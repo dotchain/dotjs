@@ -1,4 +1,8 @@
 # dotjs
+
+[![Build Status](https://travis-ci.org/dotchain/dotjs.svg?branch=master)](https://travis-ci.org/dotchain/dotjs)
+[![codecov](https://codecov.io/gh/dotchain/dotjs/branch/master/graph/badge.svg)](https://codecov.io/gh/dotchain/dotjs)
+
 ES6 Client library for [DOT](https://github.com/rameshvk/dot)
 
 ## Coding practices
