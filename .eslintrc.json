@@ -7,7 +7,9 @@
     "globals": {
         "setTimeout": true,
         "clearTimeout": true,
-        "describe": true,
-        "it": true
+        "console": true,
+        "Uint32Array": true,
+        "Uint8Array": true,
+        "ArrayBuffer": true
     }
 }
