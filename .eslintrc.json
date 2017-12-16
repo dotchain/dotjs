@@ -5,7 +5,8 @@
         "sourceType": "module"
     },
     "globals": {
-        "window": true,
+        "setTimeout": true,
+        "clearTimeout": true,
         "describe": true,
         "it": true
     }
