@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "eslint client/ fakes/ test/",
-    "test": "mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js"
+    "test": "npm run lint && mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js"
   },
   "repository": {
     "type": "git",

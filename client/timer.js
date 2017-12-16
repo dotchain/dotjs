@@ -23,11 +23,11 @@ export function CreateTimer() {
         }
         now() { return Date.now(); }
         defer(interval) { 
-            window.clearTimeout(this._t);
-            this._t = window.setTimeout(this._fn, interval);
+            clearTimeout(this._t);
+            this._t = setTimeout(this._fn, interval);
         }
         reset() { 
-            window.clearTimeout(this._t);
+            clearTimeout(this._t);
             this._t = null;
         }
     }   
