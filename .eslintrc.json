@@ -1,0 +1,12 @@
+{
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "globals": {
+        "window": true,
+        "describe": true,
+        "it": true
+    }
+}
