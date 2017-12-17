@@ -43,7 +43,31 @@ export class Inflator {
     }
 }
 
-export class Deflator extends Inflator {
+export class Deflator {
+    constructor(options) {
+        if (!options || options.raw != true) {
+            throw new Error("Invalid options: " + JSON.stringify(options));
+        }
+        this._result = null;
+        this._err = null;
+    }
+
+    get result() {
+        if (this._result === null) {
+            throw new Error("result fetched without actual push");
+        }
+
+        const result = this._result;
+        this._result = null;
+        return result;
+    }
+
+    get err() {
+        const err = this._err;
+        this._err = null;
+        return err === null ? 0 : err;
+    }
+
     push(str, flush) {
         if (flush != 2) {
             throw new Error("Invalid inflator push: " + flush);
