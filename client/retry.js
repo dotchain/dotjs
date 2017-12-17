@@ -25,10 +25,9 @@ export function CreateRetry(services) {
     return class Retry {
         constructor(fn, options) {
             this._timer = new services.Timer(fn);
-            this._random = new services.Random();
             this._options = {};
             this._lastReset = 0;
-            this._lastRetry = 0;
+            this._lastError = 0;
             this._lastDuration = 0;
             this._retry = 0;
             const opts = options || {};
@@ -39,7 +38,7 @@ export function CreateRetry(services) {
 
         retry() {
             const now = this._timer.now();
-            const wasReset = this._lastReset > this._lastTimer;
+            const wasReset = this._lastReset > this._lastError;
             const resetLongEnough = this._lastReset + this._options.successThresholdInterval < now;
             const veryOldError = this._lastError + this._options.resetThresholdInterval < now;
             
@@ -60,7 +59,7 @@ export function CreateRetry(services) {
             }
             this._retry++;
             this._lastError = now;
-            this._lastDuration = this._random.number(start + increment);
+            this._lastDuration = services.Random.number(start + increment);
             this._timer.defer(this._lastDuration);
         }
 

@@ -42,21 +42,23 @@ export function CreateConnection(services) {
 
         _onMessage(msg) {
             const m = JSON.parse(msg);
+            const modelID = m.ModelID;
+            const subID = m.SubID || modelID;
             const ops = m.Ops || [];
             const ackID = m.AckID || "";
             const message = m.Message || "";
             
             if (message !== "") {
-                this._log.warn("server reported error", m.ModelID, message);
-                this._parent.onErrorResponse(m.ModelID, message);
+                this._log.warn("server reported error", subID, message);
+                this._parent.onErrorResponse(subID, message);
             } else if (ops.length > 0 || ackID !== "") {
-                this._log.log("Received", m.ModelID, ops, ackID);
-                this._parent.onNotificationResponse(m.ModelID, ops, ackID);
+                this._log.log("Received", subID, ops, ackID);
+                this._parent.onNotificationResponse(subID, ops, ackID);
             } else {
                 const rebased = m.Rebased || [];
                 const clientRebased = m.ClientRebased || [];
-                this._log.log("Subscribed", m.ModelID, rebased, clientRebased);
-                this._parent.onBootstrap(m.ModelID, rebased, clientRebased);
+                this._log.log("Subscribed", subID, rebased, clientRebased);
+                this._parent.onBootstrap(subID, rebased, clientRebased);
             }
         }
 
@@ -76,22 +78,22 @@ export function CreateConnection(services) {
             }
         }
         
-        subscribe(modelID, ops, lastID) {
-            this._log.log("subscribing to", modelID);
-            const m = {Subscribe: modelID};
+        subscribe(subID, modelID, ops, lastID) {
+            this._log.log("subscribing", subID, "to", modelID);
+            const m = {Subscribe: subID, ModelID: modelID};
             if (ops && ops.length > 0) m.ClientOps = ops;
             if (lastID) m.LastID = lastID;
             this._send(m);
         }
 
-        unsubscribe(modelID) {
-            this._log.log("unsubscribing from", modelID);
-            this._send({Unsubscribe: modelID});
+        unsubscribe(subID) {
+            this._log.log("unsubscribing from", subID);
+            this._send({Unsubscribe: subID});
         }
 
-        append(modelID, ops) {
-            this._log.log("sending ops to", modelID, ops);
-            this._send({Append: modelID, Ops: ops})
+        append(subID, ops) {
+            this._log.log("sending ops to", subID, ops);
+            this._send({Append: subID, Ops: ops})
         }
 
         _send(msg) {

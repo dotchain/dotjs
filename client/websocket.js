@@ -28,7 +28,7 @@ export function CreateWebSocket(services) {
                 p = protocols.slice(0, 1);
             } else {
                 this._inflator = new services.Inflator({to: 'string', raw: true});
-                this._deflator = new services.Deflator({to: 'string', raw: true});
+                this._deflator = new services.Deflator({raw: true});
             }
             
             this._compressedProtocol = p[1];
