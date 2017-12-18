@@ -32,4 +32,12 @@ The main benefit of this approach is that individual source files can be neatly 
 
 ## Demo
 
-This is in progress.  A working demo should use a hosted heroku instance when done.
+This is in progress.  A working demo should use a hosted heroku instance when complete. Meanwhile, here are the manual steps.
+
+The demo server is built in [Go](https://golang.org) on top of [dots](https://github.com/dotchain/dots).
+
+1. Install Go
+2. Install dependencies: `go get -u https://github.com/dotchain/dots`
+3. Start server `go run demo/server.go` (which uses storage folder to store log files)
+4. Go to browser and party `http://localhost:8181/x`
+
