@@ -6,11 +6,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/dotchain/dot"
+	"github.com/dotchain/dots/db/files"
+	"github.com/dotchain/dots/log"
+	"github.com/dotchain/dots/snapshots"
 	"github.com/gorilla/websocket"
-	"github.com/rameshvk/dot"
-	"github.com/rameshvk/dot/x/db/files"
-	"github.com/rameshvk/dot/x/log"
-	"github.com/rameshvk/dot/x/snapshots"
 	"net/http"
 )
 

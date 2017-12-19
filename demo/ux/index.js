@@ -36,12 +36,12 @@ function panel(panel, index) {
             m.model.applyLocal({Splice: change});
         })
 
-        if (startCounter > 0) timer.defer(2000);
+        if (startCounter > 0) timer.defer(5000);
     });
 
     function updateCounter() {
         const m = manager.model;
-        timer.defer(2000);
+        timer.defer(5000);
         
         const last = startCounter + " ";
         startCounter ++;

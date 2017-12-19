@@ -78,11 +78,12 @@ export function CreateConnection(services) {
             }
         }
         
-        subscribe(subID, modelID, ops, lastID) {
+        subscribe(subID, modelID, ops, lastID, lastParentID) {
             this._log.log("subscribing", subID, "to", modelID);
             const m = {Subscribe: subID, ModelID: modelID};
             if (ops && ops.length > 0) m.ClientOps = ops;
             if (lastID) m.LastID = lastID;
+            if (lastParentID) m.LastParentID = lastParentID;
             this._send(m);
         }
 
