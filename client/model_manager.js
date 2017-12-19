@@ -66,7 +66,7 @@ export function CreateModelManager(services) {
             this._conn = conn;
             if (this._changes.length > 0) this._flushChanges();
             this._parents.updateParent(this._pending);
-            conn.subscribe(this._subID, this._id, this._pending, this._parents.basisID);
+            conn.subscribe(this._subID, this._id, this._pending, this._parents.basisID, this._parents.parentID);
         }
 
         onDisconnected() {
@@ -130,7 +130,7 @@ export function CreateModelManager(services) {
 class Parents {
     constructor(basisID, pending) {
         this._basisID = basisID;
-        this._lastParentID = this._parentID = this._lastID(pending);
+        this._parentID = this._lastID(pending);
     }
     
     updateBasis(ops) {
@@ -138,8 +138,7 @@ class Parents {
     }
     
     updateParent(ops) {
-        this._parentID = this._lastID(ops);
-        this._lastParentID = this._parentID || this._lastParentID;
+        this._parentID = this._lastID(ops) || this._parentID;
     }
     
     get basisID() {
@@ -147,7 +146,7 @@ class Parents {
     }
     
     get pair() {
-        return [this._basisID, this._lastParentID];
+        return [this._basisID, this._parentID];
     }
     
     canApply(op) {
