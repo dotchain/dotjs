@@ -153,6 +153,10 @@ class Parents {
         return this._basisID;
     }
     
+    get parentID() {
+        return this._parentID;
+    }
+    
     get pair() {
         return [this._basisID, this._parentID];
     }
