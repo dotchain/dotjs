@@ -35,12 +35,7 @@ function panel(panel, index) {
             m.model.applyLocal({Splice: change});
         })
 
-        m.setParent({
-            onChange(opsOrChange, oldModel, newModel) {
-                update(newModel);
-            }
-        });
-
+        m.events.on('remoteOperations', (_ignored, change) => update(change.after));
         if (startCounter > 0) timer.defer(5000);
     });
 
