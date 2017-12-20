@@ -12,20 +12,16 @@
 // of the builder (so it is not possible to extend builder classes)
 // but code within the class (such as the class constructor) can
 // safely acess the services.
-export function CreateModelText() {
+export function CreateModelText(services) {
     // ModelText implements the Model interface for text
     return class ModelText {
-        constructor(initial, p) {
+        constructor(initial, events) {
+            this.events = events || new services.Events();
             this._text = initial || "";
-            this._parent = p || null;
         }
 
         value() {
             return this._text;
-        }
-        
-        setParent(p) {
-            this._parent = p;
         }
         
         applyOperations(ops) {
@@ -41,7 +37,7 @@ export function CreateModelText() {
 
         applyLocal(change) {
             const result = this._apply([], change);
-            if (this._parent) this._parent.onChange(change, this, result);
+            this.events.emit('localChange', {change, before: this, after: result})
             return result;
         }
         
@@ -70,7 +66,7 @@ export function CreateModelText() {
                 const count = (change.Splice.Before || "").length;
                 const after = change.Splice.After || "";
                 const result = this._text.slice(0, offset) + after + this._text.slice(offset + count);
-                return new ModelText(result, this._parent);
+                return new ModelText(result, this.events);
             } else if (change.Move) {
                 const {Offset: offset, Count: count, Distance: distance} = change.Move;
                 const slice = this._text.slice(offset, offset+count);
@@ -78,7 +74,7 @@ export function CreateModelText() {
                 const left = before.slice(0, offset+distance);
                 const right = before.slice(offset+distance);
                 const result = left + slice + right;
-                return new ModelText(result, this._parent);
+                return new ModelText(result, this.events);
             } else {
                 return this
             }

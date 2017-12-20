@@ -15,8 +15,15 @@
 export function CreateModelManager(services) {
     // ModelManager implements utilities for managing a subscription
     // to the log service
+    //
+    // ModelManager.Events provides the following events:
+    //    localChange {change, before, after}
+    //    connected
+    //    disconnected
+    //    remoteOperations {ops, before, after}
     return class ModelManager {
         constructor(subID, modelID, cache, onReady) {
+            this.events = new services.Events();
             this._log = new services.Log("model["+modelID+"]." + subID + ": ");
 
             const {model, pending, basisID} = cache.fetch(subID, modelID);
@@ -25,7 +32,8 @@ export function CreateModelManager(services) {
             this._id = modelID;
             this._subID = subID;
             this._model = model;
-            this._model.setParent(this);
+            // TODO: cleanup?
+            this._model.events.on('localChange', (event, args) => this.onLocalChange(event, args));
             this._pending = [].concat(pending);
             this._parent = null;
             this._parents = new Parents(basisID, pending);
@@ -48,23 +56,15 @@ export function CreateModelManager(services) {
             }
         }
 
-        setParent(p) {
-            this._parent = p;
-        }
-
-        _propagateChange(change, oldModel, newModel) {
-            if (this._parent) this._parent.onChange(change, oldModel, newModel);
-        }
-        
         get model() { return this._model; }
         get modelID() { return this._id; }
-        
-        onChange(change, oldModel, newModel) {
-            if (this._model != oldModel) throw new Error("Invalid local change");
-            this._model = newModel;
-            this._changes.push(change);
+
+        onLocalChange(event, localChange) {
+            if (this._model != localChange.before) throw new Error("Invalid local change");
+            this._model = localChange.after;
+            this._changes.push(localChange.change);
             this._flushTimer.defer(0);
-            this._propagateChange(change, oldModel, newModel);
+            this.events.emit('localChange', localChange);
         }
         
         onConnected(conn) {
@@ -72,10 +72,12 @@ export function CreateModelManager(services) {
             if (this._changes.length > 0) this._flushChanges();
             this._parents.updateParent(this._pending);
             conn.subscribe(this._subID, this._id, this._pending, this._parents.basisID, this._parents.parentID);
+            this.events.emit('connected', null);
         }
 
         onDisconnected() {
             this._conn = null;
+            this.events.emit('disconnected', null);
         }
 
         onBootstrap(rebased, clientRebased) {
@@ -85,7 +87,7 @@ export function CreateModelManager(services) {
             this._parents.updateBasis(rebased);
             this._purgePending(((clientRebased || [])[0] || {}).ID);
             this._onReady();
-            this._propagateChange(ops, old, this._model);
+            this.events.emit('remoteOperations', {ops, before: old, after: this._model})
         }
 
         onNotificationResponse(ops, ackID) {
@@ -101,7 +103,7 @@ export function CreateModelManager(services) {
             }
             const old = this._model;
             this._model = this._model.applyOperations(o);
-            this._propagateChange(ops, old, this._model);
+            this.events.emit('remoteOperations', {ops, before: old, after: this._model});
         }
 
         _flush() {
