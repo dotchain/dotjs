@@ -27,6 +27,7 @@ export function CreateModelManager(services) {
             this._model = model;
             this._model.setParent(this);
             this._pending = [].concat(pending);
+            this._parent = null;
             this._parents = new Parents(basisID, pending);
             this._changes = [];
             this._conn = null;
@@ -47,9 +48,12 @@ export function CreateModelManager(services) {
             }
         }
 
-        // TODO: use the same parent interface instead of this one-off
-        setUpdated(updated) {
-            this._updated = updated;
+        setParent(p) {
+            this._parent = p;
+        }
+
+        _propagateChange(change, oldModel, newModel) {
+            if (this._parent) this._parent.onChange(change, oldModel, newModel);
         }
         
         get model() { return this._model; }
@@ -60,6 +64,7 @@ export function CreateModelManager(services) {
             this._model = newModel;
             this._changes.push(change);
             this._flushTimer.defer(0);
+            this._propagateChange(change, oldModel, newModel);
         }
         
         onConnected(conn) {
@@ -74,11 +79,13 @@ export function CreateModelManager(services) {
         }
 
         onBootstrap(rebased, clientRebased) {
-            this._model = this._model.applyOperations(rebased.concat(clientRebased));
+            const old = this._model;
+            const ops = rebased.concat(clientRebased);
+            this._model = this._model.applyOperations(ops);
             this._parents.updateBasis(rebased);
             this._purgePending(((clientRebased || [])[0] || {}).ID);
             this._onReady();
-            this._updated(this._model);
+            this._propagateChange(ops, old, this._model);
         }
 
         onNotificationResponse(ops, ackID) {
@@ -92,8 +99,9 @@ export function CreateModelManager(services) {
                 o.push(ops[kk])
                 this._parents.updateBasis([ops[kk]]);
             }
+            const old = this._model;
             this._model = this._model.applyOperations(o);
-            this._updated(this._model);
+            this._propagateChange(ops, old, this._model);
         }
 
         _flush() {

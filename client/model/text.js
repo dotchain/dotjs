@@ -20,6 +20,10 @@ export function CreateModelText() {
             this._parent = p || null;
         }
 
+        value() {
+            return this._text;
+        }
+        
         setParent(p) {
             this._parent = p;
         }
