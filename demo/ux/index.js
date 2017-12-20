@@ -31,10 +31,15 @@ function panel(panel, index) {
 
         manager = m;
 
-        m.setUpdated(() => update(m.model));
         update = manageTextArea(elt, change => {
             m.model.applyLocal({Splice: change});
         })
+
+        m.setParent({
+            onChange(opsOrChange, oldModel, newModel) {
+                update(newModel);
+            }
+        });
 
         if (startCounter > 0) timer.defer(5000);
     });
@@ -49,13 +54,13 @@ function panel(panel, index) {
         let offset = 0;
 
         if (index == 2) {
-            if (m._text.slice(offset, last.length) == last) {
+            if (m.value().slice(offset, last.length) == last) {
                 update(m.applyLocal({Splice: {Offset: offset, Before: last, After: current}}));
                 return
             }
         } else {
-            offset = m._text.length;
-            if (m._text.slice(offset - last.length) == last) {
+            offset = m.value().length;
+            if (m.value().slice(offset - last.length) == last) {
                 update(m.applyLocal({Splice: {Offset: offset - last.length, Before: last, After: current}}));
                 return;
             }
