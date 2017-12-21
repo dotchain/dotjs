@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "lint": "eslint client/ fakes/ test/",
+    "lint": "eslint lib/ client/ fakes/ test/",
     "coverage": "nyc --reporter=lcov mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js",
     "report-coverage": "cat coverage/lcov.info | codecov",
     "test": "mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js"

@@ -4,17 +4,22 @@
 
 'use strict';
 
+// lib
+import {CreateArrayLike} from '../../lib/array_like.js';
+import {CreateSparseArray} from '../../client/lib/sparse_array.js';
+
+// client/model
+import {CreateModelCache} from '../../client/model/cache.js';
+import {CreateModelText} from '../../client/model/text.js';
+import {CreateModelManager} from '../../client/model/manager.js';
+import {CreateEvents} from '../../client/model/events.js';
+
+// client
 import {CreateClient} from '../../client/client.js';
 import {CreateConnectionManager} from '../../client/conn_manager.js';
 import {CreateConnection} from '../../client/conn.js';
 import {CreateWebSocket} from '../../client/websocket.js';
 import {CreateLog} from '../../client/log.js';
-import {CreateModelCache} from '../../client/model/cache.js';
-import {CreateModelText} from '../../client/model/text.js';
-import {CreateModelArray} from '../../client/model/array.js';
-import {CreateSparseArray} from '../../client/model/sparse_array.js';
-import {CreateModelManager} from '../../client/model/manager.js';
-import {CreateEvents} from '../../client/model/events.js';
 import {CreateRandom} from '../../client/random.js';
 import {CreateRetry} from '../../client/retry.js';
 import {CreateTimer} from '../../client/timer.js';
@@ -26,17 +31,22 @@ export const services = {
     Deflator: window.pako.Deflate
 };
 
+// lib
+services.ArrayLike = CreateArrayLike(services);
+services.SparseArray = CreateSparseArray(services);
+
+// client/model
+services.Events = CreateEvents(services);
+services.ModelCache = CreateModelCache(services);
+services.ModelText = CreateModelText(services);
+services.ModelManager = CreateModelManager(services);
+
+// client
 services.Client = CreateClient(services);
 services.ConnectionManager = CreateConnectionManager(services);
 services.Connection = CreateConnection(services);
 services.WebSocket = CreateWebSocket(services);
 services.Log = CreateLog(services);
-services.Events = CreateEvents(services);
-services.ModelCache = CreateModelCache(services);
-services.ModelText = CreateModelText(services);
-services.ModelArray = CreateModelArray(services);
-services.SparseArray = CreateSparseArray(services);
-services.ModelManager = CreateModelManager(services);
 services.Random = CreateRandom(services);
 services.Retry = CreateRetry(services);
 services.Timer = CreateTimer(services);
