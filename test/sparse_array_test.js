@@ -4,13 +4,13 @@
 
 'use strict';
 
-import {CreateSparseArray} from '../client/model/sparse_array.js';
-import {CreateModelArray} from '../client/model/array.js';
+import {CreateSparseArray} from '../lib/sparse_array.js';
+import {CreateArrayLike} from '../lib/array_like.js';
 
 describe('SparseArray tests', () => {
     const services = {};
     services.SparseArray = CreateSparseArray(services);
-    services.ModelArray = CreateModelArray(services);
+    services.ArrayLike = CreateArrayLike(services);
 
     function make(elts) {
         return {"dot:encoding": "SparseArray", "dot:encoded": elts};
