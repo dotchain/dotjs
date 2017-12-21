@@ -36,7 +36,7 @@ export function CreateModelText(services) {
         }
 
         applyLocal(change) {
-            const result = this._apply([], change);
+            const result = this._apply(change.Path, change);
             this.events.emit('localChange', {change, before: this, after: result})
             return result;
         }

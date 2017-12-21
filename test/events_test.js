@@ -4,7 +4,6 @@
 
 'use strict';
 
-
 import {CreateEvents} from '../client/model/events.js';
 
 describe('Events tests', () => {
