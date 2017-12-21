@@ -19,28 +19,25 @@ function panel(panel, index) {
     let startCounter = (index-1)*100000;
     let update;
     const log = new services.Log("panel" + index + ": ");
-    let manager = null;
     const client = new services.Client(() => "ws://localhost:8181/log");
     const timer = new services.Timer(updateCounter);
     
     log.log("Initialized")
-    client.subscribe("grootza", "grootza", m => {
+    client.subscribe("grootza", "grootza", () => {
         const elt = document.createElement('textarea');
         elt.style = "border: 10px solid white; width: 100%; box-sizing: border-box; min-height: 200px;";
         panel.appendChild(elt);
 
-        manager = m;
-
         update = manageTextArea(elt, change => {
-            m.model.applyLocal({Splice: change});
+            client.apply('localChange', 0, {Path: ['grootza'], Splice: change});
         })
 
-        m.events.on('remoteOperations', (_ignored, change) => update(change.after));
+        client.events.on('remoteChange', (_ignored, data) => update(data.after.getValue()));
         if (startCounter > 0) timer.defer(5000);
     });
 
     function updateCounter() {
-        const m = manager.model;
+        var change;
         timer.defer(5000);
         
         const last = startCounter + " ";
@@ -48,18 +45,22 @@ function panel(panel, index) {
         const current = startCounter + " ";
         let offset = 0;
 
+        const val = client.getValue(['grootza']);
         if (index == 2) {
-            if (m.value().slice(offset, last.length) == last) {
-                update(m.applyLocal({Splice: {Offset: offset, Before: last, After: current}}));
+            if (val.slice(offset, last.length) == last) {
+                change = {Path: ["grootza"], Splice: {Offset: offset, Before: last, After: current}};
+                update(client.apply('localChange', 0, change).getValue());
                 return
             }
         } else {
-            offset = m.value().length;
-            if (m.value().slice(offset - last.length) == last) {
-                update(m.applyLocal({Splice: {Offset: offset - last.length, Before: last, After: current}}));
+            offset = val.length;
+            if (val.slice(offset - last.length) == last) {
+                change = {Path: ["grootza"], Splice: {Offset: offset - last.length, Before: last, After: current}};
+                update(client.apply('localChange', 0, change).getValue());
                 return;
             }
         }
-        update(m.applyLocal({Splice: {Offset: offset, Before: "", After: current}}));
+        change = {Path: ['grootza'], Splice: {Offset: offset, Before: "", After: current}}
+        update(client.apply('localChange', 0, change).getValue());
     }
 }

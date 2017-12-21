@@ -34,14 +34,14 @@ export function CreateConnectionManager(services) {
         onConnected() {
             this._isConnected = true;
             for (let id in this._subs) {
-                this._managers[id].onConnected(this._conn);
+                this._managers[id].man.onConnected(this._conn);
             }
         }
 
         onDisconnected() {
             this._isConnected = false;
             for (let id in this._subs) {
-                this._managers[id].onDisconnected(this._conn);
+                this._managers[id].man.onDisconnected(this._conn);
             }
         }
 
@@ -51,18 +51,18 @@ export function CreateConnectionManager(services) {
 
         onNotificationResponse(id, ops, ackID) {
             if (!this._subs[id]) return;
-            this._managers[id].onNotificationResponse(ops, ackID);
+            this._managers[id].man.onNotificationResponse(ops, ackID);
         }
 
         onBootstrap(id, rebased, clientRebased) {
             if (!this._subs[id]) return;
-            this._managers[id].onBootstrap(rebased, clientRebased);
+            this._managers[id].man.onBootstrap(rebased, clientRebased);
         }
 
         add(subID, modelID) {
             this._subs[subID] = modelID;
             if (this._connected) {
-                this._managers[subID].onConnected(this._conn);
+                this._managers[subID].man.onConnected(this._conn);
             }
         }
 
