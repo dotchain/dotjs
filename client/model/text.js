@@ -20,6 +20,10 @@ export function CreateModelText(services) {
             this._text = initial || "";
         }
 
+        toJSON() {
+            return this._text;
+        }
+        
         value() {
             return this._text;
         }
