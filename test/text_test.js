@@ -67,7 +67,7 @@ describe('ModelText tests', () => {
             }            
             m = d.after;
         });
-        const actual = m.applyLocal(change1).applyLocal(change2);
+        const actual = m.apply('localChange', 0, change1).apply('localChange', 0, change2);
         if (actual !== m) {
             return done(new Error("Updated does not match: " + JSON.stringify({expected:m, actual})));
         }
@@ -99,7 +99,7 @@ describe('ModelText tests', () => {
             m = d.after;
         });
 
-        const actual = m.applyLocal(change);
+        const actual = m.apply('localChange', 0, change);
         if (actual !== m) {
             return done(new Error("Updated does not match: " + JSON.stringify({expected:m, actual})));
         }
@@ -119,18 +119,13 @@ describe('ModelText tests', () => {
         done();
     });
 
-    it('applies operations silently', done => {
+    it('applies remoteChanges silently', done => {
         const m = new ModelText("hello world")
-        const ops = [
-            {ID: "one"},
-            {ID: "two", Changes: null},
-            {ID: "three", Changes: []},
-            {ID: "four", Changes: [{}]},
-            {ID: "five", Changes: [{Splice: {Offset: 6, After: "beautiful "}}]},
-        ];
 
         m.events.on("localChange", () => done(new Error("Unexpected callback")));
-        const result = m.applyOperations(ops);
+
+        const changes = [{Path: ['hello'], Splice: {Offset: 6, After: "beautiful "}}];
+        const result = m.apply('remoteChange', 1, changes);
         if (result.value() != "hello beautiful world") {
             done(new Error("Unexpected result: " + result.value()));
         }
@@ -140,7 +135,7 @@ describe('ModelText tests', () => {
     it('throws when attempting to apply a change with a path', done => {
         const m = new ModelText("hello world")
         try {
-            m.applyLocal({Path: ["hello"], Splice: {Offset: 0, After: "x"}})
+            m.apply('localChange', 0, {Path: ["hello"], Splice: {Offset: 0, After: "x"}})
         } catch (e) {
             return done(null);
         }
@@ -150,7 +145,7 @@ describe('ModelText tests', () => {
     it('throws when attempting to apply a set', done => {
         const m = new ModelText("hello world")
         try {
-            m.applyLocal({Set: {}});
+            m.apply('localChange', 0, {Set: {}});
         } catch (e) {
             return done(null);
         }
@@ -160,7 +155,7 @@ describe('ModelText tests', () => {
     it('throws when attempting to apply a range', done => {
         const m = new ModelText("hello world")
         try {
-            m.applyLocal({Range: {}});
+            m.apply('localChange', 0, {Range: {}});
         } catch (e) {
             return done(null);
         }

@@ -12,7 +12,7 @@ import {CreateLog} from '../../client/log.js';
 import {CreateModelCache} from '../../client/model/cache.js';
 import {CreateModelText} from '../../client/model/text.js';
 import {CreateModelArray} from '../../client/model/array.js';
-import {CreateSparseArray} from '../../client/model/sparse.js';
+import {CreateSparseArray} from '../../client/model/sparse_array.js';
 import {CreateModelManager} from '../../client/model/manager.js';
 import {CreateEvents} from '../../client/model/events.js';
 import {CreateRandom} from '../../client/random.js';

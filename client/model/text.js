@@ -13,6 +13,8 @@
 // but code within the class (such as the class constructor) can
 // safely acess the services.
 export function CreateModelText(services) {
+    const empty = [];
+    
     // ModelText implements the Model interface for text
     return class ModelText {
         constructor(initial, events) {
@@ -23,41 +25,42 @@ export function CreateModelText(services) {
         toJSON() {
             return this._text;
         }
-        
+
         value() {
             return this._text;
         }
         
-        applyOperations(ops) {
-            let result = this;
-            for (let jj = 0; jj < ops.length; jj ++) {
-                const changes = ops[jj].Changes || [];
-                for (let kk = 0; kk < changes.length; kk ++) {
-                    result = result._apply(changes[kk].Path, changes[kk]);
-                }
-            }
-            return result;
+        getValue(path) {
+            if (path && path.length > 0) throw new Error("invalid path: " + path);
+            return this._text;
         }
+        
+        apply(event, index, change) {
+            let  result = this;
+            if (Array.isArray(change)) {
+                change.forEach(ch => (result = result._apply(index, ch)));
+            } else {
+                result = result._apply(index, change);
+            }
 
-        applyLocal(change) {
-            const result = this._apply(change.Path, change);
-            this.events.emit('localChange', {change, before: this, after: result})
+            this.events.emit(event, {change, index, before: this, after: result});
             return result;
         }
         
         splice(offset, count, insert) {
             const before = this._text.slice(offset, offset+count);
             const change = {Splice: {Offset: offset, Before: before, After: insert || ""}}
-            return this.applyLocal(change);
+            return this.apply('localChange', 0, change);
         }
 
         move(offset, count, distance) {
             const change = {Move: {Offset: offset, Count: count, Distance: distance}};
-            return this.applyLocal(change);
+            return this.apply('localChange', 0, change);
         }
         
-        _apply(path, change) {
-            if (path && path.length > 0) {
+        _apply(index, change) {
+            const path = (change.Path || empty);
+            if (index < path.length) {
                 throw new Error("Unexpected path with text model: " + path);
             }
 
@@ -83,6 +86,5 @@ export function CreateModelText(services) {
                 return this
             }
         }
-    }
-        
+    }        
 }

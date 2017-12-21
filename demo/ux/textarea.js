@@ -15,8 +15,8 @@ function manageTextArea(elt, onChange) {
     });	    
     return update;
 
-    function update(model) {
-	console.log("New value =", model.value());
-	elt.value = value = model.value();
+    function update(val) {
+	console.log("New value =", val);
+	elt.value = value = val;
     }
 }
