@@ -34,9 +34,10 @@ describe('Array tests', () => {
         };
         const three2 = services.ArrayLike.count(encoded);
         const three3 = services.ArrayLike.count(new services.SparseArray(encoded));
-
-        if (three1 !== 3 || three2 !== 3 || three3 !== 3) {
-            throw new Error("Unexpexted counts: " + [three1, three2, three3]);
+        const three4 = services.ArrayLike.count("123");
+        
+        if (three1 !== 3 || three2 !== 3 || three3 !== 3 || three4 !== 3) {
+            throw new Error("Unexpexted counts: " + [three1, three2, three3, three4]);
         }
     });
 
