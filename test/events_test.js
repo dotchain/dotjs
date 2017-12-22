@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {CreateEvents} from '../client/model/events.js';
+import {CreateEvents} from '../lib/events.js';
 
 describe('Events tests', () => {
     const Events = CreateEvents();

@@ -8,12 +8,12 @@
 import {CreateArrayLike} from '../../lib/array_like.js';
 import {CreateSparseArray} from '../../lib/sparse_array.js';
 import {CreateRefPath} from '../../lib/ref_path.js';
+import {CreateEvents} from '../../lib/events.js';
 
 // client/model
 import {CreateModelCache} from '../../client/model/cache.js';
 import {CreateModelText} from '../../client/model/text.js';
 import {CreateModelManager} from '../../client/model/manager.js';
-import {CreateEvents} from '../../client/model/events.js';
 
 // client
 import {CreateClient} from '../../client/client.js';
