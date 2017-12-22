@@ -57,7 +57,7 @@ describe('SparseArray tests', () => {
 
     it ('creates slices', () => {
         const input = new services.SparseArray(make([2, 1, 3, "hello"]));
-        let actual = input.slice(1, 3);
+        let actual = input.slice(1, 4);
         let expected = new services.SparseArray(make([1, 1, 2, "hello"]));
 
         if (JSON.stringify(expected) != JSON.stringify(actual)) {
@@ -71,14 +71,14 @@ describe('SparseArray tests', () => {
             throw new Error("Mismatched: " + JSON.stringify(actual));
         }
 
-        actual = input.slice(2, 0);
+        actual = input.slice(2, 2);
         expected = new services.SparseArray(make([]));
 
         if (JSON.stringify(expected) != JSON.stringify(actual)) {
             throw new Error("Mismatched: " + JSON.stringify(actual));
         }
 
-        actual = input.slice(2, 3);
+        actual = input.slice(2, 5);
         expected = new services.SparseArray(make([3, "hello"]));
         
         if (JSON.stringify(expected) != JSON.stringify(actual)) {
@@ -88,7 +88,7 @@ describe('SparseArray tests', () => {
 
     it ('splices - deletes', () => {
         const input = new services.SparseArray(make([2, 1, 4, "hello"]));
-        const left = input.slice(0, 3), right = input.slice(3, 3);
+        const left = input.slice(0, 3), right = input.slice(3, 6);
         const altLeft = input.splice(3, right), altRight = input.splice(0, left);
 
         if (JSON.stringify(left) != JSON.stringify(altLeft)) {
@@ -108,7 +108,7 @@ describe('SparseArray tests', () => {
 
     it ('splices - inserts', () => {
         const input = new services.SparseArray(make([2, 1, 4, "hello"]));
-        const left = input.slice(0, 3), right = input.slice(3, 3);
+        const left = input.slice(0, 3), right = input.slice(3, 6);
 
         const alt1 = left.splice(3, null, right);
         const alt2 = right.splice(0, [], [1, 1, "hello"]);
@@ -145,10 +145,10 @@ describe('SparseArray tests', () => {
     it ('invalid slices', () => {
         const input = new services.SparseArray(make([2, 1]));
         
-        shouldThrow("negative offset", () => input.slice(-1, 0));
+        shouldThrow("negative offset", () => input.slice(-1, -1));
         shouldThrow("negative index", () => input.slice(0, -1));
-        shouldThrow("overflow count", () => input.slice(1, 2));
-        shouldThrow("overflow offset", () => input.slice(3, 0));        
+        shouldThrow("overflow count", () => input.slice(1, 3));
+        shouldThrow("overflow offset", () => input.slice(3, 3));        
     });
 
     it ('invalid splices', () => {
