@@ -59,7 +59,7 @@ export function CreateRetry(services) {
             }
             this._retry++;
             this._lastError = now;
-            this._lastDuration = services.Random.number(start + increment);
+            this._lastDuration = start + services.Random.number(increment);
             this._timer.defer(this._lastDuration);
         }
 

@@ -21,6 +21,8 @@ function panel(panel, index) {
     const log = new services.Log("panel" + index + ": ");
     const client = new services.Client(() => "ws://localhost:8181/log");
     const timer = new services.Timer(updateCounter);
+    const refStart = new services.RefPath(["grootza", 0]);
+    const refEnd = new services.RefPath(["grootza", 0]);
     
     log.log("Initialized")
     client.subscribe("grootza", "grootza", () => {
@@ -28,14 +30,30 @@ function panel(panel, index) {
         elt.style = "border: 10px solid white; width: 100%; box-sizing: border-box; min-height: 200px;";
         panel.appendChild(elt);
 
-        update = manageTextArea(elt, change => {
-            client.apply('localChange', 0, {Path: ['grootza'], Splice: change});
+        update = manageTextArea(elt, (change, c) => {
+            if (change) {
+                client.apply('localChange', 0, {Path: ['grootza'], Splice: change});
+            }
+            refStart.path = ['grootza', c[0]];
+            refEnd.path = ['grootza', c[1]];
         })
 
-        client.events.on('remoteChange', (_ignored, data) => update(data.after.getValue()));
+        client.events.on('remoteChange', (_ignored, data) => {
+            update(data.after.getValue(), [+refStart.path[1], +refEnd.path[1]]);
+        });
+        refStart.linkTo(client);
+        refEnd.linkTo(client);
+        
         if (startCounter > 0) timer.defer(5000);
     });
 
+    refStart.events.on('pathChange', () => {
+        update(client.getValue(['grootza']), [+refStart.path[1], +refEnd.path[1]]);
+    });
+    refEnd.events.on('pathChange', () => {
+        update(client.getValue(['grootza']), [+refStart.path[1], +refEnd.path[1]]);
+    });
+    
     function updateCounter() {
         var change;
         timer.defer(5000);

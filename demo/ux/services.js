@@ -6,7 +6,8 @@
 
 // lib
 import {CreateArrayLike} from '../../lib/array_like.js';
-import {CreateSparseArray} from '../../client/lib/sparse_array.js';
+import {CreateSparseArray} from '../../lib/sparse_array.js';
+import {CreateRefPath} from '../../lib/ref_path.js';
 
 // client/model
 import {CreateModelCache} from '../../client/model/cache.js';
@@ -34,6 +35,7 @@ export const services = {
 // lib
 services.ArrayLike = CreateArrayLike(services);
 services.SparseArray = CreateSparseArray(services);
+services.RefPath = CreateRefPath(services);
 
 // client/model
 services.Events = CreateEvents(services);

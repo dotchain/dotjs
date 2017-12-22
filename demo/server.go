@@ -29,6 +29,7 @@ func main() {
 	handler.Upgrader = &upgrader
 	handler.UseCompression = useCompression
 
+	http.Handle("/lib/", http.StripPrefix("/lib/", http.FileServer(http.Dir("lib"))))
 	http.Handle("/client/", http.StripPrefix("/client/", http.FileServer(http.Dir("client"))))
 	http.Handle("/demo/ux/", http.StripPrefix("/demo/ux/", http.FileServer(http.Dir("demo/ux"))))
 	http.Handle("/log", handler)
