@@ -52,7 +52,37 @@ describe('Events tests', () => {
         });
 
         rem();
+        // validate that duplicate removal causes no problems
+        rem();
         t.emit("my", 42);
+    });
+
+    it ('calls ctor and dtor', () => {
+        let cCount = 0, dCount = 0;
+        const t = new Events(() => cCount++, () => dCount++);
+
+        for (let kk = 0; kk < 3; kk ++) {
+            const rem1 = t.on("ev1", () => 42);
+            if (cCount !== 1 || dCount !== 0) {
+                throw new Error("Unexpected counts: " + [cCount, dCount]);
+            }
+            
+            const rem2 = t.on("ev2", () => 42);
+            if (cCount !== 1 || dCount !== 0) {
+                throw new Error("Unexpected counts: " + [cCount, dCount]);
+            }
+            
+            rem2(); 
+            if (cCount !== 1 || dCount !== 0) {
+                throw new Error("Unexpected counts: " + [cCount, dCount]);
+            }
+            
+            rem1();
+            if (cCount !== 1 || dCount !== 1) {
+                throw new Error("Unexpected counts: " + [cCount, dCount]);
+            }
+            cCount = dCount = 0;
+        }
     });
 });
 
