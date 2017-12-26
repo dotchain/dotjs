@@ -4,7 +4,7 @@
 
 'use strict';
 
-// CreateModelManager is a builder for the ModelManager service
+// CreateModelSubscription is a builder for the ModelSubscription service
 //
 // All builders take one parameter which is a map of services. This is
 // the dependency injection mechanism.  Builder must return a class.
@@ -12,14 +12,14 @@
 // of the builder (so it is not possible to extend builder classes)
 // but code within the class (such as the class constructor) can
 // safely acess the services.
-export function CreateModelManager(services) {
-    // ModelManager implements utilities for managing a subscription
+export function CreateModelSubscription(services) {
+    // ModelSubscription implements utilities for managing a subscription
     // to the log service
     //
-    // ModelManager.Events provides the following events:
+    // ModelSubscription.Events provides the following events:
     //    localChange {change, index, before, after}
     //    remoteChange {change, index, before, after}
-    return class ModelManager {
+    return class ModelSubscription {
         constructor(subID, modelID, cache, onReady) {
             this.events = new services.Events();
             this._log = new services.Log("model["+modelID+"]." + subID + ": ");
