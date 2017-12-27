@@ -31,7 +31,7 @@ function panel(panel, index) {
     const refStart = new services.RefPath([0]);
     const refEnd = new services.RefPath([0]);
 
-    const mm = services.ModelManager.createNew('grootza');
+    const mm = new services.ModelManager({id: 'grootza'});
     transport.initialize(mm);
     mm.events.on("initialized", () => {
         const elt = document.createElement('textarea');
