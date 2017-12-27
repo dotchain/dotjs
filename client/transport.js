@@ -39,17 +39,13 @@ export function CreateTransport(services) {
 
         _subscribe(subID, manager) {
             manager.rollUpChanges();
-            this._conn.subscribe(
-                subID,
-                manager.id,
-                manager.ops,
-                manager.basisID,
-                manager.parentID
-            );
+            this._conn.subscribe(subID, manager.id, manager.ops);
         }
 
         _resubscribe(subID, manager) {
-            this._subscribe(subID, manager);
+            manager.rollUpChanges();
+            const r = {BasisID: manager.basisID, ParentID: manager.parentID};
+            this._conn.reconnect(subID, manager.id, manager.ops, r);
         }
              
         attach(manager) {
