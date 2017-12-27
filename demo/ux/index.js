@@ -27,7 +27,7 @@ function panel(panel, index) {
     
     const transport = new services.Transport();
     const log = new services.Log("panel" + index + ": ");
-    const timer = new services.Timer(updateCounter);
+    const timer = new services.Timer(() => null);
     const refStart = new services.RefPath([0]);
     const refEnd = new services.RefPath([0]);
 

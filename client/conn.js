@@ -77,15 +77,20 @@ export function CreateConnection(services) {
                 this._retry.retry();
             }
         }
-        
-        subscribe(subID, modelID, ops, lastID, lastParentID) {
+
+        subscribe(subID, modelID, ops) {
             this._log.log("subscribing", subID, "to", modelID);
             const m = {Subscribe: subID, ModelID: modelID};
             if (ops && ops.length > 0) m.ClientOps = ops;
-            if (lastID) m.LastID = lastID;
-            if (lastParentID) m.LastParentID = lastParentID;
             this._send(m);
         }
+
+        reconnect(subID, modelID, ops, reconnectInfo) {
+            this._log.log("reconnecting", subID, "to", modelID);
+            const m = {Subscribe: subID, ModelID: modelID, Reconnect: reconnectInfo};
+            if (ops && ops.length > 0) m.ClientOps = ops;
+            this._send(m);
+        }            
 
         unsubscribe(subID) {
             this._log.log("unsubscribing from", subID);
