@@ -99,7 +99,11 @@ export function CreateConnection(services) {
 
         _send(msg) {
             if (this._ws != null) {
-                this._ws.send(JSON.stringify(msg));
+                try {
+                    this._ws.send(JSON.stringify(msg));
+                } catch (e) {
+                    this._log.warn("error: ", e);
+                }
             }
         }
     }
