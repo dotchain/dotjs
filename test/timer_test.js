@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {CreateTimer} from '../client/timer.js';
+import {CreateTimer} from '../lib/timer.js';
 
 describe('Timer tests', () => {
     const Timer = CreateTimer({});

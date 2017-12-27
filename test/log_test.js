@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {CreateLog} from '../client/log.js';
+import {CreateLog} from '../lib/log.js';
 
 describe('Log tests', () => {
     it('does not crash', () => {

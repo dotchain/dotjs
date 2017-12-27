@@ -22,13 +22,14 @@ export function CreateModelManager(services) {
     //    opsChange {modelID}
     //    initialized {modelID}
     return class ModelManager {
-        constructor(snapshot) {
+        constructor(json) {
+            const snapshot = json || {};
             this._id = snapshot.id;
-            this._model = snapshot.model;
-            this._basisID = snapshot.basisID;
-            this._parentID = snapshot.parentID;
-            this._changes = snapshot.changes;
-            this._ops = snapshot.ops;
+            this._model = snapshot.model || new services.ModelText("");
+            this._basisID = snapshot.basisID || "";
+            this._parentID = snapshot.parentID || "";
+            this._changes = snapshot.changes || [];
+            this._ops = snapshot.ops || [];
             this._log = new services.Log("model[" + this._id + "]: ");
             this._initializing = false;
             
@@ -100,7 +101,7 @@ export function CreateModelManager(services) {
             }
         }
         
-        snapshot() {
+        toJSON() {
             return {
                 id: this._id,
                 model: this._model,
@@ -110,17 +111,6 @@ export function CreateModelManager(services) {
                 ops: this._ops.slice(0),
                 changes: this._changes.slice(0),
             };
-        }
-
-        static createNew(id) {
-            return new ModelManager({
-                id: id,
-                model: new services.ModelText(),
-                basisID: "",
-                parentID: "",
-                changes: [],
-                ops: []
-            });
         }
 
         applyChange(change) {

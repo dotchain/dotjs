@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {CreateRandom} from '../client/random.js';
+import {CreateRandom} from '../lib/random.js';
 
 describe('Random tests', () => {
     it('creates a random number', done => {
