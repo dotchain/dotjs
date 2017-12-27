@@ -7,6 +7,12 @@
 import {services} from './services.js';
 import {manageTextArea} from './textarea.js';
 
+services.ModelUrlMapper = class ModelUrlMapper {
+    static fromModelID() {
+        return "ws://localhost:8181/log";
+    }
+};
+
 document.addEventListener("DOMContentLoaded", main);
 function main() {
     const elts = document.querySelectorAll('.panel');
@@ -18,67 +24,38 @@ function main() {
 function panel(panel, index) {
     let startCounter = (index-1)*100000;
     let update;
-    const log = new services.Log("panel" + index + ": ");
-    const client = new services.Client(() => "ws://localhost:8181/log");
-    const timer = new services.Timer(updateCounter);
-    const refStart = new services.RefPath(["grootza", 0]);
-    const refEnd = new services.RefPath(["grootza", 0]);
     
-    log.log("Initialized")
-    client.subscribe("grootza", "grootza", () => {
+    const transport = new services.Transport();
+    const log = new services.Log("panel" + index + ": ");
+    const timer = new services.Timer(updateCounter);
+    const refStart = new services.RefPath([0]);
+    const refEnd = new services.RefPath([0]);
+
+    const mm = services.ModelManager.createNew('grootza');
+    transport.initialize(mm);
+    mm.events.on("initialized", () => {
         const elt = document.createElement('textarea');
         elt.style = "border: 10px solid white; width: 100%; box-sizing: border-box; min-height: 200px;";
         panel.appendChild(elt);
 
         update = manageTextArea(elt, (change, c) => {
             if (change) {
-                client.apply('localChange', 0, {Path: ['grootza'], Splice: change});
+                mm.applyChange({Splice: change});
             }
-            refStart.path = ['grootza', c[0]];
-            refEnd.path = ['grootza', c[1]];
+            refStart.path = [c[0]];
+            refEnd.path = [c[1]];
         })
 
-        client.events.on('remoteChange', (_ignored, data) => {
-            update(data.after.getValue(), [+refStart.path[1], +refEnd.path[1]]);
+        update(mm.getValue(), [0, 0]);
+
+        mm.events.on('remoteChange', (_ignored, data) => {
+            update(mm.getValue(), [+refStart.path[0], +refEnd.path[0]]);
         });
-        refStart.linkTo(client);
-        refEnd.linkTo(client);
+        refStart.linkTo(mm);
+        refEnd.linkTo(mm);
         
         if (startCounter > 0) timer.defer(5000);
     });
 
-    refStart.events.on('pathChange', () => {
-        update(client.getValue(['grootza']), [+refStart.path[1], +refEnd.path[1]]);
-    });
-    refEnd.events.on('pathChange', () => {
-        update(client.getValue(['grootza']), [+refStart.path[1], +refEnd.path[1]]);
-    });
-    
-    function updateCounter() {
-        var change;
-        timer.defer(5000);
-        
-        const last = startCounter + " ";
-        startCounter ++;
-        const current = startCounter + " ";
-        let offset = 0;
-
-        const val = client.getValue(['grootza']);
-        if (index == 2) {
-            if (val.slice(offset, last.length) == last) {
-                change = {Path: ["grootza"], Splice: {Offset: offset, Before: last, After: current}};
-                update(client.apply('localChange', 0, change).getValue());
-                return
-            }
-        } else {
-            offset = val.length;
-            if (val.slice(offset - last.length) == last) {
-                change = {Path: ["grootza"], Splice: {Offset: offset - last.length, Before: last, After: current}};
-                update(client.apply('localChange', 0, change).getValue());
-                return;
-            }
-        }
-        change = {Path: ['grootza'], Splice: {Offset: offset, Before: "", After: current}}
-        update(client.apply('localChange', 0, change).getValue());
-    }
+    log.log("Initialized")
 }

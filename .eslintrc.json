@@ -10,6 +10,7 @@
         "console": true,
         "Uint32Array": true,
         "Uint8Array": true,
-        "ArrayBuffer": true
+        "ArrayBuffer": true,
+        "Map": true
     }
 }
