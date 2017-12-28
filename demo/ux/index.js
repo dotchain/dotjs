@@ -25,13 +25,13 @@ function panel(panel, index) {
     let startCounter = (index-1)*100000;
     let update;
     
-    const transport = new services.Transport();
+    const transport = new services.SyncTransport();
     const log = new services.Log("panel" + index + ": ");
     const timer = new services.Timer(() => null);
     const refStart = new services.RefPath([0]);
     const refEnd = new services.RefPath([0]);
 
-    const mm = new services.ModelManager({id: 'grootza'});
+    const mm = new services.SyncBridge({id: 'grootza'});
     transport.initialize(mm);
     mm.events.on("initialized", () => {
         const elt = document.createElement('textarea');
