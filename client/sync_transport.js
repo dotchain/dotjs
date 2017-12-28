@@ -22,24 +22,16 @@ export function CreateSyncTransport(services) {
             this._url = url;
             this._conn = new services.Connection(url, this);
             
-            // map subID => SyncBridge, not yet initiialized
+            // map subID => {modelID, path, clientOps, done}
             this._pending = {};
 
             // map subID => {bridge, cleanup}
             this._attached = {};
         }
 
-        initialize(bridge) {
-            const subID = (new services.UUID()).toString();
-            this._pending[subID] = bridge;
-            bridge.startInitializing();
-            this._subscribe(subID, bridge);
-            return subID;
-        }
-
-        _subscribe(subID, bridge) {
-            bridge.rollUpChanges();
-            this._conn.subscribe(subID, bridge.id, bridge.ops);
+        initialize(subID, modelID, path, clientOps, done) {
+            this._pending[subID] = {modelID, path, clientOps, done};
+            this._conn.subscribe(subID, modelID, clientOps);
         }
 
         _resubscribe(subID, bridge) {
@@ -50,7 +42,7 @@ export function CreateSyncTransport(services) {
              
         attach(bridge) {
             const subID = (new services.UUID()).toString();
-            this._attach(subID, bridge);
+           this._attach(subID, bridge);
             this._resubscribe(subID);
             return subID;
         }
@@ -71,7 +63,8 @@ export function CreateSyncTransport(services) {
 
         onConnected() {
             for (let subID in this._pending) {
-                this._subscribe(subID, this._pending[subID]);
+                const {modelID, path, clientOps} = this._pending[subID];
+                this._conn.subscribe(subID, modelID, clientOps);
             }
             for (let subID in this._attached) {
                 this._resubscribe(subID, this._attached[subID].bridge);
@@ -86,11 +79,32 @@ export function CreateSyncTransport(services) {
         }
         
         onBootstrap(subID, rebased, clientRebased) {
-            const bridge = this._pending[subID];
-            if (!bridge) return;
+            const pending = this._pending[subID];
+            if (!pending) return;
             delete(this._pending[subID]);
-            bridge.finishInitializing(rebased, clientRebased);
+            let model = new services.ModelText();
+            const ops = [].concat(rebased, clientRebased);
+            for (let kk = 0; kk < ops.length; kk ++) {
+                if (!ops[kk].Changes) continue;
+                for (let jj = 0; jj < ops[kk].Changes.length; jj ++) {
+                    model = model.apply('remoteChange', 0, ops[kk].Changes[jj]);
+                }
+            }
+            let basisID = "", parentID = "";
+            if (rebased.length > 0) basisID = rebased[rebased.length-1].ID;
+            if (pending.clientOps && pending.clientOps.length > 0) {
+                parentID = pending.clientOps[pending.clientOps.length-1].ID;
+            }
+            const bridge = new services.SyncBridge({
+                id: pending.modelID,
+                path: pending.path,
+                model: model,
+                basisID: basisID,
+                parentID: parentID,
+            });
+            
             this._attach(subID, bridge);
+            pending.done(bridge);
         }
 
         onNotificationResponse(subID, ops, ackID) {
@@ -107,6 +121,18 @@ export function CreateSyncTransport(services) {
             this._conn.append(subID, ops.slice(-1));
         }
     }
+
+    class ModelUrlParser {
+        static parse(url) {
+            const parts = url.split('#');
+            const pathParts = parts[0].split("/");
+            const modelID = pathParts[pathParts.length-1];
+            const wsUrl = pathParts.slice(0, -1).join('/')
+                  .replace(/^https/i, "wss")
+                  .replace(/^http/i, "ws");
+            return {wsUrl, modelID, path: (parts[1] || "").split("/")};
+        }        
+    }
     
     // SyncTransport manages mulitple manaconnections using a connection
     // bridge for each. It uses the mapper services to map modelIDs
@@ -122,11 +148,14 @@ export function CreateSyncTransport(services) {
             this._subs = new Map();
         }
 
-        initialize(bridge) {
-            const url = services.ModelUrlMapper.fromModelID(bridge.id)
-            this._conns[url] = this._conns[url] || new ConnectionManager(url);
-            const subID = this._conns[url].initialize(bridge);
-            this._subs[bridge] = {subID, url};
+        initialize(url, clientOps, done) {
+            const subID = (new services.UUID()).toString();
+            const {wsUrl, modelID, path} = ModelUrlParser.parse(url);
+            this._conns[wsUrl] = this._conns[wsUrl] || new ConnectionManager(wsUrl);
+            this._conns[wsUrl].initialize(subID, modelID, path, clientOps, bridge => {
+                this._subs[bridge] = {subID, wsUrl};
+                if (done) done(bridge);
+            });
         }
 
         attach(bridge) {

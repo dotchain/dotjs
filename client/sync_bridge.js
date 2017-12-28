@@ -28,8 +28,6 @@ export function CreateSyncBridge(services) {
      *    localChangeFlush {modelID}
      *    // opsChange: the operations array was changed
      *    opsChange {modelID}
-     *    // model was initialized by transport
-     *    initialized {modelID}
      * </pre>
      * @param snapshot {JSON} See examples
      *
@@ -65,7 +63,6 @@ export function CreateSyncBridge(services) {
             this._changes = snapshot.changes || [];
             this._ops = snapshot.ops || [];
             this._log = new services.Log("model[" + this._id + "]: ");
-            this._initializing = false;
             
             this._model.events.on('localChange', (e, d) => this._onLocalChange(e, d));
             this.events = new services.Events();
@@ -81,33 +78,6 @@ export function CreateSyncBridge(services) {
         get changes() { return this._changes.slice(0); }
         get ops() { return this._ops.slice(0); }
 
-        startInitializing() {
-            this._initializing = true;
-        }
-
-        finishInitializing(serverOps, clientOps) {
-            this._initializing = false;
-
-            // TODO: use a null model than an empty text model
-            // (also copy events over then?)
-            const applied = [];
-            const ops = [].concat(serverOps, clientOps);
-            for (let jj = 0; jj < ops.length; jj ++) {
-                if (!ops[jj].Changes || ops[jj].Changes.length === 0) continue;
-                for (let kk = 0; kk < ops[jj].Changes.length; kk ++) {
-                    applied.push(ops[jj].Changes[kk]);
-                    this._model = this._model.apply('remoteChange', 0, ops[jj].Changes[kk]);
-                }
-            }
-            if (serverOps.length > 0) {
-                this._basisID = serverOps[serverOps.length-1].ID;
-            }
-            if (applied.length > 0) {
-                this.events.emit('remoteChange', {change: applied, before: this, after: this});
-            }
-            this.events.emit("initialized", {modelID: this._id});
-        }
-        
         getValue(path) {
             return this._model.getValue(path);
         }
@@ -182,7 +152,6 @@ export function CreateSyncBridge(services) {
             if (this._model !== data.before) {
                 throw new Error("Unexpected before");
             }
-            if (this._intializing) throw new Error("Cannot modify when initializing");
 
             if (Array.isArray(data.change)) this._changes = this._changes.concat(data.change);
             else this._changes.push(data.change);
