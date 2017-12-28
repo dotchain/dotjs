@@ -4,7 +4,7 @@
 
 'use strict';
 
-// CreateModelManager is a builder for the ModelManager service.
+// CreateSyncBridge is a builder for the SyncBridge service
 //
 // All builders take one parameter which is a map of services. This is
 // the dependency injection mechanism.  Builder must return a class.
@@ -12,16 +12,50 @@
 // of the builder (so it is not possible to extend builder classes)
 // but code within the class (such as the class constructor) can
 // safely acess the services.
-export function CreateModelManager(services) {
-    // ModelManager manages OT relate state for a model
-    //
-    // events:
-    //    remoteChange {change, before, after}
-    //    localChange {change, before, after}
-    //    localChangeFlush {modelID}
-    //    opsChange {modelID}
-    //    initialized {modelID}
-    return class ModelManager {
+export function CreateSyncBridge(services) {
+    /**
+     * SyncBridge manages OT relate state for a model and provides
+     * an implementation that is compatible with the SyncTransport
+     * 
+     * <pre>
+     * events: 
+     *    // remoteChange = change that transport applied to it
+     *    remoteChange {change, before, after}
+     *    // localChange = change that was applied to the model
+     *    localChange {change, before, after}
+     *    // localChangeFlush indicates that the model is in a good state
+     *    // that local modifications can be flushed to transport
+     *    localChangeFlush {modelID}
+     *    // opsChange: the operations array was changed
+     *    opsChange {modelID}
+     *    // model was initialized by transport
+     *    initialized {modelID}
+     * </pre>
+     * @param snapshot {JSON} See examples
+     *
+     * @example <caption>Creating the class </caption>
+     *    import {CreateSyncBridge} from "dotjs/client/sync_bridge.js";
+     *    const SyncBridge = new CreateSyncBridge(services);
+     *
+     * @example <caption>Using the sync bridge</caption>
+     *    bridge = new SyncBridge({
+     *      id: "Model ID",
+     *      model: <actual Model>,
+     *      basisID: "last server op applied to the model",
+     *      parentID: "last local op applied to the model",
+     *      ops: [set of local ops that have not been acknowledged],
+     *      changrs: [set of local changes that have not been sent up to server],
+     *    });
+     * @example <caption>Attaching and detaching bridges</caption>
+     *    // A bridge can be attached to a transport and it will start syncing.
+     *    syncTransport.attach(bridge);
+     * @example <caption>Saving the bridge between sessions</caption>
+     *    const snapshot = bridge.toJSON();
+     *    // the snapshot can be store locally and in a later session:
+     *    const revivedBridge = new SyncBridge(snapshot);
+     *
+     */
+    class SyncBridge {
         constructor(json) {
             const snapshot = json || {};
             this._id = snapshot.id;
@@ -163,4 +197,6 @@ export function CreateModelManager(services) {
             this._flushTimer.defer(0);
         }
     }
+
+    return SyncBridge;
 }

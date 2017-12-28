@@ -18,8 +18,8 @@ import {CreateTimer} from '../../lib/timer.js';
 import {CreateModelText} from '../../client/model/text.js';
 
 // client
-import {CreateModelManager} from '../../client/model_manager.js';
-import {CreateTransport} from '../../../client/transport.js';
+import {CreateSyncBridge} from '../../client/sync_bridge.js';
+import {CreateSyncTransport} from '../../../client/sync_transport.js';
 import {CreateConnection} from '../../client/conn.js';
 import {CreateWebSocket} from '../../client/websocket.js';
 import {CreateUUID} from '../../client/uuid.js';
@@ -40,8 +40,8 @@ services.Events = CreateEvents(services);
 services.ModelText = CreateModelText(services);
 
 // client
-services.Transport = CreateTransport(services);
-services.ModelManager = CreateModelManager(services);
+services.SyncTransport = CreateSyncTransport(services);
+services.SyncBridge = CreateSyncBridge(services);
 services.Connection = CreateConnection(services);
 services.WebSocket = CreateWebSocket(services);
 services.Log = CreateLog(services);
