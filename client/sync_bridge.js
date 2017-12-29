@@ -61,8 +61,9 @@ export function CreateSyncBridge(services) {
         constructor(json) {
             const snapshot = json || {};
             this._url = snapshot.url;
-            this._path = snapshot.path;
-            this._id = snapshot.id;
+            const {modelID, path} = services.ModelUrl.parse(this._url);
+            this._id = modelID;
+            this._path = path;
             this._model = snapshot.model || new services.ModelText("");
             this._basisID = snapshot.basisID || "";
             this._parentID = snapshot.parentID || "";
@@ -120,8 +121,6 @@ export function CreateSyncBridge(services) {
         toJSON() {
             return {
                 url: this._url,
-                path: this._path,
-                id: this._id,
                 model: this._model,
                 basis: this._basis,
                 parentID: this._parentID,

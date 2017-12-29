@@ -30,7 +30,7 @@ export function CreateSyncTransport(services) {
         }
 
         initialize(subID, url, clientOps, done) {
-            const {modelID} = ModelUrlParser.parse(url);
+            const {modelID} = services.ModelUrl.parse(url);
             this._pending[subID] = {url, clientOps, done};
             this._conn.subscribe(subID, modelID, clientOps);
         }
@@ -65,7 +65,7 @@ export function CreateSyncTransport(services) {
         onConnected() {
             for (let subID in this._pending) {
                 const {url, clientOps} = this._pending[subID];
-                const {modelID} = ModelUrlParser.parse(url);
+                const {modelID} = services.ModelUrl.parse(url);
                 this._conn.subscribe(subID, modelID, clientOps);
             }
             for (let subID in this._attached) {
@@ -98,8 +98,6 @@ export function CreateSyncTransport(services) {
                 parentID = pending.clientOps[pending.clientOps.length-1].ID;
             }
             const bridge = new services.SyncBridge({
-                id: pending.modelID,
-                path: pending.path,
                 url: pending.url,
                 model: model,
                 basisID: basisID,
@@ -125,18 +123,6 @@ export function CreateSyncTransport(services) {
         }
     }
 
-    class ModelUrlParser {
-        static parse(url) {
-            const parts = url.split('#');
-            const pathParts = parts[0].split("/");
-            const modelID = pathParts[pathParts.length-1];
-            const wsUrl = pathParts.slice(0, -1).join('/')
-                  .replace(/^https/i, "wss")
-                  .replace(/^http/i, "ws");
-            return {wsUrl, modelID, path: (parts[1] || "").split("/")};
-        }        
-    }
-    
     // SyncTransport manages mulitple manaconnections using a connection
     // bridge for each. It uses the mapper services to map modelIDs
     // to URLs
@@ -153,7 +139,7 @@ export function CreateSyncTransport(services) {
 
         initialize(url, clientOps, done) {
             const subID = (new services.UUID()).toString();
-            const {wsUrl} = ModelUrlParser.parse(url);
+            const {wsUrl} = services.ModelUrl.parse(url);
             this._conns[wsUrl] = this._conns[wsUrl] || new ConnectionManager(wsUrl);
             this._conns[wsUrl].initialize(subID, url, clientOps, bridge => {
                 this._subs[bridge] = {subID, wsUrl};
@@ -163,7 +149,7 @@ export function CreateSyncTransport(services) {
 
         _attachBridge(bridge) {
             const url = bridge.url;
-            const {wsUrl} = ModelUrlParser.parse(url);
+            const {wsUrl} = services.ModelUrl.parse(url);
             this._conns[wsUrl] = this._conns[wsUrl] || new ConnectionManager(wsUrl);
             const subID = this._conns[wsUrl].attach(bridge);
             this._subs[bridge] = {subID, wsUrl};

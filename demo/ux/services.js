@@ -20,6 +20,7 @@ import {CreateModelText} from '../../client/model/text.js';
 // client
 import {CreateSyncBridge} from '../../client/sync_bridge.js';
 import {CreateSyncTransport} from '../../../client/sync_transport.js';
+import {CreateModelUrl} from '../../../client/model_url.js';
 import {CreateConnection} from '../../client/conn.js';
 import {CreateWebSocket} from '../../client/websocket.js';
 import {CreateUUID} from '../../client/uuid.js';
@@ -42,6 +43,7 @@ services.ModelText = CreateModelText(services);
 // client
 services.SyncTransport = CreateSyncTransport(services);
 services.SyncBridge = CreateSyncBridge(services);
+services.ModelUrl = CreateModelUrl(services);
 services.Connection = CreateConnection(services);
 services.WebSocket = CreateWebSocket(services);
 services.Log = CreateLog(services);
