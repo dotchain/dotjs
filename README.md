@@ -19,9 +19,9 @@ or
 npm install git://github.com/dotchain/dotjs
 ```
 
-## API Draft
+## API Documentation
 
-TBD
+Please see the generated [JSDoc](https://dotchain.github.io/dotjs/out/).
 
 ## Coding practices
 
