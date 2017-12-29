@@ -20,6 +20,7 @@ import {CreateModelText} from '../../client/model/text.js';
 // client
 import {CreateSyncBridge} from '../../client/sync_bridge.js';
 import {CreateSyncTransport} from '../../../client/sync_transport.js';
+import {CreateSyncMuxer} from '../../../client/sync_muxer.js';
 import {CreateModelUrl} from '../../../client/model_url.js';
 import {CreateConnection} from '../../client/conn.js';
 import {CreateWebSocket} from '../../client/websocket.js';
@@ -43,6 +44,7 @@ services.ModelText = CreateModelText(services);
 // client
 services.SyncTransport = CreateSyncTransport(services);
 services.SyncBridge = CreateSyncBridge(services);
+services.SyncMuxer = CreateSyncMuxer(services);
 services.ModelUrl = CreateModelUrl(services);
 services.Connection = CreateConnection(services);
 services.WebSocket = CreateWebSocket(services);

@@ -7,12 +7,6 @@
 import {services} from './services.js';
 import {manageTextArea} from './textarea.js';
 
-services.ModelUrlMapper = class ModelUrlMapper {
-    static fromModelID() {
-        return "ws://localhost:8181/log";
-    }
-};
-
 document.addEventListener("DOMContentLoaded", main);
 function main() {
     const elts = document.querySelectorAll('.panel');
@@ -27,7 +21,6 @@ function panel(panel, index) {
     
     const transport = new services.SyncTransport();
     const log = new services.Log("panel" + index + ": ");
-    const timer = new services.Timer(() => null);
     const refStart = new services.RefPath([0]);
     const refEnd = new services.RefPath([0]);
 
@@ -38,21 +31,19 @@ function panel(panel, index) {
 
         update = manageTextArea(elt, (change, c) => {
             if (change) {
-                bridge.applyChange({Splice: change});
+                bridge.model.apply('localChange', 0, {Splice: change});
             }
             refStart.path = [c[0]];
             refEnd.path = [c[1]];
         })
 
-        update(bridge.getValue(), [0, 0]);
+        update(bridge.model.getValue(), [0, 0]);
 
         bridge.events.on('remoteChange', (_ignored, data) => {
-            update(bridge.getValue(), [+refStart.path[0], +refEnd.path[0]]);
+            update(bridge.model.getValue(), [+refStart.path[0], +refEnd.path[0]]);
         });
         refStart.linkTo(bridge);
         refEnd.linkTo(bridge);
-        
-        if (startCounter > 0) timer.defer(5000);
     });
 
     log.log("Initialized")
