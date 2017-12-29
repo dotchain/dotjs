@@ -28,8 +28,6 @@ export function CreateSyncBridge(services) {
      *    localChangeFlush {modelID}
      *    // opsChange: the operations array was changed
      *    opsChange {modelID}
-     *    // model was initialized by transport
-     *    initialized {modelID}
      * </pre>
      * @param snapshot {JSON} See examples
      *
@@ -48,7 +46,11 @@ export function CreateSyncBridge(services) {
      *    });
      * @example <caption>Attaching and detaching bridges</caption>
      *    // A bridge can be attached to a transport and it will start syncing.
-     *    syncTransport.attach(bridge);
+     *    bridge.attach(syncTransport);
+     *    // A bridge can be detached:
+     *    bridge.detach();
+     *    // even after a bridge has been detached, the models can be
+     *    // modified.  when reattached, the changes will get synced.
      * @example <caption>Saving the bridge between sessions</caption>
      *    const snapshot = bridge.toJSON();
      *    // the snapshot can be store locally and in a later session:
@@ -58,56 +60,46 @@ export function CreateSyncBridge(services) {
     class SyncBridge {
         constructor(json) {
             const snapshot = json || {};
-            this._id = snapshot.id;
+            this._url = snapshot.url;
+            const {modelID, path} = services.ModelUrl.parse(this._url);
+            this._id = modelID;
+            this._path = path;
             this._model = snapshot.model || new services.ModelText("");
             this._basisID = snapshot.basisID || "";
             this._parentID = snapshot.parentID || "";
             this._changes = snapshot.changes || [];
             this._ops = snapshot.ops || [];
             this._log = new services.Log("model[" + this._id + "]: ");
-            this._initializing = false;
             
             this._model.events.on('localChange', (e, d) => this._onLocalChange(e, d));
+            this._transport = null;
+            
             this.events = new services.Events();
             this._flushTimer = new services.Timer(() => {
                 this.events.emit('localChangeFlush', {modelID: this._id});
             });
         }
 
+        attach(transport) {
+            if (this._transport != null) throw new Error("Cannot attach before detaching");
+            transport._attachBridge(this);
+            this._transport = transport;
+        }
+
+        detach() {
+            this._transport.detach(this);
+            this._transport = null;
+        }
+        
         get id() { return this._id; }
+        get url() { return this._url; }
+        get path() { return this._path; }
         get model() { return this._model; }
         get basisID() { return this._basisID; }
         get parentID() { return this._parentID; }
         get changes() { return this._changes.slice(0); }
         get ops() { return this._ops.slice(0); }
 
-        startInitializing() {
-            this._initializing = true;
-        }
-
-        finishInitializing(serverOps, clientOps) {
-            this._initializing = false;
-
-            // TODO: use a null model than an empty text model
-            // (also copy events over then?)
-            const applied = [];
-            const ops = [].concat(serverOps, clientOps);
-            for (let jj = 0; jj < ops.length; jj ++) {
-                if (!ops[jj].Changes || ops[jj].Changes.length === 0) continue;
-                for (let kk = 0; kk < ops[jj].Changes.length; kk ++) {
-                    applied.push(ops[jj].Changes[kk]);
-                    this._model = this._model.apply('remoteChange', 0, ops[jj].Changes[kk]);
-                }
-            }
-            if (serverOps.length > 0) {
-                this._basisID = serverOps[serverOps.length-1].ID;
-            }
-            if (applied.length > 0) {
-                this.events.emit('remoteChange', {change: applied, before: this, after: this});
-            }
-            this.events.emit("initialized", {modelID: this._id});
-        }
-        
         getValue(path) {
             return this._model.getValue(path);
         }
@@ -126,18 +118,9 @@ export function CreateSyncBridge(services) {
             this.events.emit('opsChange', {modelID: this._id});
         }
 
-        clearAcknowledgements(ackID) {
-            for (let kk = 0; kk < this._ops.length; kk ++) {
-                if (this._ops[kk].ID == ackID) {
-                    this._ops.splice(0, kk+1);
-                    this.events.emit('opsChange', {modelID: this._id});
-                }
-            }
-        }
-        
         toJSON() {
             return {
-                id: this._id,
+                url: this._url,
                 model: this._model,
                 basis: this._basis,
                 parentID: this._parentID,
@@ -151,7 +134,16 @@ export function CreateSyncBridge(services) {
             this._model = this._model.apply('localChange', 0, change);
         }
         
-        applyServerOperations(ops) {
+        _clearAcknowledgements(ackID) {
+            for (let kk = 0; kk < this._ops.length; kk ++) {
+                if (this._ops[kk].ID == ackID) {
+                    this._ops.splice(0, kk+1);
+                    this.events.emit('opsChange', {modelID: this._id});
+                }
+            }
+        }
+        
+        _applyServerOperations(ops) {
             if (this._changes.length > 0 ) {
                 this._log.warn("skipping operations due to local changes");
                 return;
@@ -182,7 +174,6 @@ export function CreateSyncBridge(services) {
             if (this._model !== data.before) {
                 throw new Error("Unexpected before");
             }
-            if (this._intializing) throw new Error("Cannot modify when initializing");
 
             if (Array.isArray(data.change)) this._changes = this._changes.concat(data.change);
             else this._changes.push(data.change);

@@ -31,28 +31,26 @@ function panel(panel, index) {
     const refStart = new services.RefPath([0]);
     const refEnd = new services.RefPath([0]);
 
-    const mm = new services.SyncBridge({id: 'grootza'});
-    transport.initialize(mm);
-    mm.events.on("initialized", () => {
+    transport.initialize("http://localhost:8181/log/grootza", [], bridge => {
         const elt = document.createElement('textarea');
         elt.style = "border: 10px solid white; width: 100%; box-sizing: border-box; min-height: 200px;";
         panel.appendChild(elt);
 
         update = manageTextArea(elt, (change, c) => {
             if (change) {
-                mm.applyChange({Splice: change});
+                bridge.applyChange({Splice: change});
             }
             refStart.path = [c[0]];
             refEnd.path = [c[1]];
         })
 
-        update(mm.getValue(), [0, 0]);
+        update(bridge.getValue(), [0, 0]);
 
-        mm.events.on('remoteChange', (_ignored, data) => {
-            update(mm.getValue(), [+refStart.path[0], +refEnd.path[0]]);
+        bridge.events.on('remoteChange', (_ignored, data) => {
+            update(bridge.getValue(), [+refStart.path[0], +refEnd.path[0]]);
         });
-        refStart.linkTo(mm);
-        refEnd.linkTo(mm);
+        refStart.linkTo(bridge);
+        refEnd.linkTo(bridge);
         
         if (startCounter > 0) timer.defer(5000);
     });
