@@ -29,8 +29,9 @@ export function CreateSyncTransport(services) {
             this._attached = {};
         }
 
-        initialize(subID, modelID, path, clientOps, done) {
-            this._pending[subID] = {modelID, path, clientOps, done};
+        initialize(subID, url, clientOps, done) {
+            const {modelID} = ModelUrlParser.parse(url);
+            this._pending[subID] = {url, clientOps, done};
             this._conn.subscribe(subID, modelID, clientOps);
         }
 
@@ -63,7 +64,8 @@ export function CreateSyncTransport(services) {
 
         onConnected() {
             for (let subID in this._pending) {
-                const {modelID, path, clientOps} = this._pending[subID];
+                const {url, clientOps} = this._pending[subID];
+                const {modelID} = ModelUrlParser.parse(url);
                 this._conn.subscribe(subID, modelID, clientOps);
             }
             for (let subID in this._attached) {
@@ -98,6 +100,7 @@ export function CreateSyncTransport(services) {
             const bridge = new services.SyncBridge({
                 id: pending.modelID,
                 path: pending.path,
+                url: pending.url,
                 model: model,
                 basisID: basisID,
                 parentID: parentID,
@@ -110,8 +113,8 @@ export function CreateSyncTransport(services) {
         onNotificationResponse(subID, ops, ackID) {
             const {bridge} = this._attached[subID] || {};
             if (!bridge) return;
-            bridge.applyServerOperations(ops);
-            bridge.clearAcknowledgements(ackID);
+            bridge._applyServerOperations(ops);
+            bridge._clearAcknowledgements(ackID);
         }
 
         _flush(subID) {
@@ -150,26 +153,27 @@ export function CreateSyncTransport(services) {
 
         initialize(url, clientOps, done) {
             const subID = (new services.UUID()).toString();
-            const {wsUrl, modelID, path} = ModelUrlParser.parse(url);
+            const {wsUrl} = ModelUrlParser.parse(url);
             this._conns[wsUrl] = this._conns[wsUrl] || new ConnectionManager(wsUrl);
-            this._conns[wsUrl].initialize(subID, modelID, path, clientOps, bridge => {
+            this._conns[wsUrl].initialize(subID, url, clientOps, bridge => {
                 this._subs[bridge] = {subID, wsUrl};
                 if (done) done(bridge);
             });
         }
 
-        attach(bridge) {
-            const url = services.ModelUrlMapper.fromModelID(bridge.id)
-            this._conns[url] = this._conns[url] || new ConnectionManager(url);
-            const subID = this._conns[url].attach(bridge);
-            this._subs[bridge] = {subID, url};
+        _attachBridge(bridge) {
+            const url = bridge.url;
+            const {wsUrl} = ModelUrlParser.parse(url);
+            this._conns[wsUrl] = this._conns[wsUrl] || new ConnectionManager(wsUrl);
+            const subID = this._conns[wsUrl].attach(bridge);
+            this._subs[bridge] = {subID, wsUrl};
         }
-        
-        detach(bridge) {
+
+        _detachBridge(bridge) {
             if (!this._subs[bridge]) return;
-            const {subID, url} = this._subs[bridge];
+            const {subID, wsUrl} = this._subs[bridge];
             delete(this._subs[bridge]);
-            this._conns[url].detach(subID);
+            this._conns[wsUrl].detach(subID);
         }
     }
 }

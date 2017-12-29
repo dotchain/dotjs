@@ -46,7 +46,11 @@ export function CreateSyncBridge(services) {
      *    });
      * @example <caption>Attaching and detaching bridges</caption>
      *    // A bridge can be attached to a transport and it will start syncing.
-     *    syncTransport.attach(bridge);
+     *    bridge.attach(syncTransport);
+     *    // A bridge can be detached:
+     *    bridge.detach();
+     *    // even after a bridge has been detached, the models can be
+     *    // modified.  when reattached, the changes will get synced.
      * @example <caption>Saving the bridge between sessions</caption>
      *    const snapshot = bridge.toJSON();
      *    // the snapshot can be store locally and in a later session:
@@ -56,6 +60,8 @@ export function CreateSyncBridge(services) {
     class SyncBridge {
         constructor(json) {
             const snapshot = json || {};
+            this._url = snapshot.url;
+            this._path = snapshot.path;
             this._id = snapshot.id;
             this._model = snapshot.model || new services.ModelText("");
             this._basisID = snapshot.basisID || "";
@@ -65,13 +71,28 @@ export function CreateSyncBridge(services) {
             this._log = new services.Log("model[" + this._id + "]: ");
             
             this._model.events.on('localChange', (e, d) => this._onLocalChange(e, d));
+            this._transport = null;
+            
             this.events = new services.Events();
             this._flushTimer = new services.Timer(() => {
                 this.events.emit('localChangeFlush', {modelID: this._id});
             });
         }
 
+        attach(transport) {
+            if (this._transport != null) throw new Error("Cannot attach before detaching");
+            transport._attachBridge(this);
+            this._transport = transport;
+        }
+
+        detach() {
+            this._transport.detach(this);
+            this._transport = null;
+        }
+        
         get id() { return this._id; }
+        get url() { return this._url; }
+        get path() { return this._path; }
         get model() { return this._model; }
         get basisID() { return this._basisID; }
         get parentID() { return this._parentID; }
@@ -96,17 +117,10 @@ export function CreateSyncBridge(services) {
             this.events.emit('opsChange', {modelID: this._id});
         }
 
-        clearAcknowledgements(ackID) {
-            for (let kk = 0; kk < this._ops.length; kk ++) {
-                if (this._ops[kk].ID == ackID) {
-                    this._ops.splice(0, kk+1);
-                    this.events.emit('opsChange', {modelID: this._id});
-                }
-            }
-        }
-        
         toJSON() {
             return {
+                url: this._url,
+                path: this._path,
                 id: this._id,
                 model: this._model,
                 basis: this._basis,
@@ -121,7 +135,16 @@ export function CreateSyncBridge(services) {
             this._model = this._model.apply('localChange', 0, change);
         }
         
-        applyServerOperations(ops) {
+        _clearAcknowledgements(ackID) {
+            for (let kk = 0; kk < this._ops.length; kk ++) {
+                if (this._ops[kk].ID == ackID) {
+                    this._ops.splice(0, kk+1);
+                    this.events.emit('opsChange', {modelID: this._id});
+                }
+            }
+        }
+        
+        _applyServerOperations(ops) {
             if (this._changes.length > 0 ) {
                 this._log.warn("skipping operations due to local changes");
                 return;
