@@ -6,9 +6,7 @@
 
 import {expect} from 'chai'
 
-import {Null} from '../../core/null.js'
-import {Atomic} from '../../core/atomic.js'
-import {Replace} from '../../core/replace.js'
+import {Null, Atomic, Replace} from '../..'
 
 describe("null", () => {
     it("should ignore empty changes", () => {
