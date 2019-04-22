@@ -4,37 +4,45 @@
 
 'use strict';
 
-import {registerValueClass, decodeValue} from './value.js'
+import {registerValueClass} from './value.js'
 import {Replace} from './replace.js'
 
 // Atomic represents an atomic value type
 export class Atomic {
     constructor(value) {
-        this.value = value
+        if (value === undefined) {
+            this.value = null;
+        } else {
+            this.value = value;
+        }
     }
     
     apply(c) {
         if (!c) {
-            return this
+            return this;
         }
+
         if (c instanceof Replace && c.before instanceof Atomic) {
-            return c.after
+            return c.after;
         }
-        return c.applyTo(this)
+        return c.applyTo(this);
     }
 
     toJSON() {
-        return [{[this.value.constructor.typeName()]: this.value}]
+        if (this.value == null) {
+            return [null];
+        }
+        return [{[this.value.constructor.typeName()]: this.value}];
     }
 
     static typeName() {
-        return "changes.Atomic"
+        return "changes.Atomic";
     }
 
     static fromJSON(decoder, json) {
-        return new Atomic(decodeValue(decoder, json[0]))
+        return new Atomic(decoder.decode(json[0]));
     }
 }
 
-registerValueClass(Atomic)
+registerValueClass(Atomic);
 
