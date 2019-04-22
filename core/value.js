@@ -20,7 +20,7 @@ export function registerValueClass(v) {
 export function decodeValue(decoder, json) {
     for (let v of valueClasses) {
         if (json.hasOwnProperty(v.typeName())) {
-            return v.fromJSON(decoder, json)
+            return v.fromJSON(decoder, json[v.typeName()])
         }
     }
 }

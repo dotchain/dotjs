@@ -20,7 +20,7 @@ export function registerChangeClass(c) {
 export function decodeChange(decoder, json) {
     for (let c of changeClasses) {
         if (json.hasOwnProperty(c.typeName())) {
-            return c.fromJSON(decoder, json)
+            return c.fromJSON(decoder, json[c.typeName()])
         }
     }
 }
