@@ -1,3 +1,0 @@
-# Demo details
-
-NYI
