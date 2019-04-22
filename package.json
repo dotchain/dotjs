@@ -1,50 +1,37 @@
 {
-  "name": "dotjs",
-  "version": "0.0.1",
-  "description": "es6 client library for DOT",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "build": "jsdoc client/*.js",
-    "lint": "eslint lib/ client/ fakes/ test/",
-    "coverage": "nyc --reporter=lcov mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js",
-    "report-coverage": "cat coverage/lcov.info | codecov",
-    "test": "mocha --require babel-core/register --compilers js:babel-core/register test/**/*_test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dotchain/dotjs.git"
-  },
-  "keywords": [
-    "dot",
-    "operational-transformatoin",
-    "ot",
-    "js",
-    "es6"
-  ],
-  "author": "VK",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/dotchain/dotjs/issues"
-  },
-  "homepage": "https://github.com/dotchain/dotjs#readme",
-  "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^8.0.3",
-    "babel-loader": "^7.1.2",
-    "babel-preset-es2015": "^6.24.1",
-    "codecov": "^3.0.0",
-    "eslint": "^4.13.1",
-    "jsdoc": "^3.5.5",
-    "mocha": "^4.0.1",
-    "nyc": "^11.3.0"
-  },
-  "dependencies": {},
-  "nyc": {
-    "include": [
-      "client/**/*.js"
-    ]
-  }
+    "name": "dotjs",
+    "version": "0.0.1",
+    "description": "Distributed sync using operational transformations",
+    "main": "index.js",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "build": "jsdoc core/*.js",
+        "lint": "eslint core/",
+        "test": "mocha --require esm test/**/*_test.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dotchain/dotjs.git"
+    },
+    "keywords": [
+        "dot",
+        "operational-transformation",
+        "ot",
+        "js",
+        "es6"
+    ],
+    "author": "VK",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/dotchain/dotjs/issues"
+    },
+    "homepage": "https://github.com/dotchain/dotjs#readme",
+    "devDependencies": {
+        "chai": "^4.2.0",
+        "eslint": "^5.16.0",
+        "esm": "^3.2.22",
+        "mocha": "^6.1.4"
+    }
 }
