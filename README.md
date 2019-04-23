@@ -9,13 +9,22 @@ Distributed synchronization using Operations Trannsformations
 
 This ES6 package is a port of the [Go implementation](https://github.com/dotchain/dot) that should fully interoperate with that version.
 
-This is in the beginning stages of the port, with the following plan:
+The roadmap:
 
-1. Port core dot/changes
-2. Port core dot/changes/types
-3. Port core dot/streams
-4. Implement ops but only client-side version
-5. Implement demo app
+1. Port minimal dot/changes and dot/changes/types. **In progress**
+    * ~This includes encoding/decoding to match [sjson](https://github.com/dotchain/dot/tree/master/ops/sjson).~
+    * ~Only the Map type is needed initially as this can produce fairly rich types.~
+    * Only PathChange, ChangeSet and Replace change type are needed initially.
+2. Implement streams interface. This will likely be a bit different than the golang version.
+3. Implement operations but only the client-side of it.
+4. Implement a browser demo against golang backend.
+5. Implement JS server version with golang front-end tests for interop.
+6. Implement array operations and basic array types.
+7. Implement refs.
+8. Implement streams for array elements.
+9. Update demos.
+10. Implement string JS types.
+12. Update demos.
 
 All other functionality will be part of v2 (including refs and such)
 
