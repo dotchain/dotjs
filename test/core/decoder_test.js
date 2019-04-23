@@ -6,6 +6,7 @@
 
 import {decodeValue} from '../..';
 
+// FakeDecoder can decode only null or values
 export class FakeDecoder {
     decode(json) {
         if (json == null) {
