@@ -4,10 +4,13 @@
 
 'use strict';
 
-export * from './change.js'
-export * from './replace.js'
-export * from './path_change.js'
+export * from './change.js';
+export * from './replace.js';
+export * from './path_change.js';
 
-export * from './value.js'
-export * from './null.js'
-export * from './atomic.js'
+export * from './value.js';
+export * from './encode.js';
+export * from './decode.js';
+export * from './null.js';
+export * from './atomic.js';
+export * from './map.js';

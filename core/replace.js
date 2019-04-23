@@ -7,6 +7,7 @@
 import {registerChangeClass} from './change.js';
 import {decodeValue} from './value.js';
 import {Null} from './null.js';
+import {encode} from './encode.js';
 
 // Replace represents a change of one value to another
 export class Replace {
@@ -44,9 +45,7 @@ export class Replace {
     }
     
     toJSON() {
-	const btype = this.before.constructor.typeName();
-	const atype = this.after.constructor.typeName();
-	return [{[btype]: this.before}, {[atype]: this.after}];
+	return [encode(this.before), encode(this.after)];
     }
 
     static typeName() {

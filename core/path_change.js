@@ -6,6 +6,7 @@
 
 import {registerChangeClass} from './change.js';
 import {decodeChange} from './change.js';
+import {encode} from './encode.js';
 
 // PathChange represents a change at a specific path
 export class PathChange {
@@ -26,11 +27,13 @@ export class PathChange {
     }
 
     toJSON() {
-        // TODO: encode path
-        if (this.change != null) {
-            return [this.path, {[this.change.constructor.typeName()]: this.change}];
+        let path = null;
+
+        if (this.path !== null) {
+            path = this.path.map(encode);
         }
-	return [this.path, null];
+
+        return [path, encode(this.change)]
     }
 
     static typeName() {
@@ -38,9 +41,14 @@ export class PathChange {
     }
     
     static fromJSON(decoder, json) {
-        // TODO: decode path
+        let path = json[0];
+
+        if (path !== null) {
+            path = path.map(decoder.decode)
+        }
+            
 	const change = decodeChange(decoder, json[1]);
-	return new PathChange(json[0], change);
+	return new PathChange(path, change);
     }
 }
 

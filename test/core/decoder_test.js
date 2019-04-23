@@ -4,14 +4,11 @@
 
 'use strict';
 
-import {decodeValue} from '../..';
+import {decode} from '../..';
 
 // FakeDecoder can decode only null or values
 export class FakeDecoder {
     decode(json) {
-        if (json == null) {
-            return null;
-        }
-        return decodeValue(this, json);
+        return decode(this, json);
     }
 }
