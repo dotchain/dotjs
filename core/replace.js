@@ -15,6 +15,14 @@ export class Replace {
 	this.after = after;
     }
 
+    isDelete() {
+        return this.after instanceof Null;
+    } 
+
+    isCreate() {
+        return this.before instanceof Null;
+    }
+   
     revert() {
         return new Replace(this.after, this.before);
     }
@@ -34,21 +42,13 @@ export class Replace {
         }
         return [new Replace(this.after, other.after), null];
     }
-
-    isDelete() {
-        return this.after instanceof Null;
-    } 
-
-    isCreate() {
-        return this.before instanceof Null;
-    }
-   
+    
     toJSON() {
 	const btype = this.before.constructor.typeName();
 	const atype = this.after.constructor.typeName();
 	return [{[btype]: this.before}, {[atype]: this.after}];
     }
-    
+
     static typeName() {
 	return "changes.Replace";
     }
