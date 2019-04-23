@@ -2,45 +2,44 @@
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
-'use strict';
+"use strict";
 
-import {registerValueClass} from './value.js';
-import {Replace} from './replace.js';
-import {encode} from './encode.js';
+import { registerValueClass } from "./value.js";
+import { Replace } from "./replace.js";
+import { encode } from "./encode.js";
 
 // Atomic represents an atomic value type
 export class Atomic {
-    constructor(value) {
-        if (value === undefined) {
-            this.value = null;
-        } else {
-            this.value = value;
-        }
+  constructor(value) {
+    if (value === undefined) {
+      this.value = null;
+    } else {
+      this.value = value;
     }
-    
-    apply(c) {
-        if (!c) {
-            return this;
-        }
+  }
 
-        if (c instanceof Replace && c.before instanceof Atomic) {
-            return c.after;
-        }
-        return c.applyTo(this);
+  apply(c) {
+    if (!c) {
+      return this;
     }
 
-    toJSON() {
-        return [encode(this.value)];
+    if (c instanceof Replace && c.before instanceof Atomic) {
+      return c.after;
     }
+    return c.applyTo(this);
+  }
 
-    static typeName() {
-        return "changes.Atomic";
-    }
+  toJSON() {
+    return [encode(this.value)];
+  }
 
-    static fromJSON(decoder, json) {
-        return new Atomic(decoder.decode(json[0]));
-    }
+  static typeName() {
+    return "changes.Atomic";
+  }
+
+  static fromJSON(decoder, json) {
+    return new Atomic(decoder.decode(json[0]));
+  }
 }
 
 registerValueClass(Atomic);
-

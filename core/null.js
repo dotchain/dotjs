@@ -2,35 +2,34 @@
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
-'use strict';
+"use strict";
 
-import {registerValueClass} from './value.js'
-import {Replace} from './replace.js'
+import { registerValueClass } from "./value.js";
+import { Replace } from "./replace.js";
 
 // Null represents an empty value
 export class Null {
-    apply(c) {
-        if (!c) {
-            return this
-        }
-        if (c instanceof Replace && c.before instanceof Null) {
-            return c.after
-        }
-        return c.applyTo(this)
+  apply(c) {
+    if (!c) {
+      return this;
     }
+    if (c instanceof Replace && c.before instanceof Null) {
+      return c.after;
+    }
+    return c.applyTo(this);
+  }
 
-    toJSON() {
-        return []
-    }
+  toJSON() {
+    return [];
+  }
 
-    static typeName() {
-        return "changes.empty"
-    }
+  static typeName() {
+    return "changes.empty";
+  }
 
-    static fromJSON() {
-        return new Null
-    }
+  static fromJSON() {
+    return new Null();
+  }
 }
 
-registerValueClass(Null)
-
+registerValueClass(Null);

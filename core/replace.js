@@ -2,61 +2,61 @@
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
-'use strict';
+"use strict";
 
-import {registerChangeClass} from './change.js';
-import {decodeValue} from './value.js';
-import {Null} from './null.js';
-import {encode} from './encode.js';
+import { registerChangeClass } from "./change.js";
+import { decodeValue } from "./value.js";
+import { Null } from "./null.js";
+import { encode } from "./encode.js";
 
 // Replace represents a change of one value to another
 export class Replace {
-    constructor(before, after) {
-	this.before = before;
-	this.after = after;
-    }
+  constructor(before, after) {
+    this.before = before;
+    this.after = after;
+  }
 
-    isDelete() {
-        return this.after instanceof Null;
-    } 
+  isDelete() {
+    return this.after instanceof Null;
+  }
 
-    isCreate() {
-        return this.before instanceof Null;
-    }
-   
-    revert() {
-        return new Replace(this.after, this.before);
-    }
+  isCreate() {
+    return this.before instanceof Null;
+  }
 
-    merge(other) {
-        if (other == null) {
-            return [null, this]
-        }
-        if (other instanceof Replace) {
-            return this._mergeReplace(other)
-        }
-    }
+  revert() {
+    return new Replace(this.after, this.before);
+  }
 
-    _mergeReplace(other) {
-        if (this.isDelete() && other.isDelete()) {
-            return [null, null];
-        }
-        return [new Replace(this.after, other.after), null];
+  merge(other) {
+    if (other == null) {
+      return [null, this];
     }
-    
-    toJSON() {
-	return [encode(this.before), encode(this.after)];
+    if (other instanceof Replace) {
+      return this._mergeReplace(other);
     }
+  }
 
-    static typeName() {
-	return "changes.Replace";
+  _mergeReplace(other) {
+    if (this.isDelete() && other.isDelete()) {
+      return [null, null];
     }
-    
-    static fromJSON(decoder, json) {
-	const before = decodeValue(decoder, json[0]);
-	const after = decodeValue(decoder, json[1]);
-	return new Replace(before, after);
-    }
+    return [new Replace(this.after, other.after), null];
+  }
+
+  toJSON() {
+    return [encode(this.before), encode(this.after)];
+  }
+
+  static typeName() {
+    return "changes.Replace";
+  }
+
+  static fromJSON(decoder, json) {
+    const before = decodeValue(decoder, json[0]);
+    const after = decodeValue(decoder, json[1]);
+    return new Replace(before, after);
+  }
 }
 
 registerChangeClass(Replace);
