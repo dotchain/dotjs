@@ -4,8 +4,9 @@
 
 'use strict';
 
-import {registerValueClass} from './value.js'
-import {Replace} from './replace.js'
+import {registerValueClass} from './value.js';
+import {Replace} from './replace.js';
+import {encode} from './encode.js';
 
 // Atomic represents an atomic value type
 export class Atomic {
@@ -29,10 +30,7 @@ export class Atomic {
     }
 
     toJSON() {
-        if (this.value == null) {
-            return [null];
-        }
-        return [{[this.value.constructor.typeName()]: this.value}];
+        return [encode(this.value)];
     }
 
     static typeName() {

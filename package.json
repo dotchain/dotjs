@@ -8,7 +8,7 @@
     },
     "scripts": {
         "build": "jsdoc core/*.js",
-        "lint": "eslint --env mocha core/ test/",
+        "lint": "eslint --env mocha --env es6 core/ test/",
         "test": "mocha --require esm test/**/*_test.js"
     },
     "repository": {

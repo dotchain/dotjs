@@ -27,6 +27,9 @@ describe("PathChange - interop serialization", () => {
         const replace = new Replace(new Null(), new Null());
         expect(JSON.stringify(new PathChange(null, replace)))
             .to.equal('[null,{"changes.Replace":[{"changes.empty":[]},{"changes.empty":[]}]}]');
+
+        expect(JSON.stringify(new PathChange([5])))
+            .to.equal('[[{"int":5}],null]');
     });
 
     it("should desserialize", () => {
@@ -37,7 +40,9 @@ describe("PathChange - interop serialization", () => {
         const replace = new Replace(new Null(), new Null());
         expect(PathChange.fromJSON(d, [null,{"changes.Replace":[{"changes.empty":[]},{"changes.empty":[]}]}]))
             .to.deep.equal(new PathChange(null, replace));
-    });
 
+        expect(PathChange.fromJSON(d, [[{"int":5}],null]))
+            .to.deep.equal(new PathChange([5]))
+    });
 });
 
