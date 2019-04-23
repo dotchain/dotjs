@@ -6,7 +6,7 @@
 
 import {expect} from 'chai'
 
-import {Map, Null, Atomic, Replace, decodeValue} from '../..'
+import {Map, Null, Atomic, Replace, PathChange, decodeValue} from '../..'
 import {FakeDecoder} from './decoder_test.js';
 
 describe("Map", () => {
@@ -33,11 +33,35 @@ describe("Map", () => {
         expect(n2.get(5)).to.deep.equal(new Atomic(5));
     });
 
-    it("should succeed with simple replace", () => {
+    it("should apply Replace", () => {
         const before = new Map();
 	const repl = new Replace(before, new Atomic(5));
 	expect(before.apply(repl)).to.equal(repl.after);
     });
+
+    it("should apply PathChange create", () => {
+	const repl = new Replace(new Null, new Atomic(5));
+        const c = new PathChange(["boo"], repl);
+        const before = new Map();
+        const expected = (new Map()).set("boo", repl.after);
+	expect(before.apply(c)).to.deep.equal(expected);
+    });
+
+    it("should apply PathChange update", () => {
+	const repl = new Replace(new Atomic("hoo"), new Atomic(5));
+        const c = new PathChange(["boo"], repl);
+        const before = (new Map()).set("boo", repl.before);
+        const expected = (new Map()).set("boo", repl.after)
+	expect(before.apply(c)).to.deep.equal(expected);
+    });
+
+    it("should apply PathChange remove", () => {
+	const repl = new Replace(new Atomic("hoo"), new Null);
+        const c = new PathChange(["boo"], repl);
+        const before = (new Map()).set("boo", repl.before);
+        const expected = new Map;
+	expect(before.apply(c)).to.deep.equal(expected);
+    });    
 });
 
 describe("Map - interop serialization", () => {

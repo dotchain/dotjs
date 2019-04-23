@@ -26,6 +26,13 @@ export class PathChange {
         return new PathChange(this.path, this.change.revert());
     }
 
+    applyTo(value) {
+        if (this.path === null || this.path.length === 0) {
+            return value.apply(this.change);
+        }
+        return value.apply(this);
+    }
+    
     toJSON() {
         let path = null;
 

@@ -26,10 +26,10 @@ export function applyMap(obj, c) {
     }
 
     if (c instanceof PathChange) {
-        if (c.path == null || c.path.length == 0) {
+        if (c.path === null || c.path.length === 0) {
             return obj.apply(c.change);
         }
-        const pc = new PathChange(c.path.Slice(1), c.change);
+        const pc = new PathChange(c.path.slice(1), c.change);
         return obj.set(c.path[0], obj.get(c.path[0]).apply(pc));
     }
     
