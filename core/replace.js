@@ -35,6 +35,8 @@ export class Replace {
     if (other instanceof Replace) {
       return this._mergeReplace(other);
     }
+    const [left, right] = other.reverseMerge(this);
+    return [right, left];
   }
 
   _mergeReplace(other) {
