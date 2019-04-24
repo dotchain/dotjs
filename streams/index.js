@@ -4,5 +4,6 @@
 
 "use strict";
 
-export * from "./core";
-export * from "./streams";
+export * from "./stream.js";
+export * from "./value.js";
+export * from "./string.js";
