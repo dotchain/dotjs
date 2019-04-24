@@ -7,6 +7,7 @@
 export * from "./change.js";
 export * from "./replace.js";
 export * from "./path_change.js";
+export * from "./changes.js";
 
 export * from "./value.js";
 export * from "./encode.js";
