@@ -55,7 +55,7 @@ describe("Replace - interop serialization", () => {
     );
   });
 
-  it("should desserialize", () => {
+  it("should deserialize", () => {
     const replace = new Replace(new Null(), new Atomic(new Null()));
     const json = JSON.parse(JSON.stringify(replace));
     expect(Replace.fromJSON(new FakeDecoder(), json)).to.deep.equal(replace);

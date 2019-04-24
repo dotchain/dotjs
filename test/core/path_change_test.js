@@ -128,7 +128,7 @@ describe("PathChange - interop serialization", () => {
     expect(JSON.stringify(new PathChange([5]))).to.equal('[[{"int":5}],null]');
   });
 
-  it("should desserialize", () => {
+  it("should deserialize", () => {
     const d = new FakeDecoder();
     expect(PathChange.fromJSON(d, [null, null])).to.deep.equal(
       new PathChange()
