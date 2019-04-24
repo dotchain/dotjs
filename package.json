@@ -9,6 +9,7 @@
     "scripts": {
         "build": "jsdoc core/*.js",
         "lint": "eslint --env mocha --env es6 core/ test/",
+        "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
         "test": "mocha --require esm test/**/*_test.js"
     },
     "repository": {
