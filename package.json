@@ -1,39 +1,51 @@
 {
-    "name": "dotjs",
-    "version": "0.0.1",
-    "description": "Distributed sync using operational transformations",
-    "main": "index.js",
-    "directories": {
-        "test": "test"
-    },
-    "scripts": {
-        "build": "jsdoc core/*.js",
-        "lint": "eslint --env mocha --env es6 core/ test/",
-        "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
-        "test": "mocha --require esm test/**/*_test.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/dotchain/dotjs.git"
-    },
-    "keywords": [
-        "dot",
-        "operational-transformation",
-        "ot",
-        "js",
-        "es6"
+  "name": "dotjs",
+  "version": "0.0.1",
+  "description": "Distributed sync using operational transformations",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "jsdoc core/*.js",
+    "coverage": "nyc report --reporter=json && codecov -f coverage/coverage-final.json",
+    "lint": "eslint --env mocha --env es6 core/ test/",
+    "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
+    "test": "nyc mocha --require esm test/**/*_test.js",
+    "mocha": "mocha --require esm test/**/*_test.js"
+  },
+  "nyc": {
+    "include": [
+      "core/**/*.js",
+      "streams/**/*.js"
     ],
-    "author": "VK",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/dotchain/dotjs/issues"
-    },
-    "homepage": "https://github.com/dotchain/dotjs#readme",
-    "devDependencies": {
-        "chai": "^4.2.0",
-        "eslint": "^5.16.0",
-        "esm": "^3.2.22",
-        "mocha": "^6.1.4",
-        "prettier": "1.17.0"
-    }
+    "sourceMap": false,
+    "instrument": false
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotchain/dotjs.git"
+  },
+  "keywords": [
+    "dot",
+    "operational-transformation",
+    "ot",
+    "js",
+    "es6"
+  ],
+  "author": "VK",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dotchain/dotjs/issues"
+  },
+  "homepage": "https://github.com/dotchain/dotjs#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "codecov": "^3.3.0",
+    "eslint": "^5.16.0",
+    "esm": "^3.2.22",
+    "mocha": "^6.1.4",
+    "nyc": "^14.0.0",
+    "prettier": "1.17.0"
+  }
 }
