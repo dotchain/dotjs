@@ -20,8 +20,9 @@
       "streams/**/*.js"
     ],
     "sourceMap": false,
-    "instrument": false
+    "instrument": true
   },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dotchain/dotjs.git"
