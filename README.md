@@ -15,8 +15,8 @@ The roadmap:
     * ~This includes encoding/decoding to match [sjson](https://github.com/dotchain/dot/tree/master/ops/sjson).~
     * ~Only the Map type is needed initially as this can produce fairly rich types.~
     * ~Only PathChange, ChangeSet and Replace change type are needed initially.~
-2. Implement streams interface. This will likely be a bit different than the golang version. **In Progress**
-3. Implement operations but only the client-side of it.
+2. ~Implement streams interface. This will likely be a bit different than the golang version.~
+3. Implement operations but only the client-side of it. ** In Progress **
 4. Implement a browser demo against golang backend.
 5. Implement JS server version with golang front-end tests for interop.
 6. Implement array operations and basic array types.
