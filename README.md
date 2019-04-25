@@ -16,17 +16,15 @@ The roadmap:
     * ~Only the Map type is needed initially as this can produce fairly rich types.~
     * ~Only PathChange, ChangeSet and Replace change type are needed initially.~
 2. ~Implement streams interface. This will likely be a bit different than the golang version.~
-3. Implement operations but only the client-side of it. ** In Progress **
-4. Implement a browser demo against golang backend.
-5. Implement JS server version with golang front-end tests for interop.
-6. Implement array operations and basic array types.
-7. Implement refs.
-8. Implement streams for array elements.
-9. Update demos.
-10. Implement string JS types.
-12. Update demos.
-
-All other functionality will be part of v2 (including refs and such)
+3. ~Implement operations but only the client-side of it.~
+4. Implement a browser demo against golang backend. ** In progress **
+5. Implement array operations and basic array types.
+6. Implement session with local transformations
+7. Implement streams for array elements.
+8. Update demos.
+9. Implement string JS types.
+10. Update demos.
+11. Implement JS server version with golang front-end tests for interop.
 
 ## Installation
 

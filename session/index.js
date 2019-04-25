@@ -6,3 +6,4 @@
 
 export * from "./conn.js";
 export * from "./op.js";
+export * from "./session.js";

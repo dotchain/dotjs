@@ -4,11 +4,17 @@
 
 "use strict";
 
+let getRandomValues = null;
+
+if (typeof crypto !== "undefined") {
+  getRandomValues = crypto.getRandomValues;
+}
+
 import { encode, decodeChange } from "../core";
 
 export class Operation {
   constructor(id, parentId, version, basis, changes) {
-    this.id = id;
+    this.id = id || Operation.newId();
     this.parentId = parentId;
     this.version = version;
     this.basis = basis;
@@ -33,5 +39,16 @@ export class Operation {
       basis,
       decodeChange(decoder, changes)
     );
+  }
+
+  static newId() {
+    const bytes = new Uint8Array(16);
+    getRandomValues(bytes);
+    const toHex = x => ("00" + x.toString(16)).slice(-2);
+    return Array.prototype.map.call(bytes, toHex).join("");
+  }
+
+  static useCrypto(crypto) {
+    getRandomValues = crypto.randomFillSync;
   }
 }
