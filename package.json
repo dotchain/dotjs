@@ -22,7 +22,7 @@
     "sourceMap": false,
     "instrument": true
   },
-
+  "eslintIgnore": ["test/session/golden.js"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dotchain/dotjs.git"
