@@ -61,7 +61,7 @@ export class PathChange {
       other = new PathChange(null, other);
     }
 
-    const len = PathChange._commonPrefixLen(this.path, other.path);
+    const len = PathChange.commonPrefixLen(this.path, other.path);
     const ownLen = (this.path && this.path.length) || 0;
     const otherLen = (other.path && other.path.length) || 0;
 
@@ -123,7 +123,7 @@ export class PathChange {
     return new PathChange(path, change);
   }
 
-  static _commonPrefixLen(p1, p2) {
+  static commonPrefixLen(p1, p2) {
     if (p1 == null || p2 == null) {
       return 0;
     }

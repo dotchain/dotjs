@@ -10,6 +10,9 @@ import { Replace, Atomic } from "../core";
 
 export class StringStream extends ValueStream {
   constructor(value, stream) {
+    if (value instanceof Atomic) {
+      value = value.value;
+    }
     if (typeof value != "string") {
       throw "value must be string";
     }
