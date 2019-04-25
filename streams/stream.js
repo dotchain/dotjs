@@ -15,7 +15,7 @@ export class Stream {
   }
 
   reverseAppend(c) {
-    return this._appendChange(c, false);
+    return this._appendChange(c, true);
   }
 
   _appendChange(c, reverse) {
