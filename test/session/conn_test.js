@@ -26,7 +26,7 @@ describe("Conn - write", () => {
     const conn = new Conn("some url", fetch, new FakeDecoder());
     return conn.write(getSampleOps()).then(x => {
       expect(x).to.equal(null);
-      expectGoldenFile("request-append.json", req);
+      return expectGoldenFile("request-append.js", req);
     });
   });
 
@@ -44,7 +44,7 @@ describe("Conn - write", () => {
 
     const conn = new Conn("some url", fetch, new FakeDecoder());
     return conn.write(getSampleOps()).catch(x => {
-      expect(x.toString()).to.deep.equal(new Error("booya").toString());
+      return expect(x.toString()).to.deep.equal(new Error("booya").toString());
     });
   });
 
@@ -78,7 +78,7 @@ describe("Conn - read", () => {
     const conn = new Conn("some url", fetch, new FakeDecoder());
     return conn.read(10, 1000).then(ops => {
       expect(ops).to.deep.equal(getSampleOps());
-      expectGoldenFile("request-getSince.json", req);
+      return expectGoldenFile("request-getSince.js", req);
     });
   });
 

@@ -1,4 +1,4 @@
-{
+export default {
   "url": "some url",
   "opts": {
     "method": "POST",
