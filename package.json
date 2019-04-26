@@ -12,8 +12,10 @@
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "lint": "eslint --env mocha --env es6 core/ test/",
     "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
-    "test": "nyc mocha --require esm test/**/*_test.js",
-    "mocha": "mocha --require esm test/**/*_test.js"
+    "test": "nyc mocha --require esm test/**/*_test.js && karma start",
+    "mocha": "mocha --require esm test/**/*_test.js",
+    "karma": "karma start",
+    "e2e": "karma start --e2e"
   },
   "nyc": {
     "include": [

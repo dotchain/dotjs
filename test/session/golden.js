@@ -12,8 +12,11 @@ export function expectGoldenFile(fileName, json) {
   fileName = dir + "/testdata/" + fileName;
 
   if (generateGoldenFile()) {
-    return import("fs").then(({writeFileSync}) => {
-      writeFileSync(fileName, "export default " + JSON.stringify(json, null, 2));
+    return import("fs").then(({ writeFileSync }) => {
+      writeFileSync(
+        fileName,
+        "export default " + JSON.stringify(json, null, 2)
+      );
     });
   }
 
@@ -26,7 +29,7 @@ function generateGoldenFile() {
   if (typeof process === "undefined") {
     return false;
   }
-  
+
   for (let arg of process.argv) {
     if (arg.indexOf("--golden") == 0) {
       return true;
