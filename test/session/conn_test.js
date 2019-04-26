@@ -14,7 +14,10 @@ describe("Conn - write", () => {
   it("should write ops", () => {
     let req = null;
     const fetch = (url, opts) => {
-      req = { url, opts };
+      req = {
+        url,
+        opts: Object.assign({}, opts, { body: JSON.parse(opts.body) })
+      };
       return Promise.resolve({
         ok: true,
         json() {
@@ -64,7 +67,10 @@ describe("Conn - read", () => {
   it("should read ops", () => {
     let req = null;
     const fetch = (url, opts) => {
-      req = { url, opts };
+      req = {
+        url,
+        opts: Object.assign({}, opts, { body: JSON.parse(opts.body) })
+      };
       return Promise.resolve({
         ok: true,
         json() {

@@ -17,10 +17,10 @@ The roadmap:
     * ~Only PathChange, ChangeSet and Replace change type are needed initially.~
 2. ~Implement streams interface. This will likely be a bit different than the golang version.~
 3. ~Implement operations but only the client-side of it.~
-4. Implement a browser demo against golang backend. ** In progress **
-5. Implement array operations and basic array types.
-6. Implement session with local transformations
-7. Implement streams for array elements.
+4. ~Implement a browser demo against golang backend.~
+5. Implement array operations and basic array types. **In Progress**
+6. Implement streams for array elements.
+7. Implement session with local transformations
 8. Update demos.
 9. Implement string JS types.
 10. Update demos.
@@ -40,21 +40,24 @@ or
 npm install git://github.com/dotchain/dotjs
 ```
 
+## Tests
+
+* Node-based tests: `yarn mocha` or `npm run mocha`.
+* Node-based tests with code coverage: `yarn test` or `npm test`.
+* Browser tests using Karma: `yarn karma` or `npm run karma`
+    * This uses karma and headless chrome
+* Browser-based end-to-end tests:
+    * Requires golang for running servers (at this point).
+    * Run a server via `go run test/e2e/server.go`
+    * Run `yarn e2e` or `npm run e2e`
+
 ## Demo
 
-Running the demo requires starting the server:
+The demo is a silly command line app:
 
-```sh
-$> go run demo/server.go
-```
-
-And then, starting a client:
-
-```sh
-$> node -r esm demo/client.js
-```
+* Start the server via `go run demo/server.go` (obviously requires golang)
+* Run the client via `node -r esm demo/client.js`
 
 The client currently blocks for 30s on the first call but should print
-a message every second after that.  Not a very practical demo but good
-enough to validate that things work E2E.
+a message every second after that.
 

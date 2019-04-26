@@ -26,7 +26,11 @@ export class Conn {
   static _request(url, fetch, decoder, req) {
     const headers = { "Content-Type": " application/x-sjson" };
     const opsOrNull = ops => (ops && ops.length > 0 ? ops : null);
-    return fetch(url, { method: "POST", body: encode(req), headers })
+    return fetch(url, {
+      method: "POST",
+      body: JSON.stringify(encode(req)),
+      headers
+    })
       .then(res =>
         res.ok ? res : Promise.reject(res.status + " " + res.statusText)
       )

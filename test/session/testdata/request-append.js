@@ -1,18 +1,18 @@
 export default {
-  "url": "some url",
-  "opts": {
-    "method": "POST",
-    "body": {
+  url: "some url",
+  opts: {
+    method: "POST",
+    body: {
       "ops/nw.request": [
         "Append",
         [
           {
             "ops.Operation": [
               {
-                "string": "id"
+                string: "id"
               },
               {
-                "string": "parentId"
+                string: "parentId"
               },
               10,
               100,
@@ -21,14 +21,14 @@ export default {
                   {
                     "changes.Atomic": [
                       {
-                        "int": 1
+                        int: 1
                       }
                     ]
                   },
                   {
                     "changes.Atomic": [
                       {
-                        "int": 2
+                        int: 2
                       }
                     ]
                   }
@@ -39,10 +39,10 @@ export default {
           {
             "ops.Operation": [
               {
-                "string": "id2"
+                string: "id2"
               },
               {
-                "string": "parentId2"
+                string: "parentId2"
               },
               11,
               101,
@@ -51,14 +51,14 @@ export default {
                   {
                     "changes.Atomic": [
                       {
-                        "int": 1
+                        int: 1
                       }
                     ]
                   },
                   {
                     "changes.Atomic": [
                       {
-                        "int": 2
+                        int: 2
                       }
                     ]
                   }
@@ -72,8 +72,8 @@ export default {
         0
       ]
     },
-    "headers": {
+    headers: {
       "Content-Type": " application/x-sjson"
     }
   }
-}
+};

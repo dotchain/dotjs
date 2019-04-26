@@ -12,13 +12,7 @@ function main() {
   Operation.useCrypto(crypto);
 
   const url = "http://localhost:8089/dotjs/";
-  const myFetch = function(url, opts) {
-    if (typeof opts.body !== "string") {
-      opts.body = JSON.stringify(opts.body);
-    }
-    return fetch(url, opts);
-  };
-  const conn = new Conn(url, myFetch, new Decoder());
+  const conn = new Conn(url, fetch, new Decoder());
   const session = new Session().withLog(console);
   let val = new StringStream("", session.stream);
   const ping = function() {
