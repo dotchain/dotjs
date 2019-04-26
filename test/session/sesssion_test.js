@@ -74,7 +74,7 @@ describe("Session", () => {
 
     return s
       .pull({
-        read(version, limit) {
+        read(version) {
           expect(version).to.equal(4);
           const replace = new Replace(new Atomic(3), new Atomic(10));
           return Promise.resolve(
@@ -84,7 +84,7 @@ describe("Session", () => {
       })
       .then(() => {
         return s.pull({
-          read(version, limit) {
+          read(version) {
             expect(version).to.equal(5);
             return Promise.resolve(null);
           }

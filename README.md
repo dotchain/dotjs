@@ -40,3 +40,21 @@ or
 npm install git://github.com/dotchain/dotjs
 ```
 
+## Demo
+
+Running the demo requires starting the server:
+
+```sh
+$> go run demo/server.go
+```
+
+And then, starting a client:
+
+```sh
+$> node -r esm demo/client.js
+```
+
+The client currently blocks for 30s on the first call but should print
+a message every second after that.  Not a very practical demo but good
+enough to validate that things work E2E.
+
