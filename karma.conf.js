@@ -12,6 +12,10 @@ function createChaiPreprocessor(logger) {
       'import { expect } from "chai";',
       "const {expect} = window.chai;"
     );
+    content = content.replace(
+      'import { dirname } from "path";',
+      'const dirname = e => ".";'
+    );
     done(null, content);
   };
 }
@@ -35,6 +39,7 @@ module.exports = function(config) {
       { pattern: "session/**/*.js", type: "module" },
       { pattern: "test/core/*.js", type: "module" },
       { pattern: "test/streams/*.js", type: "module" },
+      { pattern: "test/session/testdata/*.js", type: "module" },      
       { pattern: "test/session/*.js", type: "module" }
     ],
 
@@ -47,7 +52,7 @@ module.exports = function(config) {
     ],
 
     // list of files / patterns to exclude
-    exclude: ["test/session/conn_test.js", "test/session/golden.js"],
+    exclude: [],
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
