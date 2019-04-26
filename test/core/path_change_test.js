@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Map, PathChange, Replace } from "../..";
+import { Null, Atomic, Map, PathChange, Replace } from "../../index.js";
 import { FakeDecoder } from "./decoder_test.js";
 
 describe("PathChange", () => {

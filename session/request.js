@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode } from "../core";
+import { encode } from "../core/index.js";
 import { Operation } from "./op.js";
 
 export class Request {

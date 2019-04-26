@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { StringStream } from "../..";
+import { StringStream } from "../../index.js";
 
 describe("String", () => {
   it("should replace", () => {

@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { PathChange, Changes, Replace } from "../core";
+import { PathChange, Changes, Replace } from "../core/index.js";
 
 export class Substream {
   constructor(parent, path) {

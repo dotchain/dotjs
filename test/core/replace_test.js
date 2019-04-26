@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Replace } from "../..";
+import { Null, Atomic, Replace } from "../../index.js";
 import { FakeDecoder } from "./decoder_test.js";
 
 describe("Replace", () => {

@@ -6,7 +6,7 @@
 
 import { Substream } from "./substream.js";
 import { ValueStream } from "./value.js";
-import { Replace, Map, PathChange, Null } from "../core";
+import { Replace, Map, PathChange, Null } from "../core/index.js";
 
 export class MapStream extends ValueStream {
   constructor(pairs, stream) {

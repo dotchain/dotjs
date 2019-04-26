@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Replace, decodeValue } from "../..";
+import { Null, Atomic, Replace, decodeValue } from "../../index.js";
 
 describe("Null", () => {
   it("should ignore empty changes", () => {

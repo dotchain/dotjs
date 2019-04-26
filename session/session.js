@@ -5,7 +5,7 @@
 "use strict";
 
 import { Conn } from "./conn.js";
-import { Stream } from "../streams";
+import { Stream } from "../streams/index.js";
 import { Operation } from "./op.js";
 
 export class Session {

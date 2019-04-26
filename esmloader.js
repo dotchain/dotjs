@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
-"use strict";
-
-export * from "./core/index.js";
-export * from "./streams/index.js";
-export * from "./session/index.js";
+// This is a legacy loader for systems that do not have
+// ES6 module loading support.
+module.exports = require("esm")(module)("./index.js");
