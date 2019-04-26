@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { decode } from "../..";
+import { decode } from "../../index.js";
 
 // FakeDecoder can decode only null or values
 export class FakeDecoder {

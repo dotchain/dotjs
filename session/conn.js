@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode, decodeChange } from "../core";
+import { encode, decodeChange } from "../core/index.js";
 import { Operation } from "./op.js";
 import { AppendRequest, GetSinceRequest } from "./request.js";
 import { Response } from "./response.js";

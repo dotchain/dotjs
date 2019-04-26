@@ -6,7 +6,14 @@
 
 import { expect } from "chai";
 
-import { Map, Null, Atomic, Replace, PathChange, decodeValue } from "../..";
+import {
+  Map,
+  Null,
+  Atomic,
+  Replace,
+  PathChange,
+  decodeValue
+} from "../../index.js";
 import { FakeDecoder } from "./decoder_test.js";
 
 describe("Map", () => {

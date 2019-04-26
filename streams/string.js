@@ -6,7 +6,7 @@
 
 import { Stream } from "./stream.js";
 import { ValueStream } from "./value.js";
-import { Replace, Atomic } from "../core";
+import { Replace, Atomic } from "../core/index.js";
 
 export class StringStream extends ValueStream {
   constructor(value, stream) {

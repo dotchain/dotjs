@@ -4,13 +4,13 @@
 
 "use strict";
 
+import { encode, decodeChange } from "../core/index.js";
+
 let getRandomValues = null;
 
 if (typeof crypto !== "undefined") {
-  getRandomValues = crypto.getRandomValues;
+  getRandomValues = b => crypto.getRandomValues(b);
 }
-
-import { encode, decodeChange } from "../core";
 
 export class Operation {
   constructor(id, parentId, version, basis, changes) {

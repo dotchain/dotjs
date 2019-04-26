@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { StringStream, MapStream, Map, Atomic } from "../..";
+import { StringStream, MapStream, Map, Atomic } from "../../index.js";
 
 describe("MapStream", () => {
   const zero = new Atomic("world");

@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Conn, Operation, Replace, Atomic, encode } from "../..";
+import { Conn, Operation, Replace, Atomic, encode } from "../../index.js";
 import { FakeDecoder } from "../core/decoder_test.js";
 import { expectGoldenFile } from "./golden.js";
 

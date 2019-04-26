@@ -4,6 +4,6 @@
 
 "use strict";
 
-export * from "./conn.js";
 export * from "./op.js";
+export * from "./conn.js";
 export * from "./session.js";

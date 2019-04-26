@@ -6,11 +6,13 @@
 
 import { expect } from "chai";
 
-import { Session, Operation, Replace, Atomic } from "../..";
+import { Session, Operation, Replace, Atomic } from "../../index.js";
 
 describe("Session", () => {
-  // eslint-disable-next-line
-  Operation.useCrypto(require("crypto"));
+  if (typeof crypto === "undefined") {
+    // eslint-disable-next-line
+    Operation.useCrypto(require("crypto"));
+  }
 
   it("writes pending", () => {
     const s = new Session().withPending(getSampleOps(), 3);
