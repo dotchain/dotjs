@@ -22,7 +22,9 @@
     "sourceMap": false,
     "instrument": true
   },
-  "eslintIgnore": ["test/session/golden.js"],
+  "eslintIgnore": [
+    "test/session/golden.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dotchain/dotjs.git"
@@ -46,6 +48,7 @@
     "eslint": "^5.16.0",
     "esm": "^3.2.22",
     "mocha": "^6.1.4",
+    "node-fetch": "^2.3.0",
     "nyc": "^14.0.0",
     "prettier": "1.17.0"
   }

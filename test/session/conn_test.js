@@ -16,6 +16,7 @@ describe("Conn - write", () => {
     const fetch = (url, opts) => {
       req = { url, opts };
       return Promise.resolve({
+        ok: true,
         json() {
           return Promise.resolve({ "ops/nw.response": [null, null] });
         }
@@ -32,6 +33,7 @@ describe("Conn - write", () => {
   it("should throw errors", () => {
     const fetch = () => {
       return Promise.resolve({
+        ok: true,
         json() {
           return Promise.resolve({
             "ops/nw.response": [null, { "ops/nw.strError": "booya" }]
@@ -64,6 +66,7 @@ describe("Conn - read", () => {
     const fetch = (url, opts) => {
       req = { url, opts };
       return Promise.resolve({
+        ok: true,
         json() {
           return Promise.resolve({
             "ops/nw.response": [getSampleEncodedOps(), null]
@@ -82,6 +85,7 @@ describe("Conn - read", () => {
   it("should throw errors", () => {
     const fetch = () => {
       return Promise.resolve({
+        ok: true,
         json() {
           return Promise.resolve({
             "ops/nw.response": [null, { "ops/nw.strError": "booya" }]
