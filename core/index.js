@@ -4,14 +4,29 @@
 
 "use strict";
 
-export * from "./change.js";
-export * from "./replace.js";
-export * from "./path_change.js";
-export * from "./changes.js";
+import { Encoder } from "./encode.js";
+import { Decoder } from "./decode.js";
 
-export * from "./value.js";
-export * from "./encode.js";
-export * from "./decode.js";
-export * from "./null.js";
-export * from "./atomic.js";
-export * from "./map.js";
+import { Replace } from "./replace.js";
+import { PathChange } from "./path_change.js";
+import { Changes } from "./changes.js";
+
+import { Null } from "./null.js";
+import { Atomic } from "./atomic.js";
+import { Map } from "./map.js";
+
+//
+// The type registrations are done here because of
+// import cycles -- the types are partially defined
+// within and seem to cause issues in Chrome
+//
+
+Decoder.registerChangeClass(Replace);
+Decoder.registerChangeClass(PathChange);
+Decoder.registerChangeClass(Changes);
+
+Decoder.registerValueClass(Null);
+Decoder.registerValueClass(Atomic);
+Decoder.registerValueClass(Map);
+
+export { Encoder, Decoder, Replace, PathChange, Changes, Null, Atomic, Map };

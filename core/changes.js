@@ -4,8 +4,7 @@
 
 "use strict";
 
-import { decodeChange, registerChangeClass } from "./change.js";
-import { encode } from "./encode.js";
+import { Encoder } from "./encode.js";
 
 // Changes represents a collection of changes
 export class Changes {
@@ -72,7 +71,7 @@ export class Changes {
   }
 
   toJSON() {
-    return this._all.map(encode);
+    return Encoder.encodeArrayValue(this._all);
   }
 
   static typeName() {
@@ -81,7 +80,7 @@ export class Changes {
 
   static fromJSON(decoder, json) {
     if (json) {
-      json = json.map(elt => decodeChange(decoder, elt));
+      json = json.map(elt => decoder.decodeChange(elt));
     }
     return Changes.create(json);
   }
@@ -90,5 +89,3 @@ export class Changes {
     return (elts && elts.length && new Changes(elts)) || null;
   }
 }
-
-registerChangeClass(Changes);

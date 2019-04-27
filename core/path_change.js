@@ -4,9 +4,7 @@
 
 "use strict";
 
-import { registerChangeClass } from "./change.js";
-import { decodeChange } from "./change.js";
-import { encode } from "./encode.js";
+import { Encoder } from "./encode.js";
 import { Replace } from "./replace.js";
 
 // PathChange represents a change at a specific path
@@ -99,13 +97,8 @@ export class PathChange {
   }
 
   toJSON() {
-    let path = null;
-
-    if (this.path !== null) {
-      path = this.path.map(encode);
-    }
-
-    return [path, encode(this.change)];
+    const path = Encoder.encodeArrayValue(this.path);
+    return [path, Encoder.encode(this.change)];
   }
 
   static typeName() {
@@ -116,10 +109,10 @@ export class PathChange {
     let path = json[0];
 
     if (path !== null) {
-      path = path.map(decoder.decode);
+      path = path.map(x => decoder.decode(x));
     }
 
-    const change = decodeChange(decoder, json[1]);
+    const change = decoder.decodeChange(json[1]);
     return new PathChange(path, change);
   }
 
@@ -129,6 +122,7 @@ export class PathChange {
     }
     let len = 0;
     for (; len < p1.length && len < p2.length; len++) {
+      const encode = x => Encoder.encode(x);
       if (JSON.stringify(encode(p1[len])) != JSON.stringify(encode(p2[len]))) {
         return len;
       }
@@ -150,5 +144,3 @@ export class PathChange {
     return new PathChange(path, change);
   }
 }
-
-registerChangeClass(PathChange);

@@ -4,7 +4,6 @@
 
 "use strict";
 
-import { registerValueClass } from "./value.js";
 import { Replace } from "./replace.js";
 
 // Null represents an empty value
@@ -31,5 +30,3 @@ export class Null {
     return new Null();
   }
 }
-
-registerValueClass(Null);

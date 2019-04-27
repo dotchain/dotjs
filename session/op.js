@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode, decodeChange } from "../core/index.js";
+import { Encoder, Decoder } from "../core/index.js";
 
 let getRandomValues = null;
 
@@ -22,8 +22,9 @@ export class Operation {
   }
 
   toJSON() {
-    const [id, parentId] = [encode(this.id), encode(this.parentId)];
-    return [id, parentId, this.version, this.basis, encode(this.changes)];
+    const unencoded = [this.id, this.parentId, this.changes];
+    const [id, parentId, c] = Encoder.encodeArrayValue(unencoded);
+    return [id, parentId, this.version, this.basis, c];
   }
 
   static typeName() {
@@ -37,7 +38,7 @@ export class Operation {
       decoder.decode(parentId),
       version,
       basis,
-      decodeChange(decoder, changes)
+      decoder.decodeChange(changes)
     );
   }
 

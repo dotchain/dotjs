@@ -4,10 +4,8 @@
 
 "use strict";
 
-import { registerChangeClass } from "./change.js";
-import { decodeValue } from "./value.js";
+import { Encoder } from "./encode.js";
 import { Null } from "./null.js";
-import { encode } from "./encode.js";
 
 // Replace represents a change of one value to another
 export class Replace {
@@ -47,7 +45,7 @@ export class Replace {
   }
 
   toJSON() {
-    return [encode(this.before), encode(this.after)];
+    return Encoder.encodeArrayValue([this.before, this.after]);
   }
 
   static typeName() {
@@ -55,10 +53,8 @@ export class Replace {
   }
 
   static fromJSON(decoder, json) {
-    const before = decodeValue(decoder, json[0]);
-    const after = decodeValue(decoder, json[1]);
+    const before = decoder.decodeValue(json[0]);
+    const after = decoder.decodeValue(json[1]);
     return new Replace(before, after);
   }
 }
-
-registerChangeClass(Replace);

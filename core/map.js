@@ -4,11 +4,12 @@
 
 "use strict";
 
+import { Encoder } from "./encode.js";
+import { Decoder } from "./decode.js";
+
 import { PathChange } from "./path_change.js";
 import { Replace } from "./replace.js";
 import { Null } from "./null.js";
-import { registerValueClass, decodeValue } from "./value.js";
-import { encode } from "./encode.js";
 import { ImmutableMap } from "./immutable.js";
 
 // applyMap implements apply() for map-like objects which have
@@ -66,7 +67,7 @@ export class Map {
   toJSON() {
     let all = [];
     for (let pair of this._pairs) {
-      all.push(encode(pair[0]), encode(pair[1]));
+      all.push(...Encoder.encodeArrayValue(pair));
     }
     return all;
   }
@@ -81,13 +82,10 @@ export class Map {
     }
     const pairs = [];
     for (let kk = 0; kk < json.length; kk += 2) {
-      pairs.push([
-        decoder.decode(json[kk]),
-        decodeValue(decoder, json[kk + 1])
-      ]);
+      pairs.push([decoder.decode(json[kk]), decoder.decodeValue(json[kk + 1])]);
     }
     return new Map(pairs);
   }
 }
 
-registerValueClass(Map);
+Decoder.registerValueClass(Map);

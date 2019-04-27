@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode } from "../core/index.js";
+import { Encoder } from "../core/index.js";
 import { Operation } from "./op.js";
 
 export class Request {
@@ -17,7 +17,7 @@ export class Request {
   }
 
   toJSON() {
-    const ops = (this.ops || []).map(encode);
+    const ops = Encoder.encodeArrayValue(this.ops);
     return [this.name, ops, this.version, this.limit, this.duration];
   }
 
