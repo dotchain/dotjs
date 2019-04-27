@@ -23,20 +23,16 @@ export class Conn {
     return this._request(new GetSinceRequest(version, 1000, duration));
   }
 
-  static _request(url, fetch, req) {
-    const decoder = new Decoder();
+  static async _request(url, fetch, req) {
     const headers = { "Content-Type": " application/x-sjson" };
-    const opsOrNull = ops => (ops && ops.length > 0 ? ops : null);
-    return fetch(url, {
-      method: "POST",
-      body: JSON.stringify(Encoder.encode(req)),
-      headers
-    })
-      .then(res =>
-        res.ok ? res : Promise.reject(res.status + " " + res.statusText)
-      )
-      .then(res => res.json())
-      .then(json => Response.fromJSON(decoder, json[Response.typeName()]))
-      .then(r => (r.err ? Promise.reject(r.err) : opsOrNull(r.ops)));
+    const body = JSON.stringify(Encoder.encode(req));
+
+    const res = await fetch(url, {method: "POST", body, headers});
+    if (!res.ok) {
+      return Promise.reject(res.status + " " + res.statusText);
+    }
+    const json = await res.json();
+    const r = Response.fromJSON(new Decoder(), json[Response.typeName()]);
+    return r.err || (r.ops && r.ops.length && r.ops) || null;
   }
 }
