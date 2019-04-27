@@ -27,7 +27,7 @@ export class Conn {
     const headers = { "Content-Type": " application/x-sjson" };
     const body = JSON.stringify(Encoder.encode(req));
 
-    const res = await fetch(url, {method: "POST", body, headers});
+    const res = await fetch(url, { method: "POST", body, headers });
     if (!res.ok) {
       return Promise.reject(res.status + " " + res.statusText);
     }

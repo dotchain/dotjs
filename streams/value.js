@@ -19,24 +19,24 @@ export class ValueStream {
   }
 
   get next() {
-    const next = this.stream.nextInstance;
-    if (next == null) {
+    if (this.stream.next === null) {
       return null;
     }
 
+    const { change, version } = this.stream.next;
     const val = this.constructor.toValue(this.value);
-    const applied = val.apply(this.stream.nextChange);
-    return this.constructor.create(applied, this.stream.nextInstance);
+    const applied = val.apply(change);
+    return { change, version: this.constructor.create(applied, version) };
   }
 
   [Symbol.iterator]() {
-    let value = this;
+    let next = { version: this };
     return {
       next() {
-        if (value !== null) {
-          value = value.next;
+        if (next !== null) {
+          next = next.version.next;
         }
-        return value === null ? { done: true } : { value };
+        return next === null ? { done: true } : { value: next.version };
       }
     };
   }

@@ -37,10 +37,10 @@ describe("MapStream", () => {
     const m1 = m0.replace(new Map([[1, one]]));
     expect(m1.value).to.deep.equal(new Map([[1, one]]));
     expect(m0.value).to.deep.equal(new Map([[0, zero]]));
-    expect(m0.next.value).to.deep.equal(new Map([[1, one]]));
+    expect(m0.next.version.value).to.deep.equal(new Map([[1, one]]));
 
     expect(m1.next).to.equal(null);
-    expect(m0.next.next).to.equal(null);
+    expect(m0.next.version.next).to.equal(null);
   });
 
   it("should converge with multiple edits", () => {

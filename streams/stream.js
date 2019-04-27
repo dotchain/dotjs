@@ -6,8 +6,7 @@
 
 export class Stream {
   constructor() {
-    this.nextChange = null;
-    this.nextInstance = null;
+    this.next = null;
   }
 
   append(c) {
@@ -20,15 +19,17 @@ export class Stream {
 
   _appendChange(c, reverse) {
     const result = new Stream();
-    let next = result;
     let s = this;
-    while (s.nextInstance !== null) {
-      [c, next.nextChange] = this._merge(s.nextChange, c, reverse);
-      s = s.nextInstance;
-      next.nextInstance = new Stream();
-      next = next.nextInstance;
+    let nexts = result;
+    while (s.next !== null) {
+      let { change, version } = s.next;
+      s = version;
+
+      [c, change] = this._merge(change, c, reverse);
+      nexts.next = { change, version: new Stream() };
+      nexts = nexts.next.version;
     }
-    [s.nextChange, s.nextInstance] = [c, next];
+    s.next = { change: c, version: nexts };
     return result;
   }
 

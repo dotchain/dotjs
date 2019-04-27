@@ -21,10 +21,10 @@ describe("String", () => {
     const s1 = s0.replace("world");
     expect(s1.value).to.equal("world");
     expect(s0.value).to.equal("hello");
-    expect(s0.next.value).to.equal("world");
+    expect(s0.next.version.value).to.equal("world");
 
     expect(s1.next).to.equal(null);
-    expect(s0.next.next).to.equal(null);
+    expect(s0.next.version.next).to.equal(null);
   });
 
   it("should converge with multiple edits", () => {
