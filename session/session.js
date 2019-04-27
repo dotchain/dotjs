@@ -93,12 +93,12 @@ export class Session {
   push(conn) {
     // push client side changes
     let s = this._stream;
-    for (let next = s.nextInstance; next != null; next = next.nextInstance) {
+    for (let next = s.next; next != null; next = next.version.next) {
       const pid = this._parentId();
-      const op = new Operation(null, pid, -1, this._version, s.nextChange);
+      const op = new Operation(null, pid, -1, this._version, next.change);
       this._unsent.push(op);
       this._unacked.push(op);
-      s = next;
+      s = next.version;
     }
     this._stream = s;
 

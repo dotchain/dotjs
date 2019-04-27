@@ -93,8 +93,8 @@ describe("Session", () => {
         });
       })
       .then(() => {
-        expect(str.nextInstance).to.not.equal(null);
-        expect(str.nextChange).to.equal(null);
+        expect(str.next).to.not.equal(null);
+        expect(str.next.change).to.equal(null);
         return s.push({
           write(ops) {
             written = ops;

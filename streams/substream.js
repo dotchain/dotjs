@@ -6,10 +6,12 @@
 
 import { PathChange, Changes, Replace } from "../core/index.js";
 
+const sentinel = {};
 export class Substream {
   constructor(parent, path) {
     this.parent = parent;
     this.path = path;
+    this._next = sentinel;
   }
 
   append(c) {
@@ -20,58 +22,62 @@ export class Substream {
     return this.parent.reverseAppend(new PathChange(this.path, c));
   }
 
-  get nextChange() {
-    return next(this.parent, this.path)[0];
-  }
-
-  get nextInstance() {
-    const [c, parent] = next(this.parent, this.path);
-    if (parent !== null) {
-      return new Substreaam(parent, this.path);
+  get next() {
+    if (this._next !== sentinel) {
+      return this._next;
     }
+
+    if (this.parent.next == null) {
+      return null;
+    }
+
+    this._next = getNext(this);
+    return this._next;
   }
 }
 
-function next(parent, path) {
-  const nextInstance = parent.nextInstance;
-  if (nextInstance === null) {
-    return [null, null];
-  }
-  const [c, ok] = transform(parent.nextChange, path);
+function getNext(s) {
+  const next = s.parent.next;
+  const { xform, ok } = transform(next.change, s.path);
   if (!ok) {
-    return [null, null];
+    return null;
   }
-  return [c, parent.nextInstance];
+
+  return { change: xform, version: new Substream(next.version, s.path) };
 }
 
 function transform(c, path) {
   if (c === null) {
-    return [null, true];
+    return { xform: c, ok: true };
   }
 
   if (c instanceof Replace) {
-    return [null, false];
+    return { xform: null, ok: false };
   }
 
   if (c instanceof PathChange) {
     const len = PathChange.commonPrefixLen(path, c.path);
+
     if (len === ((c.path && c.path.length) || 0)) {
       return transform(c.change, path.slice(len));
     }
+
     if (len === path.length) {
-      return [PathChange.create(c.path.slice(len), c.change), true];
+      const xform = PathChange.create(c.path.slice(len), c.change);
+      return { xform, ok: true };
     }
   }
 
   if (c instanceof Changes) {
     const result = [];
     for (let cx of c) {
-      const [updated, ok] = transform(cx, path);
+      const { xform, ok } = transform(cx, path);
       if (!ok) {
-        return [null, false];
+        return { xform, ok };
       }
       result.push(updated);
     }
-    return Changes.create(result);
+    const xform = Changes.create(result);
+    return { xform, ok: true };
   }
 }
