@@ -4,14 +4,14 @@
 
 "use strict";
 
-import { encode, decodeChange } from "../core/index.js";
+import { Encoder, Decoder } from "../core/index.js";
 import { Operation } from "./op.js";
 import { AppendRequest, GetSinceRequest } from "./request.js";
 import { Response } from "./response.js";
 
 export class Conn {
-  constructor(url, fetch, decoder) {
-    this._request = Conn._request.bind(null, url, fetch, decoder);
+  constructor(url, fetch) {
+    this._request = Conn._request.bind(null, url, fetch);
   }
 
   write(ops) {
@@ -23,12 +23,13 @@ export class Conn {
     return this._request(new GetSinceRequest(version, 1000, duration));
   }
 
-  static _request(url, fetch, decoder, req) {
+  static _request(url, fetch, req) {
+    const decoder = new Decoder();
     const headers = { "Content-Type": " application/x-sjson" };
     const opsOrNull = ops => (ops && ops.length > 0 ? ops : null);
     return fetch(url, {
       method: "POST",
-      body: JSON.stringify(encode(req)),
+      body: JSON.stringify(Encoder.encode(req)),
       headers
     })
       .then(res =>

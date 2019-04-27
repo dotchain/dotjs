@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode } from "./encode.js";
+import { Encoder } from "./encode.js";
 
 export class ImmutableMap {
   constructor(pairs) {
@@ -12,7 +12,9 @@ export class ImmutableMap {
   }
 
   _equal(v1, v2) {
-    return JSON.stringify(encode(v1)) === JSON.stringify(encode(v2));
+    return (
+      JSON.stringify(Encoder.encode(v1)) === JSON.stringify(Encoder.encode(v2))
+    );
   }
 
   has(key) {

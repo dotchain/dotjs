@@ -4,38 +4,77 @@
 
 "use strict";
 
-import { decodeChange } from "./change.js";
-import { decodeValue } from "./value.js";
+const valueTypes = {};
+const changeTypes = {};
 
-// decode deserializes a value
-export function decode(decoder, value) {
-  if (value === undefined || value === null) {
-    return null;
+export class Decoder {
+  decode(value) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value !== "object") {
+      return value;
+    }
+
+    for (let key in value) {
+      switch (key) {
+        case "bool":
+          return value.bool;
+        case "int":
+          return value.int;
+        case "float64":
+          return +value.float64;
+        case "string":
+          return value.string;
+        case "time.Time":
+          return new Date(value[key]);
+      }
+    }
+
+    const val = this.decodeValue(value);
+    if (val !== undefined) {
+      return val;
+    }
+
+    return this.decodeChange(value);
   }
 
-  if (value.hasOwnProperty("bool")) {
-    return value.bool;
+  decodeValue(v) {
+    for (let key in v) {
+      if (valueTypes.hasOwnProperty(key)) {
+        return valueTypes[key].fromJSON(this, v[key]);
+      }
+    }
   }
 
-  if (value.hasOwnProperty("int")) {
-    return value.int;
+  decodeChange(c) {
+    if (c === null) {
+      return null;
+    }
+
+    for (let key in c) {
+      if (changeTypes.hasOwnProperty(key)) {
+        return changeTypes[key].fromJSON(this, c[key]);
+      }
+    }
   }
 
-  if (value.hasOwnProperty("float64")) {
-    return +value.float64;
+  // registerValueClass registers value types. This is needed
+  // for encoding/decoding value types
+  //
+  // Value classes should include a static method typeName() which
+  // provides the associated golang type
+  static registerValueClass(valueConstructor) {
+    valueTypes[valueConstructor.typeName()] = valueConstructor;
   }
 
-  if (value.hasOwnProperty("string")) {
-    return value.string;
-  }
-
-  const val = decodeValue(decoder, value);
-  if (val !== undefined) {
-    return val;
-  }
-
-  const c = decodeChange(decoder, value);
-  if (c !== undefined) {
-    return c;
+  // registerChangeClass registers change types. This is needed
+  // for encoding/decoding change types
+  //
+  // Change classes should include a static method typeName() which
+  // provides the associated golang type
+  static registerChangeClass(changeConstructor) {
+    changeTypes[changeConstructor.typeName()] = changeConstructor;
   }
 }

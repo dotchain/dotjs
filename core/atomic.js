@@ -4,9 +4,10 @@
 
 "use strict";
 
-import { registerValueClass } from "./value.js";
+import { Encoder } from "./encode.js";
+import { Decoder } from "./decode.js";
+
 import { Replace } from "./replace.js";
-import { encode } from "./encode.js";
 
 // Atomic represents an atomic value type
 export class Atomic {
@@ -30,7 +31,7 @@ export class Atomic {
   }
 
   toJSON() {
-    return [encode(this.value)];
+    return [Encoder.encode(this.value)];
   }
 
   static typeName() {
@@ -42,4 +43,4 @@ export class Atomic {
   }
 }
 
-registerValueClass(Atomic);
+Decoder.registerValueClass(Atomic);

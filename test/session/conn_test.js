@@ -6,8 +6,14 @@
 
 import { expect } from "chai";
 
-import { Conn, Operation, Replace, Atomic, encode } from "../../index.js";
-import { FakeDecoder } from "../core/decoder_test.js";
+import {
+  Conn,
+  Operation,
+  Replace,
+  Atomic,
+  Encoder,
+  Decoder
+} from "../../index.js";
 import { expectGoldenFile } from "./golden.js";
 
 describe("Conn - write", () => {
@@ -26,7 +32,7 @@ describe("Conn - write", () => {
       });
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.write(getSampleOps()).then(x => {
       expect(x).to.equal(null);
       return expectGoldenFile("request-append.js", req);
@@ -45,7 +51,7 @@ describe("Conn - write", () => {
       });
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.write(getSampleOps()).catch(x => {
       return expect(x.toString()).to.deep.equal(new Error("booya").toString());
     });
@@ -56,7 +62,7 @@ describe("Conn - write", () => {
       return Promise.reject(new Error("booya"));
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.write(getSampleOps()).catch(x => {
       expect(x.toString()).to.deep.equal(new Error("booya").toString());
     });
@@ -81,7 +87,7 @@ describe("Conn - read", () => {
       });
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.read(10, 1000).then(ops => {
       expect(ops).to.deep.equal(getSampleOps());
       return expectGoldenFile("request-getSince.js", req);
@@ -100,7 +106,7 @@ describe("Conn - read", () => {
       });
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.read(10, 1000).catch(x => {
       expect(x.toString()).to.deep.equal(new Error("booya").toString());
     });
@@ -111,7 +117,7 @@ describe("Conn - read", () => {
       return Promise.reject(new Error("booya"));
     };
 
-    const conn = new Conn("some url", fetch, new FakeDecoder());
+    const conn = new Conn("some url", fetch, new Decoder());
     return conn.read(10, 1000).catch(x => {
       expect(x.toString()).to.deep.equal(new Error("booya").toString());
     });
@@ -130,8 +136,8 @@ function getSampleEncodedOps() {
   const replace = new Replace(new Atomic(1), new Atomic(2));
   return JSON.parse(
     JSON.stringify([
-      encode(new Operation("id", "parentId", 10, 100, replace)),
-      encode(new Operation("id2", "parentId2", 11, 101, replace))
+      Encoder.encode(new Operation("id", "parentId", 10, 100, replace)),
+      Encoder.encode(new Operation("id2", "parentId2", 11, 101, replace))
     ])
   );
 }

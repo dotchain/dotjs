@@ -12,9 +12,8 @@ import {
   Atomic,
   Replace,
   PathChange,
-  decodeValue
+  Decoder
 } from "../../index.js";
-import { FakeDecoder } from "./decoder_test.js";
 
 describe("Map", () => {
   it("should ignore empty changes", () => {
@@ -81,10 +80,8 @@ describe("Map - interop serialization", () => {
   });
 
   it("should deserialize", () => {
-    const d = new FakeDecoder();
-    expect(decodeValue(null, { "changes/types.M": [] })).to.deep.equal(
-      new Map()
-    );
+    const decoded = new Decoder().decodeValue({ "changes/types.M": [] });
+    expect(decoded).to.deep.equal(new Map());
 
     let json = [
       { int: 2 },
@@ -92,7 +89,7 @@ describe("Map - interop serialization", () => {
       { string: "s" },
       { "changes.empty": [] }
     ];
-    expect(Map.fromJSON(d, json)).to.deep.equal(
+    expect(Map.fromJSON(new Decoder(), json)).to.deep.equal(
       new Map([[2, new Null()], ["s", new Null()]])
     );
   });

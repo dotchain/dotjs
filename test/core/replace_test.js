@@ -6,8 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Replace } from "../../index.js";
-import { FakeDecoder } from "./decoder_test.js";
+import { Null, Atomic, Replace, Decoder } from "../../index.js";
 
 describe("Replace", () => {
   it("reverts", () => {
@@ -58,6 +57,6 @@ describe("Replace - interop serialization", () => {
   it("should deserialize", () => {
     const replace = new Replace(new Null(), new Atomic(new Null()));
     const json = JSON.parse(JSON.stringify(replace));
-    expect(Replace.fromJSON(new FakeDecoder(), json)).to.deep.equal(replace);
+    expect(Replace.fromJSON(new Decoder(), json)).to.deep.equal(replace);
   });
 });

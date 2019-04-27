@@ -6,8 +6,14 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Map, PathChange, Replace } from "../../index.js";
-import { FakeDecoder } from "./decoder_test.js";
+import {
+  Null,
+  Atomic,
+  Map,
+  PathChange,
+  Replace,
+  Decoder
+} from "../../index.js";
 
 describe("PathChange", () => {
   it("reverts", () => {
@@ -129,7 +135,7 @@ describe("PathChange - interop serialization", () => {
   });
 
   it("should deserialize", () => {
-    const d = new FakeDecoder();
+    const d = new Decoder();
     expect(PathChange.fromJSON(d, [null, null])).to.deep.equal(
       new PathChange()
     );

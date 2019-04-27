@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { encode } from "../core/index.js";
+import { Encoder } from "../core/index.js";
 import { Operation } from "./op.js";
 
 export class Response {
@@ -15,7 +15,7 @@ export class Response {
 
   toJSON() {
     const err = this.err ? { "ops/nw.strError": err.toString() } : null;
-    return [ops.map(encode), err];
+    return [Encoder.encodeArrayValue(ops), err];
   }
 
   static typeName() {

@@ -6,8 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Atomic, Replace } from "../../index.js";
-import { FakeDecoder } from "./decoder_test.js";
+import { Null, Atomic, Replace, Decoder } from "../../index.js";
 
 describe("Atomic", () => {
   it("should ignore empty changes", () => {
@@ -31,7 +30,7 @@ describe("Atomic - interop serialization", () => {
   });
 
   it("should deserialize", () => {
-    const d = new FakeDecoder();
+    const d = new Decoder();
     expect(Atomic.fromJSON(d, [null])).to.deep.equal(new Atomic());
     expect(Atomic.fromJSON(d, [{ "changes.empty": [] }])).to.deep.equal(
       new Atomic(new Null())
