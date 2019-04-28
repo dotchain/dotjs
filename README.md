@@ -18,13 +18,17 @@ The roadmap:
 2. ~Implement streams interface. This will likely be a bit different than the golang version.~
 3. ~Implement operations but only the client-side of it.~
 4. ~Implement a browser demo against golang backend.~
-5. Implement array operations and basic array types. **In Progress**
-6. Implement streams for array elements.
-7. Implement session with local transformations
-8. Update demos.
-9. Implement string JS types.
-10. Update demos.
+5. ~Implement array operations and basic array types.~
+6. ~Implement streams for array elements.~
+7. ~Implement string JS types.~
+8. Implement session with local transformations. **In Progress**
+9. Add custom struct and collection type factories.
+9. Update demos.
 11. Implement JS server version with golang front-end tests for interop.
+
+## Convergent streams
+
+[Convergent streams in Dot.js](convergent.md)
 
 ## Installation
 
