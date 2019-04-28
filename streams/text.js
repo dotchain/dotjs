@@ -10,8 +10,12 @@ import { Replace, Splice, Text } from "../core/index.js";
 
 export class TextStream extends ValueStream {
   constructor(value, stream) {
+    if (value instanceof Text) {
+      value = value.text;
+    }
+
     if (typeof value != "string") {
-      throw "value must be string";
+      throw new Error("value must be string");
     }
     super(value, stream);
   }
@@ -26,7 +30,7 @@ export class TextStream extends ValueStream {
   splice(offset, removeCount, replacement) {
     const r = replacement || "";
     if (typeof r != "string") {
-      throw "replacement must be a string";
+      throw new Error("replacement must be a string");
     }
 
     const before = this.value.slice(offset, offset + removeCount);

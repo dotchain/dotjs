@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { PathChange, Changes, Replace } from "../core/index.js";
+import { PathChange, Changes, Replace, Splice } from "../core/index.js";
 
 const sentinel = {};
 export class Substream {
@@ -38,46 +38,56 @@ export class Substream {
 
 function getNext(s) {
   const next = s.parent.next;
-  const { xform, ok } = transform(next.change, s.path);
+  const { xform, path, ok } = transform(next.change, s.path);
   if (!ok) {
     return null;
   }
 
-  return { change: xform, version: new Substream(next.version, s.path) };
+  return { change: xform, version: new Substream(next.version, path) };
 }
 
 function transform(c, path) {
   if (c === null) {
-    return { xform: c, ok: true };
+    return { xform: c, path, ok: true };
   }
 
   if (c instanceof Replace) {
-    return { xform: null, ok: false };
+    return { xform: null, path, ok: false };
+  }
+
+  if (c instanceof Splice) {
+    path = c.mapPath(path);
+    return { xform: null, path, ok: path !== null };
   }
 
   if (c instanceof PathChange) {
     const len = PathChange.commonPrefixLen(path, c.path);
 
     if (len === ((c.path && c.path.length) || 0)) {
-      return transform(c.change, path.slice(len));
+      const { xform, path: p2, ok } = transform(c.change, path.slice(len));
+      if (ok) {
+        path = path.slice(0, len).concat(p2);
+      }
+      return { xform, path, ok };
     }
 
     if (len === path.length) {
       const xform = PathChange.create(c.path.slice(len), c.change);
-      return { xform, ok: true };
+      return { xform, path, ok: true };
     }
   }
 
   if (c instanceof Changes) {
     const result = [];
     for (let cx of c) {
-      const { xform, ok } = transform(cx, path);
+      const { xform, path: p2, ok } = transform(cx, path);
       if (!ok) {
-        return { xform, ok };
+        return { xform, path, ok };
       }
+      path = p2;
       result.push(updated);
     }
     const xform = Changes.create(result);
-    return { xform, ok: true };
+    return { xform, path, ok: true };
   }
 }
