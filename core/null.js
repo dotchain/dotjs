@@ -12,7 +12,7 @@ export class Null {
     if (!c) {
       return this;
     }
-    if (c instanceof Replace && c.before instanceof Null) {
+    if (c instanceof Replace && c.isCreate()) {
       return c.after;
     }
     return c.applyTo(this);

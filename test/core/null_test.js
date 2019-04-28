@@ -30,8 +30,6 @@ describe("Null - interop serialization", () => {
     const d = new Decoder();
     const v = d.decodeValue({ "changes.empty": [] });
 
-    // v look very much like Null() but instanceof fails
-    // the suspect is likely import cycles..
-    expect(v.constructor.name).to.equal("Null");
+    expect(v).to.be.instanceOf(Null);
   });
 });

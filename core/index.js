@@ -10,10 +10,13 @@ import { Decoder } from "./decode.js";
 import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { Changes } from "./changes.js";
+import { Splice } from "./splice.js";
 
 import { Null } from "./null.js";
 import { Atomic } from "./atomic.js";
 import { Map } from "./map.js";
+import { Text } from "./text.js";
+import { List } from "./list.js";
 
 //
 // The type registrations are done here because of
@@ -24,9 +27,24 @@ import { Map } from "./map.js";
 Decoder.registerChangeClass(Replace);
 Decoder.registerChangeClass(PathChange);
 Decoder.registerChangeClass(Changes);
+Decoder.registerChangeClass(Splice);
 
 Decoder.registerValueClass(Null);
 Decoder.registerValueClass(Atomic);
 Decoder.registerValueClass(Map);
+Decoder.registerValueClass(Text);
+Decoder.registerValueClass(List);
 
-export { Encoder, Decoder, Replace, PathChange, Changes, Null, Atomic, Map };
+export {
+  Encoder,
+  Decoder,
+  Replace,
+  PathChange,
+  Changes,
+  Splice,
+  Null,
+  Atomic,
+  Map,
+  Text,
+  List
+};
