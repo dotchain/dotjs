@@ -9,3 +9,4 @@ export * from "./value.js";
 export * from "./string.js";
 export * from "./map.js";
 export * from "./substream.js";
+export * from "./text.js";
