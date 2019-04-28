@@ -7,6 +7,7 @@
 import { expect } from "chai";
 
 import { Null, Text, Replace, Splice, Decoder } from "../../index.js";
+import compactSpliceInfo from "./testdata/splices.js";
 
 describe("Splice", () => {
   it("reverts", () => {
@@ -50,4 +51,54 @@ describe("Splice - interop serialization", () => {
     const json = JSON.parse(JSON.stringify(splice));
     expect(Splice.fromJSON(new Decoder(), json)).to.deep.equal(splice);
   });
+});
+
+describe("Splice - dataset tests", () => {
+  let count = 0;
+
+  for (let test of compactSpliceInfo.test) {
+    count++;
+
+    const [before, after, [left], [right], [leftx], [rightx]] = test;
+
+    it(count.toString() + ": " + left + " x " + right, () => {
+      const l = parse(before, after, left);
+      const r = parse(before, after, right);
+      const lx = parse(before, after, leftx);
+      const rx = parse(before, after, rightx);
+
+      expect(l.merge(r).map(simplify)).to.deep.equal([lx, rx].map(simplify));
+      expect(r.reverseMerge(l).map(simplify)).to.deep.equal(
+        [rx, lx].map(simplify)
+      );
+      expect(new Text(before).apply(l).apply(lx)).to.deep.equal(
+        new Text(after)
+      );
+      expect(new Text(before).apply(r).apply(rx)).to.deep.equal(
+        new Text(after)
+      );
+    });
+  }
+
+  function simplify(c) {
+    if (
+      c instanceof Splice &&
+      JSON.stringify(c.before) == JSON.stringify(c.after)
+    ) {
+      return null;
+    }
+    return c;
+  }
+
+  function parse(before, after, x) {
+    if (!x) {
+      return null;
+    }
+
+    const l = x.indexOf("(");
+    const r = x.indexOf(")");
+    const mid = x.slice(l + 1, r);
+    const [midl, midr] = mid.split("=");
+    return new Splice(l, new Text(midl), new Text(midr));
+  }
 });

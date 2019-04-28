@@ -60,7 +60,7 @@ export class Splice {
       return [other, this];
     }
 
-    if (Splice.end(o) <= this.offset) {
+    if (Splice._end(o) <= this.offset) {
       // < > [ ]
       const offset = this.offset + Splice._diff(o);
       const updated = new Splice(offset, this.before, this.after);
@@ -69,7 +69,7 @@ export class Splice {
 
     if (this.offset < o.offset && Splice._end(this) < Splice._end(o)) {
       // [ < ] >
-      const oOffset = o.offset + this.after.length;
+      const oOffset = this.offset + this.after.length;
       const end = Splice._end(this);
       const oBefore = o.before.slice(end - o.offset, o.before.length);
       const before = this.before.slice(0, o.offset - this.offset);
@@ -79,13 +79,22 @@ export class Splice {
       ];
     }
 
-    if (this.offset == o.offset && Splice._end(this) < Splice._end(o)) {
+    if (this.offset == o.offset && this.before.length < o.before.length) {
       // <[ ] >
-      const oBefore = o.before.apply(new Splice(0, this.before, this.after));
-      return [new Splice(o.offset, oBefore, o.after), null];
+      const oBefore = o.before.slice(this.before.length, o.before.length);
+      const oOffset = o.offset + this.after.length;
+      const other = new Splice(oOffset, oBefore, o.after);
+
+      return [
+        other,
+        new Splice(this.offset, this.before.slice(0, 0), this.after)
+      ];
+      // golang behavior is below
+      // const oBefore = o.before.apply(new Splice(0, this.before, this.after));
+      // return [new Splice(o.offset, oBefore, o.after), null];
     }
 
-    if (this.offset < o.offset && Splice._end(this) >= Splice._end(o)) {
+    if (this.offset <= o.offset && Splice._end(this) >= Splice._end(o)) {
       // [ < > ]
       const diff = o.offset - this.offset;
       const slice = this.before.slice(diff, diff + o.before.length);

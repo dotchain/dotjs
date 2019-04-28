@@ -16,6 +16,7 @@ function mungeFactory(logger) {
       'import { dirname } from "path";',
       'const dirname = e => ".";'
     );
+
     done(null, content);
   };
 }
@@ -34,6 +35,7 @@ module.exports = function(config) {
     modules.push({ pattern: "test/e2e/*.js", type: "module" });
   } else {
     modules = modules.concat([
+      { pattern: "test/core/testdata/*.js", type: "module" },
       { pattern: "test/core/*.js", type: "module" },
       { pattern: "test/streams/*.js", type: "module" },
       { pattern: "test/session/testdata/*.js", type: "module" },
