@@ -43,7 +43,7 @@ describe("Text - interop serialization", () => {
 
   it("should deserialize", () => {
     const d = new Decoder();
-    const v = d.decodeValue({ "types.S16": "boo" });
+    const v = d.decodeValue({ "changes/types.S16": "boo" });
 
     expect(v).to.deep.equal(new Text("boo"));
   });

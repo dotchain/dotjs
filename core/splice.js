@@ -6,6 +6,7 @@
 
 import { Encoder } from "./encode.js";
 import { Replace } from "./replace.js";
+import { PathChange } from "./path_change.js";
 
 // Splice represents replacing a sub-sequence in a collection
 export class Splice {
@@ -32,6 +33,10 @@ export class Splice {
       return [right, left];
     }
 
+    if (other instanceof PathChange) {
+      return this._mergePath(other, true);
+    }
+
     throw "Splice.reverseMerge: unexpected change";
   }
 
@@ -48,8 +53,43 @@ export class Splice {
       return this._mergeSplice(other);
     }
 
+    if (other instanceof PathChange) {
+      return this._mergePath(other, false);
+    }
     const [left, right] = other.reverseMerge(this);
     return [right, left];
+  }
+
+  _mergePath(o, reverse) {
+    if (o.path == null || o.path.length === 0) {
+      if (reverse) {
+        return this._reverseMerge(o.change);
+      }
+      return this._merge(o.change);
+    }
+
+    const newPath = this.mapPath(o.path);
+    if (newPath == null) {
+      const p = [o.path[0] - this.offset].concat(o.path.slice(1));
+      const before = this.before.apply(new PathChange(p, o.change));
+      return [null, new Splice(this.offset, before, this.after)];
+    }
+    return [new PathChange(newPath, o.change), this];
+  }
+
+  mapPath(path) {
+    const idx = path[0];
+    if (idx < this.offset) {
+      return path;
+    }
+
+    if (idx >= this.offset + this.before.length) {
+      const idx2 = idx + this.after.length - this.before.length;
+      return [idx2].concat(path.slice(1));
+    }
+
+    // path obliterated
+    return null;
   }
 
   _mergeSplice(o) {

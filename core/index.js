@@ -16,6 +16,7 @@ import { Null } from "./null.js";
 import { Atomic } from "./atomic.js";
 import { Map } from "./map.js";
 import { Text } from "./text.js";
+import { List } from "./list.js";
 
 //
 // The type registrations are done here because of
@@ -32,6 +33,7 @@ Decoder.registerValueClass(Null);
 Decoder.registerValueClass(Atomic);
 Decoder.registerValueClass(Map);
 Decoder.registerValueClass(Text);
+Decoder.registerValueClass(List);
 
 export {
   Encoder,
@@ -43,5 +45,6 @@ export {
   Null,
   Atomic,
   Map,
-  Text
+  Text,
+  List
 };

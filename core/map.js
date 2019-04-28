@@ -20,9 +20,6 @@ export function applyMap(obj, c) {
   }
 
   if (c instanceof Replace) {
-    if (c.isDelete()) {
-      return new Null();
-    }
     return c.after;
   }
 

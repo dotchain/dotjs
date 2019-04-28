@@ -44,7 +44,7 @@ export class Text {
   }
 
   static typeName() {
-    return "types.S16";
+    return "changes/types.S16";
   }
 
   static fromJSON(decoder, json) {
