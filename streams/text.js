@@ -22,7 +22,7 @@ export class TextStream extends ValueStream {
 
   replace(value) {
     if (typeof value != "string") {
-      throw "replacement must be a string";
+      throw new Error("replacement must be a string");
     }
     return super.append(new Replace(new Text(this.value), new Text(value)));
   }
@@ -48,6 +48,6 @@ export class TextStream extends ValueStream {
     if (val instanceof Text) {
       return this.create(val.text, stream);
     }
-    throw new "unexpected value type: "() + val.constructor.name;
+    throw new Error("unexpected value type: " + val.constructor.name);
   }
 }

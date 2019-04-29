@@ -39,7 +39,7 @@ export class PathChange {
       const before = other.before.apply(this);
       return [new Replace(before, other.after), null];
     }
-    throw "unexpected PathChange.reverseMerge";
+    throw new Error("unexpected PathChange.reverseMerge");
   }
 
   merge(other) {
@@ -93,7 +93,7 @@ export class PathChange {
     if (this.path === null || this.path.length === 0) {
       return value.apply(this.change);
     }
-    throw "Unexpected use of PathChange.applyTo";
+    throw new Error("Unexpected use of PathChange.applyTo");
   }
 
   toJSON() {

@@ -27,11 +27,11 @@ export class Request {
 
   static fromJSON(decoder, json) {
     const [name, ops, version, limit, duration] = json;
-    const opx = (ops || []).map(
-      op => Operation.fromJSON[op[Operation.typeName()]]
+    const opx = (ops || []).map(op =>
+      Operation.fromJSON(decoder, op[Operation.typeName()])
     );
     if (name == "Append") {
-      return new AppendRequest(ops);
+      return new AppendRequest(opx);
     } else {
       return new GetSinceRequest(version, limit, duration);
     }

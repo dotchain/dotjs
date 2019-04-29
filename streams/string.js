@@ -14,14 +14,14 @@ export class StringStream extends ValueStream {
       value = value.value;
     }
     if (typeof value != "string") {
-      throw "value must be string";
+      throw new Error("value must be string");
     }
     super(value, stream);
   }
 
   replace(value) {
     if (typeof value != "string") {
-      throw "replacement must be a string";
+      throw new Error("replacement must be a string");
     }
     return super.append(new Replace(new Atomic(this.value), new Atomic(value)));
   }
@@ -37,6 +37,6 @@ export class StringStream extends ValueStream {
     if (val instanceof Atomic) {
       return this.create(val.value, stream);
     }
-    throw new "unexpected value type: "() + val.constructor.name;
+    throw new Error("unexpected value type: " + val.constructor.name);
   }
 }

@@ -14,8 +14,10 @@ export class Response {
   }
 
   toJSON() {
-    const err = this.err ? { "ops/nw.strError": err.toString() } : null;
-    return [Encoder.encodeArrayValue(ops), err];
+    const err = this.err
+      ? { "ops/nw.strError": this.err.toString().replace("Error: ", "") }
+      : null;
+    return [Encoder.encodeArrayValue(this.ops || []), err];
   }
 
   static typeName() {
@@ -23,7 +25,7 @@ export class Response {
   }
 
   static fromJSON(decoder, json) {
-    const err = json[1] && new Error(json[1]["ops/nw.strError"]);
+    const err = (json[1] && new Error(json[1]["ops/nw.strError"])) || null;
     const decode = op => Operation.fromJSON(decoder, op[Operation.typeName()]);
     return new Response((json[0] || []).map(decode), err);
   }
