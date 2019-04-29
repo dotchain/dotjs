@@ -107,10 +107,7 @@ describe("Splice - dataset tests", () => {
     const [before, after, [left], [right], [leftx], [rightx]] = test;
 
     it(count.toString() + ": " + left + " x " + right, () => {
-      const l = parse(before, after, left);
-      const r = parse(before, after, right);
-      const lx = parse(before, after, leftx);
-      const rx = parse(before, after, rightx);
+      const [l, r, lx, rx] = [left, right, leftx, rightx].map(parse);
 
       expect(l.merge(r).map(simplify)).to.deep.equal([lx, rx].map(simplify));
       expect(r.reverseMerge(l).map(simplify)).to.deep.equal(
@@ -135,7 +132,7 @@ describe("Splice - dataset tests", () => {
     return c;
   }
 
-  function parse(before, after, x) {
+  function parse(x) {
     if (!x) {
       return null;
     }
