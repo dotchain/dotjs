@@ -161,7 +161,7 @@ function proxyFetch(fetch) {
         body: JSON.parse(opts.body)
       };
       const res = {
-        write(body) {
+        send(body) {
           resolve({
             ok: true,
             json: () => JSON.parse(body)

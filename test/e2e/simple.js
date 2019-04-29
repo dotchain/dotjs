@@ -7,13 +7,13 @@
 /* eslint-env mocha, browser */
 
 import { expect } from "chai";
-import { Session, Conn, decode, Atomic, Map, MapStream } from "../../index.js";
+import { Session, Conn, Atomic, Map, MapStream } from "../../index.js";
 
 describe("e2e serialization", () => {
   it("write op, read op", () => {
     const time = new Date().getTime();
     const url = "http://localhost:8089/dotjs/" + time;
-    const conn = new Conn(url, fetch, new Decoder());
+    const conn = new Conn(url, fetch);
     const session = new Session().withLog(console);
     let val = new MapStream(new Map(), session.stream);
     val.set(42, new Map([["ok", new Atomic("hello")]]));
@@ -28,9 +28,3 @@ describe("e2e serialization", () => {
       });
   });
 });
-
-class Decoder {
-  decode(json) {
-    return decode(this, json);
-  }
-}
