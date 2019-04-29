@@ -39,8 +39,8 @@ export class Server {
     });
 
     this.asyncHandle(req, res).then(
-      ops => res.write(JSON.stringify(response(ops, null))),
-      err => res.write(JSON.stringify(response(null, err)))
+      ops => res.send(JSON.stringify(response(ops, null))),
+      err => res.send(JSON.stringify(response(null, err)))
     );
   }
 

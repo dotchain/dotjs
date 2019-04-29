@@ -25,8 +25,9 @@ export class Conn {
     return this._request(new AppendRequest(ops));
   }
 
-  read(version, limit) {
-    return this._request(new GetSinceRequest(version, limit, this._duration));
+  read(version, limit, duration) {
+    duration = duration || this._duration;
+    return this._request(new GetSinceRequest(version, limit, duration));
   }
 
   static async _request(url, fetch, req) {

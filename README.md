@@ -23,7 +23,7 @@ The roadmap:
 7. ~Implement string JS types.~
 8. ~Implement session with local transformations.~
 9. ~Implement server handler (no storage yet though)~
-10. Implement in-memory backend and wire e2e tests to it: **In Progress**
+10. ~Implement in-memory backend and wire e2e tests to it.~
 11. Add custom struct and collection type factories.
 12. Build actual TODO-MVC example.
 13. Implement e2e tests for interop: js vs golang (front-end vs backend and vice versa).
@@ -55,9 +55,8 @@ npm install git://github.com/dotchain/dotjs
 * Browser tests using Karma: `yarn karma` or `npm run karma`
     * This uses karma and headless chrome
 * Browser-based end-to-end tests:
-    * Requires golang for running servers (at this point).
-    * Run a server via `go run test/e2e/server.go`
     * Run `yarn e2e` or `npm run e2e`
+    * This runs a js server (via test/e2e/server.js)
 
 ## Demo
 

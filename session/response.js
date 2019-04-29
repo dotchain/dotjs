@@ -14,9 +14,12 @@ export class Response {
   }
 
   toJSON() {
-    const err = this.err
-      ? { "ops/nw.strError": this.err.toString().replace("Error: ", "") }
-      : null;
+    let err = null;
+    if (this.err) {
+      const s = this.err.toString().replace("Error: ", "");
+      err = { "ops/nw.strError": s };
+    }
+
     return [Encoder.encodeArrayValue(this.ops || []), err];
   }
 

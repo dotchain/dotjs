@@ -31,16 +31,17 @@ module.exports = function(config) {
     { pattern: "session/**/*.js", type: "module" }
   ];
 
+  modules = modules.concat([
+    { pattern: "test/core/testdata/*.js", type: "module" },
+    { pattern: "test/core/*.js", type: "module" },
+    { pattern: "test/streams/*.js", type: "module" },
+    { pattern: "test/session/testdata/*.js", type: "module" },
+    { pattern: "test/session/*.js", type: "module" }
+  ]);
+
   if (config.e2e) {
+    require("esm")(module)("./test/e2e/server.js");
     modules.push({ pattern: "test/e2e/*.js", type: "module" });
-  } else {
-    modules = modules.concat([
-      { pattern: "test/core/testdata/*.js", type: "module" },
-      { pattern: "test/core/*.js", type: "module" },
-      { pattern: "test/streams/*.js", type: "module" },
-      { pattern: "test/session/testdata/*.js", type: "module" },
-      { pattern: "test/session/*.js", type: "module" }
-    ]);
   }
 
   config.set({
@@ -63,7 +64,7 @@ module.exports = function(config) {
     ],
 
     // list of files / patterns to exclude
-    exclude: [],
+    exclude: config.e2e ? ["test/e2e/server.js"] : [],
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
