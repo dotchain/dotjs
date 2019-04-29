@@ -15,7 +15,9 @@ export class MapStream extends ValueStream {
       map = new Map(pairs);
     }
     if (!(map instanceof Map)) {
-      throw "MapStream requires array of key/value pairs or dotjs.Map";
+      throw new Error(
+        "MapStream requires array of key/value pairs or dotjs.Map"
+      );
     }
 
     super(map, stream);

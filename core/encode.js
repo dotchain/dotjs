@@ -29,7 +29,12 @@ export class Encoder {
         return { string: value };
     }
 
-    throw "cannot encode unknown type: " + value;
+    throw new Error(
+      "cannot encode unknown type: " +
+        value.constructor.name +
+        "\n" +
+        new Error().stack
+    );
   }
 
   static encodeBoolValue(b) {

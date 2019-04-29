@@ -12,6 +12,13 @@ import { Response } from "./response.js";
 export class Conn {
   constructor(url, fetch) {
     this._request = Conn._request.bind(null, url, fetch);
+    this._limit = 1000;
+    this._duration = 30 * 1000 * 1000 * 1000;
+  }
+
+  withPollMilliseconds(ms) {
+    this._duration = ms * 1000 * 1000;
+    return this;
   }
 
   write(ops) {
@@ -19,8 +26,7 @@ export class Conn {
   }
 
   read(version, limit) {
-    const duration = 30 * 1000 * 1000 * 1000;
-    return this._request(new GetSinceRequest(version, 1000, duration));
+    return this._request(new GetSinceRequest(version, limit, this._duration));
   }
 
   static async _request(url, fetch, req) {
@@ -29,10 +35,14 @@ export class Conn {
 
     const res = await fetch(url, { method: "POST", body, headers });
     if (!res.ok) {
-      return Promise.reject(res.status + " " + res.statusText);
+      return Promise.reject(new Error(res.status + " " + res.statusText));
     }
     const json = await res.json();
     const r = Response.fromJSON(new Decoder(), json[Response.typeName()]);
-    return r.err || (r.ops && r.ops.length && r.ops) || null;
+    if (r.err) {
+      return Promise.reject(r.err);
+    }
+
+    return (r.ops && r.ops.length && r.ops) || null;
   }
 }

@@ -46,6 +46,7 @@
   },
   "homepage": "https://github.com/dotchain/dotjs#readme",
   "devDependencies": {
+    "body-parser": "^1.19.0",
     "chai": "^4.2.0",
     "codecov": "^3.3.0",
     "eslint": "^5.16.0",

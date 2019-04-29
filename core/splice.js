@@ -37,7 +37,7 @@ export class Splice {
       return this._mergePath(other, true);
     }
 
-    throw "Splice.reverseMerge: unexpected change";
+    throw new Error("Splice.reverseMerge: unexpected change");
   }
 
   merge(other) {
