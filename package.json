@@ -19,8 +19,9 @@
   },
   "nyc": {
     "include": [
-      "core/**/*.js",
-      "streams/**/*.js"
+      "core/*.js",
+      "streams/*.js",
+      "session/*.js"
     ],
     "sourceMap": false,
     "instrument": true
