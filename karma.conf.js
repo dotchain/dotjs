@@ -28,16 +28,14 @@ module.exports = function(config) {
     { pattern: "index.js", type: "module" },
     { pattern: "core/**/*.js", type: "module" },
     { pattern: "streams/**/*.js", type: "module" },
-    { pattern: "session/**/*.js", type: "module" }
-  ];
-
-  modules = modules.concat([
+    { pattern: "session/**/*.js", type: "module" },
+    { pattern: "types/**/*.js", type: "module" },
     { pattern: "test/core/testdata/*.js", type: "module" },
     { pattern: "test/core/*.js", type: "module" },
     { pattern: "test/streams/*.js", type: "module" },
     { pattern: "test/session/testdata/*.js", type: "module" },
     { pattern: "test/session/*.js", type: "module" }
-  ]);
+  ];
 
   if (config.e2e) {
     require("esm")(module)("./test/e2e/server.js");
