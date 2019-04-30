@@ -47,4 +47,12 @@ describe("StructStream", () => {
     t.replace("hello world");
     expect(s.latest().value.str).to.deep.equal("hello world");
   });
+
+  it("should provide field updates", () => {
+    const s = new TaskStream(new Task(5, "hello"));
+    const t = s.setStr("hello world");
+    expect(t.value.str).to.equal("hello world");
+
+    expect(s.latest().value.str).to.deep.equal("hello world");
+  });
 });
