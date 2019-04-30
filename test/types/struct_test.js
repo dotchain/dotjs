@@ -8,37 +8,7 @@ import { expect } from "chai";
 
 import { Decoder, Replace, Atomic, PathChange } from "../../index.js";
 
-import {
-  StructDef,
-  StructBase,
-  Bool,
-  Int,
-  String,
-  AnyType
-} from "../../types/index.js";
-
-let taskDef = null;
-class Task extends StructBase {
-  constructor(done, str, mint, any) {
-    super();
-    this.done = done;
-    this.str = str;
-    this.mutableInt = mint;
-    this.any = any || null;
-  }
-
-  static structDef() {
-    return taskDef;
-  }
-}
-
-taskDef = new StructDef("task", Task)
-  .withField("done", "Done", Bool)
-  .withField("str", "String", String)
-  .withField("mutableInt", "MutableInt", Int)
-  .withField("any", "Any", AnyType);
-
-Decoder.registerValueClass(Task);
+import { Task } from "./defs.js";
 
 describe("StructDef", () => {
   it("should ignore empty changes", () => {
