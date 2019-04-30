@@ -5,3 +5,4 @@
 "use strict";
 
 export * from "./struct.js";
+export * from "./list.js";
