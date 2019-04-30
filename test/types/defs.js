@@ -14,7 +14,8 @@ import {
   Int,
   Bool,
   String,
-  AnyType
+  AnyType,
+  makeStreamClass
 } from "../../types/index.js";
 
 let taskDef = null;
@@ -32,11 +33,19 @@ export class Task extends StructBase {
   static structDef() {
     return taskDef;
   }
+
+  static get Stream() {
+    return TaskStream;
+  }
 }
 
 export class Tasks extends ListBase {
   static listDef() {
     return tasksDef;
+  }
+
+  static get Stream() {
+    return TasksStream;
   }
 }
 
@@ -50,3 +59,6 @@ tasksDef = new ListDef("tasks", Tasks, Task);
 
 Decoder.registerValueClass(Task);
 Decoder.registerValueClass(Tasks);
+
+export const TaskStream = makeStreamClass(Task);
+export const TasksStream = makeStreamClass(Tasks);
