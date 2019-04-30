@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { Splice } from "../core/index.js";
+import { Replace, Splice } from "../core/index.js";
 import { Stream, Substream, ValueStream } from "../streams/index.js";
 
 import { ListBase, ListDef } from "./list.js";
@@ -32,6 +32,9 @@ export function makeStreamClass(baseClass) {
     t.prototype.splice = function(idx, removeCount, ...replacements) {
       const before = this.value.slice(idx, idx + removeCount);
       const after = this.value.constructor.from(replacements);
+
+      // this should be super.append but can't do that because
+      // this is mucking around with prototypes :(
       return this.append(new Splice(idx, before, after));
     };
 
@@ -56,6 +59,19 @@ export function makeStreamClass(baseClass) {
         const ctor =
           optCtor || (field._ctor && field._ctor.Stream) || ValueStream;
         return new ctor(field.get(this.value), sub);
+      };
+
+      const first = field._propName.charAt(0).toUpperCase();
+      const setter = "set" + first + field._propName.slice(1);
+      t.prototype[setter] = function(val) {
+        const after = baseClass
+          .structDef()
+          ._replaceField(this.value, field._fieldName, val);
+        const c = new Replace(this.value, after);
+
+        // this should be super.append  but can't do that
+        // because this is mucking around with prototypes
+        return this.append(c);
       };
     }
   }

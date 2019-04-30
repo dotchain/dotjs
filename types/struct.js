@@ -69,6 +69,18 @@ export class StructDef {
     return new this._ctor(...fields);
   }
 
+  _replaceField(obj, fieldName, value) {
+    const fields = [];
+    for (let field of this._fields) {
+      if (field.is(fieldName)) {
+        fields.push(value);
+      } else {
+        fields.push(field.get(obj));
+      }
+    }
+    return new this._ctor(...fields);
+  }
+
   toJSON(obj) {
     const result = [];
     for (let field of this._fields) {
@@ -101,20 +113,28 @@ class Field {
     return obj[this._propName];
   }
 
-  apply(obj, c) {
-    if (c instanceof PathChange && (c.path === null || c.path.length === 0)) {
-      c = c.change;
-    }
-
-    const prop = obj[this._propName];
+  wrapValue(val) {
     if (this._ctor === null || this._ctor.prototype.apply) {
-      return prop.apply(c);
+      return val;
     }
 
-    const nil = prop === undefined || prop === null;
-    const v = nil ? new Null() : new Atomic(prop);
-    const applied = v.apply(c);
-    return applied instanceof Atomic ? applied.value : null;
+    const nil = val === undefined || val === null;
+    return nil ? new Null() : new Atomic(val);
+  }
+
+  unwrapValue(val) {
+    if (this._ctor === null || this._ctor.prototype.apply) {
+      return val;
+    }
+
+    if (val instanceof Atomic) {
+      return val.value;
+    }
+    return null;
+  }
+
+  apply(obj, c) {
+    return this.unwrapValue(this.wrapValue(obj[this._propName]).apply(c));
   }
 
   toJSON(obj) {
