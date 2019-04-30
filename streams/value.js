@@ -4,12 +4,19 @@
 
 "use strict";
 
+import { Replace } from "../core/index.js";
 import { Stream } from "./stream.js";
 
 export class ValueStream {
   constructor(value, stream) {
     this.value = value;
     this.stream = stream || new Stream();
+  }
+
+  replace(v) {
+    const before = this.constructor.toValue(this.value);
+    const after = this.constructor.toValue(v);
+    return this.append(new Replace(before, after));
   }
 
   append(c) {

@@ -57,8 +57,8 @@ export class ListDef {
     }
 
     if (c instanceof Splice) {
-      const left = this.slice(0, c.offset);
-      const right = this.slice(c.offset + c.before.length);
+      const left = obj.slice(0, c.offset);
+      const right = obj.slice(c.offset + c.before.length);
       return left.concat(c.after).concat(right);
     }
 

@@ -6,3 +6,4 @@
 
 export * from "./struct.js";
 export * from "./list.js";
+export * from "./stream.js";
