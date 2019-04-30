@@ -14,7 +14,7 @@ import { ImmutableMap } from "./immutable.js";
 
 // applyMap implements apply() for map-like objects which have
 // get and set methods
-export function applyMap(obj, c) {
+function applyMap(obj, c) {
   if (c == null) {
     return obj;
   }
