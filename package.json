@@ -21,7 +21,8 @@
     "include": [
       "core/*.js",
       "streams/*.js",
-      "session/*.js"
+      "session/*.js",
+      "types/*.js"
     ],
     "sourceMap": false,
     "instrument": true
