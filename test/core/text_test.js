@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Text, Atomic, Replace, Splice, Decoder } from "../../index.js";
+import { Text, Atomic, Replace, Splice, Move, Decoder } from "../../index.js";
 
 describe("Text", () => {
   it("should ignore empty changes", () => {
@@ -29,10 +29,16 @@ describe("Text", () => {
     expect(new Text("hello").length).to.equal(5);
   });
 
-  it("should support splice", () => {
+  it("should support splice()", () => {
     const t = new Text("hello");
     const splice = new Splice(2, t.slice(2, 4), new Text("LL"));
     expect(t.apply(splice)).to.deep.equal(new Text("heLLo"));
+  });
+
+  it("should support move()", () => {
+    const t = new Text("fargo");
+    const move = new Move(3, 2, -3);
+    expect(t.apply(move)).to.deep.equal(new Text("gofar"));
   });
 });
 

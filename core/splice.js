@@ -37,7 +37,8 @@ export class Splice {
       return this._mergePath(other, true);
     }
 
-    throw new Error("Splice.reverseMerge: unexpected change");
+    const [self, otherx] = other.reverseMerge(this);
+    return [otherx, self];
   }
 
   merge(other) {
@@ -63,9 +64,9 @@ export class Splice {
   _mergePath(o, reverse) {
     if (o.path == null || o.path.length === 0) {
       if (reverse) {
-        return this._reverseMerge(o.change);
+        return this.reverseMerge(o.change);
       }
-      return this._merge(o.change);
+      return this.merge(o.change);
     }
 
     const newPath = this.mapPath(o.path);

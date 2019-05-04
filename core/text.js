@@ -6,6 +6,7 @@
 
 import { Replace } from "./replace.js";
 import { Splice } from "./splice.js";
+import { Move } from "./move.js";
 
 // Text represents a JS-friend text (using UTF16 encoding)
 export class Text {
@@ -34,6 +35,19 @@ export class Text {
       const left = this.text.slice(0, c.offset);
       const right = this.text.slice(c.offset + c.before.length);
       return new Text(left + c.after.text + right);
+    }
+
+    if (c instanceof Move) {
+      let { offset: o, distance: d, count: cx } = c;
+      if (d < 0) {
+        [o, cx, d] = [o + d, -d, cx];
+      }
+
+      const s1 = this.text.slice(0, o);
+      const s2 = this.text.slice(o, o + cx);
+      const s3 = this.text.slice(o + cx, o + cx + d);
+      const s4 = this.text.slice(o + cx + d);
+      return new Text(s1 + s3 + s2 + s4);
     }
 
     return c.applyTo(this);

@@ -11,6 +11,7 @@ import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { Changes } from "./changes.js";
 import { Splice } from "./splice.js";
+import { Move } from "./move.js";
 
 import { Null } from "./null.js";
 import { Atomic } from "./atomic.js";
@@ -28,6 +29,7 @@ Decoder.registerChangeClass(Replace);
 Decoder.registerChangeClass(PathChange);
 Decoder.registerChangeClass(Changes);
 Decoder.registerChangeClass(Splice);
+Decoder.registerChangeClass(Move);
 
 Decoder.registerValueClass(Null);
 Decoder.registerValueClass(Atomic);
@@ -42,6 +44,7 @@ export {
   PathChange,
   Changes,
   Splice,
+  Move,
   Null,
   Atomic,
   Map,
