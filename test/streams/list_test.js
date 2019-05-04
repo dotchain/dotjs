@@ -42,6 +42,18 @@ describe("ListStream", () => {
     expect(m0.latest().value).to.deep.equal(new List([one]));
   });
 
+  it("should move", () => {
+    const m0 = new ListStream([zero, one, two, three, four]);
+    const m1 = m0.move(1, 2, 1);
+
+    expect(m0.value).to.deep.equal(new List([zero, one, two, three, four]));
+    expect(m1.value).to.deep.equal(new List([zero, three, one, two, four]));
+
+    expect(m0.latest().value).to.deep.equal(
+      new List([zero, three, one, two, four])
+    );
+  });
+
   it("should push", () => {
     const m0 = new ListStream([zero]);
     const m1 = m0.push(one);

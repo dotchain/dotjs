@@ -10,6 +10,7 @@ import {
   List,
   Replace,
   Splice,
+  Move,
   Text,
   PathChange,
   Decoder
@@ -41,6 +42,13 @@ describe("List", () => {
     const after = new List([new Text("hello"), new Text("world")]);
     const splice = new Splice(1, new List(), new List([new Text("world")]));
     expect(before.apply(splice)).to.deep.equal(after);
+  });
+
+  it("should apply move", () => {
+    const before = new List([1, 2, 3, 4, 5].map(n => new Text(n.toString())));
+    const after = new List([2, 3, 4, 1, 5].map(n => new Text(n.toString())));
+    const move = new Move(1, 3, -1);
+    expect(before.apply(move)).to.deep.equal(after);
   });
 
   it("should apply PathChange", () => {
