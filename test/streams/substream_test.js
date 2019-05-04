@@ -105,16 +105,16 @@ describe("Substream", () => {
   it("should append -- parent move", () => {
     let parent = new Stream();
     let s0 = new Substream(parent, path);
-    const c = new Move(100, 2, -99)
+    const c = new Move(100, 2, -99);
     parent = parent.append(new PathChange(path.slice(0, 1), c));
 
     const replace = new Replace(new Text("before"), new Text("after"));
     s0.next.version.append(replace);
-    expect(parent.next.change)
-      .to.deep.equal(new PathChange(["boo", 5, "hoo"], replace));
+    expect(parent.next.change).to.deep.equal(
+      new PathChange(["boo", 5, "hoo"], replace)
+    );
   });
-  
-  
+
   it("should implement push, pull, undo and redo", () => {
     const parent = new Stream();
     const s = new Substream(parent, path);
