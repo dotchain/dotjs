@@ -8,8 +8,19 @@ import { Encoder } from "./encode.js";
 
 // Changes represents a collection of changes
 export class Changes {
-  constructor(changes) {
-    this._all = changes || [];
+  constructor(...changes) {
+    this._all = [];
+    for (let cx of changes) {
+      if (cx instanceof Changes) {
+        cx = cx._all;
+      }
+      if (!Array.isArray(cx)) {
+        cx = [cx];
+      }
+      for (let c of cx) {
+        this._all.push(c);
+      }
+    }
   }
 
   revert() {

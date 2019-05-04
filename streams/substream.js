@@ -55,7 +55,7 @@ function transform(c, path) {
     return { xform: null, path, ok: false };
   }
 
-  if (c instanceof Splice) {
+  if (c instanceof Splice || c instanceof Move) {
     path = c.mapPath(path);
     return { xform: null, path, ok: path !== null };
   }
