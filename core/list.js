@@ -8,6 +8,7 @@ import { Replace } from "./replace.js";
 import { Splice } from "./splice.js";
 import { PathChange } from "./path_change.js";
 import { Encoder } from "./encode.js";
+import { Move } from "./move.js";
 
 // List represents a collection
 export class List {
@@ -19,8 +20,12 @@ export class List {
     return new List(this.entries.slice(start, end));
   }
 
-  concat(otherList) {
-    return new List(this.entries.concat(otherList.entries));
+  concat(...args) {
+    const entries = [];
+    for (let arg of args) {
+      entries.push(arg.entries);
+    }
+    return new List(this.entries.concat(...entries));
   }
 
   get length() {
@@ -76,7 +81,19 @@ export function applyList(obj, c) {
   if (c instanceof Splice) {
     const left = obj.slice(0, c.offset);
     const right = obj.slice(c.offset + c.before.length);
-    return left.concat(c.after).concat(right);
+    return left.concat(c.after, right);
+  }
+
+  if (c instanceof Move) {
+    let { offset: off, count, distance: dist } = c;
+    if (dist < 0) {
+      [off, count, dist] = [off + dist, -dist, count];
+    }
+    const l1 = obj.slice(0, off);
+    const l2 = obj.slice(off, off + count);
+    const l3 = obj.slice(off + count, off + count + dist);
+    const l4 = obj.slice(off + count + dist);
+    return l1.concat(l3, l2, l4);
   }
 
   return c.applyTo(obj);

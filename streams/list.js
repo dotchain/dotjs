@@ -6,7 +6,14 @@
 
 import { Substream } from "./substream.js";
 import { ValueStream } from "./value.js";
-import { Splice, List, PathChange, Replace, Null } from "../core/index.js";
+import {
+  Splice,
+  List,
+  PathChange,
+  Replace,
+  Null,
+  Move
+} from "../core/index.js";
 
 export class ListStream extends ValueStream {
   constructor(value, stream) {
@@ -52,6 +59,10 @@ export class ListStream extends ValueStream {
     }
 
     return super.append(new Splice(offset, before, replacement));
+  }
+
+  move(offset, count, distance) {
+    return super.append(new Move(offset, count, distance));
   }
 
   push(item) {
