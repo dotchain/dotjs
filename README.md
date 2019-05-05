@@ -25,14 +25,17 @@ The roadmap:
 9. ~Implement server handler (no storage yet though)~
 10. ~Implement in-memory backend and wire e2e tests to it.~
 11. ~Add custom struct and collection type factories.~
-12. Build actual TODO-MVC example. ** In Progress **
-13. Implement e2e tests for interop: js vs golang (front-end vs backend and vice versa).
-14. Add Move mutation type.
+12. ~Add Move mutation type.~
+13. Build actual TODO-MVC example. ** In Progress **
+14. Implement e2e tests for interop: js vs golang (front-end vs backend and vice versa).
 15. Add refs.
 
-## Convergent streams
+## Documentation
 
-[Convergent streams in Dot.js](convergent.md)
+A tutorial is in the works.  Meanwhile:
+
+1. [jsdoc documentation for core types](core.md)
+2. [Convergent streams in Dot.js](convergent.md)
 
 ## Installation
 

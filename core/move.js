@@ -9,15 +9,20 @@ import { PathChange } from "./path_change.js";
 import { Splice } from "./splice.js";
 import { Changes } from "./changes.js";
 
-// Move represents shifting a sub-sequence over to a different spot
-//
-// The offset and count identify the subsequence.  The distance refers
-// to the point where the subsequence is moved to. A positive distance
-// refers to how many elements to skip over to the right: 1 indicates
-// the sub-sequence is shifted over to the right jumping over one.
-//
-// Negaative distance implies a shift to the left.
+/**
+ * Move represents shifting a sub-sequence over to a different spot.
+ * It can be used with strings or array-like values.
+ */
 export class Move {
+  /**
+   * Example: new Move(1, 2, -1) represents removing the slice
+   * value.slice(1, 3) and re-inserting it at index 0.
+   *
+   * @param {Number} offset - index of first element to shift.
+   * @param {Number} count - number of elements to shift.
+   * @param {Number} distance - how many elements to skip over.
+   *
+   */
   constructor(offset, count, distance) {
     const isNumber = x => typeof x === "number";
     if (!isNumber(offset) || !isNumber(count) || !isNumber(distance)) {
@@ -28,6 +33,7 @@ export class Move {
     this.distance = distance;
   }
 
+  /** @returns {Move} - the inverse of the move */
   revert() {
     return new Move(this.offset + this.distance, this.count, -this.distance);
   }
@@ -53,6 +59,15 @@ export class Move {
     return [right, left];
   }
 
+  /**
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
   merge(c) {
     if (!c) {
       return [null, this];

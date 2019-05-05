@@ -8,8 +8,16 @@ import { Encoder } from "./encode.js";
 import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 
-// Splice represents replacing a sub-sequence in a collection
+/**
+ * Splice represents the change to replace a sub-sequence with another.
+ * It can be used with strings or array-like values.
+ */
 export class Splice {
+  /**
+   * @param {Number} offset -- where the sub-sequence starts.
+   * @param {Value} before -- the subsequnce as it was before.
+   * @param {Value} value - the subsequence as it is after.
+   */
   constructor(offset, before, after) {
     this.offset = offset;
     this.before = before;

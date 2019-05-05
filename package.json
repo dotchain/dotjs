@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "build": "jsdoc core/*.js",
+    "build": "jsdoc2md core/*.js > core.md",
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "lint": "eslint --env mocha --env es6 core/ test/",
     "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
@@ -55,6 +55,7 @@
     "eslint": "^5.16.0",
     "esm": "^3.2.22",
     "express": "^4.16.4",
+    "jsdoc-to-markdown": "^4.0.1",
     "karma": "^4.1.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.2.0",

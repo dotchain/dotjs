@@ -6,8 +6,13 @@
 
 import { Replace } from "./replace.js";
 
-// Null represents an empty value
+/** Null represents an empty value */
 export class Null {
+  /**
+   * Apply any change immutably.
+   * @param {Change} c -- any change; can be null.
+   * @returns {Value}
+   */
   apply(c) {
     if (!c) {
       return this;

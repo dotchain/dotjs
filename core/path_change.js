@@ -7,8 +7,16 @@
 import { Encoder } from "./encode.js";
 import { Replace } from "./replace.js";
 
-// PathChange represents a change at a specific path
+/** PathChange represents an embedded value changing at the specified path. */
 export class PathChange {
+  /**
+   * The path is a sequence of index or key name to refer to the embeded value.
+   *
+   * Example: root.rows[3] will have path ["rows", 3].
+   *
+   * @param {Any[]} path - path to inner value.
+   * @param {Change} change - any change applied to inner value at path.
+   */
   constructor(path, change) {
     if (path == undefined) {
       path = null;
@@ -21,6 +29,7 @@ export class PathChange {
     this.change = change;
   }
 
+  /** @returns {Change} - the inverse of this change */
   revert() {
     if (this.change == null) {
       return null;
@@ -42,6 +51,15 @@ export class PathChange {
     throw new Error("unexpected PathChange.reverseMerge");
   }
 
+  /**
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
   merge(other) {
     if (other == null) {
       return [null, this];
