@@ -6,8 +6,9 @@
 
 import { Encoder } from "./encode.js";
 
-// Changes represents a collection of changes
+/** Implements a collection of change values */
 export class Changes {
+  /** @param {...Change|Change[]} changes - sequentially combine changes */
   constructor(...changes) {
     this._all = [];
     for (let cx of changes) {
@@ -23,6 +24,7 @@ export class Changes {
     }
   }
 
+  /** @returns {Changes} - the inverse of the collection */
   revert() {
     let result = [];
     for (let kk = this._all.length - 1; kk >= 0; kk--) {
@@ -34,6 +36,15 @@ export class Changes {
     return Changes.create(result);
   }
 
+  /**
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
   merge(other) {
     if (other == null) {
       return [null, this];

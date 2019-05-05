@@ -4,7 +4,7 @@
 
 "use strict";
 
-// encoder serializes values, changes and types for network transmission
+// Encoder serializes values, changes and types for network transmission
 export class Encoder {
   static encode(value) {
     if (value === undefined || value === null) {

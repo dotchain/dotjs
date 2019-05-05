@@ -9,8 +9,15 @@ import { Decoder } from "./decode.js";
 
 import { Replace } from "./replace.js";
 
-// Atomic represents an atomic value type
+/**
+ * Implements DOTJS value semantics for atomic values.
+ *
+ * An atomic value can only be replaced as a whole.
+ */
 export class Atomic {
+  /**
+   * @param {Any} value - the value being wrapped.
+   */
   constructor(value) {
     if (value === undefined) {
       this.value = null;
@@ -19,6 +26,11 @@ export class Atomic {
     }
   }
 
+  /**
+   * Apply any change immutably.
+   * @param {Change} c -- any change; can be null.
+   * @returns {Value}
+   */
   apply(c) {
     if (!c) {
       return this;

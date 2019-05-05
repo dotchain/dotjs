@@ -7,6 +7,7 @@
 const valueTypes = {};
 const changeTypes = {};
 
+// Decoder implments network serialization and deserialization
 export class Decoder {
   decode(value) {
     if (value === undefined || value === null) {

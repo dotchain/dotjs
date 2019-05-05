@@ -8,7 +8,9 @@ import { Replace } from "./replace.js";
 import { Splice } from "./splice.js";
 import { Move } from "./move.js";
 
-// Text represents a JS-friend text (using UTF16 encoding)
+/**
+ * Text represents a string value that supports Splice/Move etc.
+ */
 export class Text {
   constructor(text) {
     this.text = text || "";
@@ -22,6 +24,11 @@ export class Text {
     return this.text.length;
   }
 
+  /**
+   * Apply any change immutably.
+   * @param {Change} c -- any change; can be null.
+   * @returns {Value}
+   */
   apply(c) {
     if (!c) {
       return this;

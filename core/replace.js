@@ -7,8 +7,14 @@
 import { Encoder } from "./encode.js";
 import { Null } from "./null.js";
 
-// Replace represents a change of one value to another
+/** Replace represents a change one value to another **/
 export class Replace {
+  /**
+   * before and after must be valid Value types (that implement apply()).
+   *
+   * @param {Value} before - the value as it was before.
+   * @param {Value} after - the value as it is after.
+   */
   constructor(before, after) {
     this.before = before;
     this.after = after;
@@ -22,10 +28,20 @@ export class Replace {
     return this.before instanceof Null;
   }
 
+  /** @returns {Replace} - the inverse of the replace */
   revert() {
     return new Replace(this.after, this.before);
   }
 
+  /**
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
   merge(other) {
     if (other == null) {
       return [null, this];
