@@ -9,6 +9,22 @@ export class Stream {
     this.next = null;
   }
 
+  push() {
+    return this;
+  }
+
+  pull() {
+    return this;
+  }
+
+  undo() {
+    return this;
+  }
+
+  redo() {
+    return this;
+  }
+
   append(c) {
     return this._appendChange(c, false);
   }

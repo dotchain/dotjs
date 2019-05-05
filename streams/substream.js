@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { PathChange, Changes, Replace, Splice } from "../core/index.js";
+import { PathChange, Changes, Replace, Move, Splice } from "../core/index.js";
 
 const sentinel = {};
 export class Substream {
@@ -34,6 +34,26 @@ export class Substream {
     this._next = getNext(this);
     return this._next;
   }
+
+  push() {
+    this.parent.push();
+    return this;
+  }
+
+  pull() {
+    this.parent.pull();
+    return this;
+  }
+
+  undo() {
+    this.parent.undo();
+    return this;
+  }
+
+  redo() {
+    this.parent.redo();
+    return this;
+  }
 }
 
 function getNext(s) {
@@ -47,7 +67,7 @@ function getNext(s) {
 }
 
 function transform(c, path) {
-  if (c === null) {
+  if (c === null || path.length === 0) {
     return { xform: c, path, ok: true };
   }
 
@@ -75,6 +95,8 @@ function transform(c, path) {
       const xform = PathChange.create(c.path.slice(len), c.change);
       return { xform, path, ok: true };
     }
+
+    return { xform: null, path, ok: true };
   }
 
   if (c instanceof Changes) {
