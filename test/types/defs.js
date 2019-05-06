@@ -13,7 +13,7 @@ import {
   ListBase,
   Int,
   Bool,
-  String,
+  Text,
   AnyType,
   makeStreamClass
 } from "../../types/index.js";
@@ -51,7 +51,7 @@ export class Tasks extends ListBase {
 
 taskDef = new StructDef("task", Task)
   .withField("done", "Done", Bool)
-  .withField("str", "String", String)
+  .withField("str", "String", Text)
   .withField("mutableInt", "MutableInt", Int)
   .withField("any", "Any", AnyType);
 

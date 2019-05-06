@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { StringStream, MapStream, Map, Atomic } from "../../index.js";
+import { Text, TextStream, MapStream, Map, Atomic } from "../../index.js";
 
 describe("MapStream", () => {
   const zero = new Atomic("world");
@@ -69,13 +69,13 @@ describe("MapStream", () => {
 
 describe("MapStream.substream", () => {
   it("should track sub-stream changes", () => {
-    const m0 = new MapStream([["boo", new Atomic("hoo")]]);
+    const m0 = new MapStream([["boo", new Text("hoo")]]);
 
-    const child0 = m0.substream("boo", StringStream);
+    const child0 = m0.substream("boo", TextStream);
     child0.replace("wonderboo");
 
     expect(m0.latest().value).to.deep.equal(
-      new Map([["boo", new Atomic("wonderboo")]])
+      new Map([["boo", new Text("wonderboo")]])
     );
   });
 });

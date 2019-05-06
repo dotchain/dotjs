@@ -220,7 +220,7 @@ export class Text extends CoreText {
   }
 
   static fromJSON(decoder, json) {
-    return Text.fromJSON(decoder, json).text;
+    return CoreText.fromJSON(decoder, json).text;
   }
 
   static unwrap(v) {

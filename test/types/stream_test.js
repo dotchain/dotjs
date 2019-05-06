@@ -6,7 +6,6 @@
 
 import { expect } from "chai";
 
-import { StringStream } from "../../index.js";
 import { Task, Tasks, TaskStream, TasksStream } from "./defs.js";
 
 describe("ListStream", () => {
@@ -41,7 +40,7 @@ describe("ListStream", () => {
 describe("StructStream", () => {
   it("should provide substream access", () => {
     const s = new TaskStream(new Task(5, "hello"));
-    const t = s.str(StringStream);
+    const t = s.str();
     expect(t.value).to.equal(s.value.str);
 
     t.replace("hello world");
