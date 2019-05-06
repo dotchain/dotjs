@@ -8,7 +8,7 @@ import { expect } from "chai";
 import fetch from "node-fetch";
 
 import { startServer } from "./server.js";
-import { Session, Conn, TextStream, Operation } from "dotjs";
+import { Session, Conn, TextStream, Operation, Transformer } from "dotjs";
 
 it("client example", () => {
   // this is only needed on nodejs.  on browsers, Operation
@@ -19,7 +19,7 @@ it("client example", () => {
   const url = "http://localhost:8077/dotjs/something";
 
   // start a session
-  const conn = new Conn(url, fetch);
+  const conn = new Transformer(new Conn(url, fetch));
   const session = new Session().withLog(console);
 
   // connect that session to a text stream

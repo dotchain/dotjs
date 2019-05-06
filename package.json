@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "build": "jsdoc2md core/*.js > core.md && jsdoc2md streams/*.js  > streams.md",
+    "build": "jsdoc2md core/*.js > core.md && jsdoc2md streams/*.js  > streams.md && jsdoc2md session/*.js > session.md && jsdoc2md types/*.js > types.md",
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "lint": "eslint --env mocha --env es6 core/ test/",
     "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",

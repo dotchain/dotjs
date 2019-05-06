@@ -10,6 +10,21 @@ import { Stream, Substream, ValueStream } from "../streams/index.js";
 import { ListBase, ListDef } from "./list.js";
 import { StructBase, StructDef } from "./struct.js";
 
+/* makeStreamClass creates a stream class on top of the base class
+ * @param {StructBase|ListBase} baseClass
+ *
+ * The returned class has the standard stream constructor:
+ * `constructor(value, stream)` where value is an instance of the
+ * provided `baseClass`.
+ *
+ * list streams implement: `item(index)` to fetch the element stream.
+ * Methods splice, push, pop and move are also available on the stream.
+ *
+ * struct streams implement `<field>()` to fetch the substream for
+ * each field in the struct. A setter is also available for each field.
+ * The replace method replaces the whole value.
+ *
+ */
 export function makeStreamClass(baseClass) {
   const name = baseClass.name + "Stream";
   const v = {

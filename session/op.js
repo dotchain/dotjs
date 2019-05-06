@@ -12,7 +12,15 @@ if (typeof crypto !== "undefined") {
   getRandomValues = b => crypto.getRandomValues(b);
 }
 
+/** Operation is the change and metadata needed for network transmission */
 export class Operation {
+  /**
+   * @param {string} [id] - the id is typically auto-generated.
+   * @param {string} [parentId] - the id of the previous unacknowledged local op.
+   * @param {int} [version] - the zero-based index is updated by the server.
+   * @param {int} basis -- the version of the last applied acknowledged op.
+   * @param {Change} changes -- the actual change being sent to the server.
+   */
   constructor(id, parentId, version, basis, changes) {
     this.id = id || Operation.newId();
     this.parentId = parentId;
@@ -49,6 +57,11 @@ export class Operation {
     return Array.prototype.map.call(bytes, toHex).join("");
   }
 
+  /*
+   * useCrypto should be used to provide the polyfill for crypto
+   * @param [Object] crypto - the crypto module
+   * @param [function] cyrpto.randomFillSync -- this is only function used here
+   */
   static useCrypto(crypto) {
     getRandomValues = crypto.randomFillSync;
   }

@@ -8,6 +8,7 @@ import { Conn } from "./conn.js";
 import { Stream } from "../streams/index.js";
 import { Operation } from "./op.js";
 
+/** Session syncs a local stream with an network connection */
 export class Session {
   constructor() {
     this._version = -1;
@@ -24,16 +25,29 @@ export class Session {
     this._log = { error() {} };
   }
 
+  /** configure logger for reporting errors.
+   * @param {Object} log - only log.error(...) is used.
+   * @returns {Session}
+   */
   withLog(log) {
     this._log = log || { error() {} };
     return this;
   }
 
+  /** configure time function
+   * @param {Function} now - use () => (new Date).getTime()
+   * @returns {Session}
+   */
   withNow(now) {
     this._now = now;
     return this;
   }
 
+  /** configure state for restarting a session
+   * @param {Operation[]} pending - the last value of session.pending
+   * @param {int} version - the last value of version
+   * @returns {Session}
+   */
   withPending(pending, version) {
     this._unsent = pending || [];
     this._unacked = this._unsent.slice(0);
@@ -58,6 +72,12 @@ export class Session {
     return this._stream;
   }
 
+  /** pull fetches server side ops and applies them to the stream
+   *
+   * if a call is in progress, returns the last promise.
+   * @param {Conn|Transformer} conn -- the connection to use
+   * @return {Promise}
+   */
   pull(conn) {
     // apply server side changes
     for (let op of this._unmerged) {
@@ -90,6 +110,12 @@ export class Session {
       }));
   }
 
+  /** push takes all local changes and sends them upstream
+   *
+   * if a call is in progress, returns the last promise.
+   * @param {Conn|Transformer} conn -- the connection to use
+   * @return {Promise}
+   */
   push(conn) {
     // push client side changes
     let s = this._stream;
