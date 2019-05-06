@@ -51,7 +51,7 @@ export class TextStream extends ValueStream {
     }
 
     const before = this.value.slice(offset, offset + removeCount);
-    return super.append(new Splice(offset, before, new Text(r)));
+    return super.append(new Splice(offset, new Text(before), new Text(r)));
   }
 
   static toValue(val) {

@@ -67,7 +67,7 @@ for code).
     let s1 = s.splice(s.value.length, 0, " world!");
     
     // in parallel, modify: "hello" => "Hello"
-    // s2 below will not be affected directly s1
+    // s2 below will not be affected directly by s1
     let s2 = s.splice(0, 1, "H");
 
     // converge! get the latest value of both s1 & s2
@@ -80,17 +80,17 @@ for code).
 ```
 ### Streams
 
-Streams provide a simple abstraction to represent a value that change
+Streams provide a simple abstraction to represent a value that changes
 in time. Instances of the stream have a `value` field (that holds the
 immutable value at that point) and a `next` field (which tracks the
 next **version** and associated **change**).
 
-Each mutation on a single stream instance act like an immutable
+Each mutation on a single stream instance acts like an immutable
 update, yielding the result of that particular change but not
 factoring in the other changes made on that instance. But streams
 `converge`: all the separate instances have their `next` field updated
 such that chasing the versions (through **next**) is guaranteed to
-result in the same value for all instances.  The example above
+end with the same value for all instances.  The example above
 illustrates this (by using the *conveninence function* **latest()**).
 
 ### Value streams and change streams
@@ -98,7 +98,7 @@ illustrates this (by using the *conveninence function* **latest()**).
 The example above used a `TextStream` which has the `value` and `next`
 fields. A change stream only has the `next` field and is used to track
 only changes without accumulating any values.  Value streams are
-typically implemented on top of the change stream by take the next
+typically implemented on top of the change stream by taking the next
 change from the change stream and applying it to values.  The change
 stream supports features like branching, undo etc and every value
 stream in **dotjs** exposes the underlying change stream via the
@@ -107,8 +107,7 @@ stream in **dotjs** exposes the underlying change stream via the
 ### Branching
 
 Streams support git-like branching with push/pull support. See
-[code](https://github.com/dotchain/dotjs/blob/master/examples/simple/branch_test.js)
-for running code.
+[code](https://github.com/dotchain/dotjs/blob/master/examples/simple/branch_test.js).
 
 ```js
   // create a parent raw stream + branch
@@ -143,6 +142,29 @@ for running code.
   expect(sParent.value).to.equal("Hello world!");
 ```
 
+### Undo support
+
+DotJS includes built-in support for undos and redos (see [code](https://github.com/dotchain/dotjs/blob/master/examples/simple/undo_test.js))
+
+```js
+  // create an undoable text stream
+  let text = new TextStream("hello", undoable(new Stream()));
+
+  // "hello" => "hello world"
+  text = text.splice(5, 0, " world");
+  expect(text.value).to.equal("hello world");
+
+  // undo!
+  text.stream.undo();
+  text = text.latest();
+  expect(text.value).to.equal("hello");
+
+  // redo!
+  text.stream.redo();
+  text = text.latest();
+  expect(text.value).to.equal("hello world")
+```
+
 ### Rich types
 
 Custom rich types can be defined with ability to treat individual
@@ -150,7 +172,7 @@ fields themselves as substreams (such that mutating the field
 effectively updates the parent structure).  The example definition
 is
 [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_struct.js)
-with the code below being how to use classes defined like that:
+with the code below showing how to use classes defined like that:
 
 ```js
   // create a task stream (which is defined in custom_struct.js)
@@ -171,9 +193,9 @@ with the code below being how to use classes defined like that:
 The running code for the above is
 [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_test.js).
 
-The example above uses map-like objects ("structs") but can also be
-done with collection-like values. The following illustrates how to
-work with collection streams (running code [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_test.js)):
+The example above uses map-like objects ("structs") and dotjs also 
+support collection-like values. The following illustrates how to
+work with collection streams (see code [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_test.js)):
 
 ```js
   // create a couple of tasks (which is defined in custom_struct.js)
@@ -188,7 +210,7 @@ work with collection streams (running code [here](https://github.com/dotchain/do
   // get the description of the second task as a TextStream
   let description = tasks.item(1).description();
 
-  // splice an task at index 0; this should change index of
+  // splice a task at index 0; this should change index of
   // description to 2.
   tasks = tasks.splice(0, 0, new Task(true, "Completed"));
   description = description.latest();

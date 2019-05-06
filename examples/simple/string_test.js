@@ -15,6 +15,7 @@ it("string example", () => {
   let s1 = s.splice(s.value.length, 0, " world!");
 
   // in parallel, "hello" => "Hello"
+  // s2 below will not be affected directly by s1
   let s2 = s.splice(0, 1, "H");
 
   // converge!
