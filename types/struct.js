@@ -4,7 +4,16 @@
 
 "use strict";
 
-import { Atomic, Null, Encoder, Replace, PathChange } from "../core/index.js";
+import {
+  Atomic,
+  Null,
+  Encoder,
+  Replace,
+  PathChange,
+  Text as CoreText,
+  TextStream,
+  ValueStream
+} from "../index.js";
 
 // StructBase can be used to simplify creating structs
 export class StructBase {
@@ -114,6 +123,10 @@ class Field {
   }
 
   wrapValue(val) {
+    if (this._ctor && this._ctor.wrap) {
+      return this._ctor.wrap(val);
+    }
+
     if (this._ctor === null || this._ctor.prototype.apply) {
       return val;
     }
@@ -123,6 +136,10 @@ class Field {
   }
 
   unwrapValue(val) {
+    if (this._ctor && this._ctor.unwrap) {
+      return this._ctor.unwrap(val);
+    }
+
     if (this._ctor === null || this._ctor.prototype.apply) {
       return val;
     }
@@ -165,11 +182,25 @@ class Field {
 export const Bool = nativeType("bool", "Bool");
 export const Int = nativeType("int", "Int");
 export const String = nativeType("string", "String");
+export class Text extends CoreText {
+  static wrap(v) {
+    return new Text(v);
+  }
+
+  static unwrap(v) {
+    return v.text;
+  }
+
+  static get Stream() {
+    return TextStream;
+  }
+}
+
 export const Date = nativeType("time.Time", "Time");
 export const Float = nativeType("float64", "Float");
 export const AnyType = null;
 
-function nativeType(typeName, displayName) {
+function nativeType(typeName, displayName, streamClass) {
   let toJSON = v => v;
   let fromJSON = (decoder, json) => decoder.decode({ [typeName]: json });
 
@@ -205,6 +236,9 @@ function nativeType(typeName, displayName) {
     }
     static fromJSON(decoder, json) {
       return fromJSON(decoder, json);
+    }
+    static get Stream() {
+      return streamClass || ValueStream;
     }
   };
 
