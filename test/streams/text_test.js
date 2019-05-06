@@ -24,6 +24,14 @@ describe("Text", () => {
     expect(s0.latest().value).to.equal("heyo");
   });
 
+  it("should move", () => {
+    const s0 = new TextStream("ridelow");
+    const s1 = s0.move(4, 3, -4);
+    expect(s1.value).to.equal("lowride");
+    expect(s0.value).to.equal("ridelow");
+    expect(s0.latest().value).to.equal("lowride");
+  });
+
   it("should converge", () => {
     const s0 = new TextStream("hello");
     const s1 = s0.replace("world");

@@ -10,6 +10,7 @@ import {
   Encoder,
   Replace,
   Splice,
+  Move,
   PathChange
 } from "../core/index.js";
 
@@ -72,6 +73,18 @@ export class ListDef {
       const left = obj.slice(0, c.offset);
       const right = obj.slice(c.offset + c.before.length);
       return left.concat(c.after).concat(right);
+    }
+
+    if (c instanceof Move) {
+      let { offset: ox, count: cx, distance: dx } = c;
+      if (dx < 0) {
+        [ox, cx, dx] = [ox + dx, -dx, cx];
+      }
+      const x1 = obj.slice(0, ox);
+      const x2 = obj.slice(ox, ox + cx);
+      const x3 = obj.slice(ox + cx, ox + cx + dx);
+      const x4 = obj.slice(ox + cx + dx, obj.length - ox - cx - dx);
+      return x1.concat(x3, x2, x4);
     }
 
     return c.applyTo(obj);
