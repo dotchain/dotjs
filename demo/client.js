@@ -6,15 +6,15 @@
 
 import crypto from "crypto";
 import fetch from "node-fetch";
-import { Session, Conn, decode, StringStream, Operation } from "..";
+import { Session, Conn, decode, TextStream, Operation } from "../index.js";
 
 function main() {
   Operation.useCrypto(crypto);
 
   const url = "http://localhost:8089/dotjs/";
-  const conn = new Conn(url, fetch, new Decoder());
+  const conn = new Conn(url, fetch);
   const session = new Session().withLog(console);
-  let val = new StringStream("", session.stream);
+  let val = new TextStream("", session.stream);
   const ping = function() {
     session
       .push(conn)
@@ -28,12 +28,6 @@ function main() {
   };
 
   ping();
-}
-
-class Decoder {
-  decode(json) {
-    return decode(this, json);
-  }
 }
 
 main();
