@@ -18,6 +18,38 @@ describe("ListStream", () => {
     expect(s.latest().value[0]).to.deep.equal(new Task(2));
   });
 
+  it("should remap substream index", () => {
+    let s = new TasksStream(
+      new Tasks(new Task(false, "1"), new Task(false, "2"))
+    );
+    let t = s.item(1);
+
+    s = s.splice(0, 1);
+    t = t.latest();
+
+    expect(t.value.str).to.equal("2");
+    t.replace(new Task(false, "3"));
+    expect(s.latest().value).to.deep.equal(new Tasks(new Task(false, "3")));
+  });
+
+  it("should splice", () => {
+    const s = new TasksStream(new Tasks(new Task(false, "2")));
+
+    s.splice(0, 1, new Task(false, "1"));
+    expect(s.latest().value).to.deep.equal(new Tasks(new Task(false, "1")));
+  });
+
+  it("should move", () => {
+    const s = new TasksStream(
+      new Tasks(new Task(false, "1"), new Task(false, "2"))
+    );
+
+    s.move(1, 1, -1);
+    expect(s.latest().value).to.deep.equal(
+      new Tasks(new Task(false, "2"), new Task(false, "1"))
+    );
+  });
+
   it("should push", () => {
     const s = new TasksStream(new Tasks(new Task()));
     const t = s.item(0);

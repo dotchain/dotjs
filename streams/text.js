@@ -6,7 +6,7 @@
 
 import { Stream } from "./stream.js";
 import { ValueStream } from "./value.js";
-import { Replace, Splice, Text } from "../core/index.js";
+import { Replace, Splice, Move, Text } from "../core/index.js";
 
 /* TextStream represents a mutable text value stream */
 export class TextStream extends ValueStream {
@@ -52,6 +52,17 @@ export class TextStream extends ValueStream {
 
     const before = this.value.slice(offset, offset + removeCount);
     return super.append(new Splice(offset, new Text(before), new Text(r)));
+  }
+
+  /*
+   * move the sub sequence offset, count over by distance.
+   * @param {int} offset - start of substring.
+   * @param {int} count - number of code points in substring.
+   * @param {int} distance - the distance to shift text by.
+   * @returns {TextStream}
+   */
+  move(offset, count, distance) {
+    return super.append(new Move(offset, count, distance));
   }
 
   static toValue(val) {

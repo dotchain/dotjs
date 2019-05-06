@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { Replace, Splice } from "../core/index.js";
+import { Replace, Splice, Move } from "../core/index.js";
 import { Stream, Substream, ValueStream } from "../streams/index.js";
 
 import { ListBase, ListDef } from "./list.js";
@@ -51,6 +51,12 @@ export function makeStreamClass(baseClass) {
       // this should be super.append but can't do that because
       // this is mucking around with prototypes :(
       return this.append(new Splice(idx, before, after));
+    };
+
+    t.prototype.move = function(offset, count, distance) {
+      // this should be super.append but can't do that because
+      // this is mucking around with prototypes :(
+      return this.append(new Move(offset, count, distance));
     };
 
     t.prototype.push = function(val) {
