@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/dotchain/dotjs.svg?branch=master)](https://travis-ci.com/dotchain/dotjs)
 [![codecov](https://codecov.io/gh/dotchain/dotjs/branch/master/graph/badge.svg)](https://codecov.io/gh/dotchain/dotjs)
 
-Distributed synchronization using Operations Trannsformations
+The dotjs project provides high-level APIs for distributed synchronization of rich data.
 
 ## Contents
 1. [Status](#status)
@@ -13,10 +13,11 @@ Distributed synchronization using Operations Trannsformations
     3. [Value streams and change streams](#value-streams-and-change-streams)
     4. [Branching](#branching)
     5. [Rich types](#rich-types)
-    6. [Custom change types](#custom-change-types)
-    7. [Network connection](#network-connection)
-    8. [Network backend](#network-backend)
-    9. [Golang and Javascript interop](#golang-and-javascript-interop)
+    6. [Network connection](#network-connection)
+    7. [Network backend](#network-backend)
+    8. [Changes and Values](#changes-and-values)
+    9. [Streams](#streams)
+    10. [Golang and Javascript interop](#golang-and-javascript-interop)
 3. [Reference Documentation](#reference-documentation)
 4. [Installation](#installation)
 5. [Tests](#tests)
@@ -51,7 +52,7 @@ The roadmap:
 
 The simplest way to use dotjs is using the streams API.  Here is an
 example using strings (see
-[simple_test.js](https://github.com/dotchain/dotjs/blob/master/examples/simple/string__test.js)
+[string_test.js](https://github.com/dotchain/dotjs/blob/master/examples/simple/string_test.js)
 for code).
 
 ### String example
@@ -76,8 +77,6 @@ for code).
     // ensure they are both "merged"
     expect(s1.value).to.equal("Hello world!");
     expect(s2.value).to.equal("Hello world!");  
-  });
-});
 ```
 ### Streams
 
@@ -172,45 +171,52 @@ with the code below being how to use classes defined like that:
 The running code for the above is
 [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_test.js).
 
-Richer types can also be collections.  See
-[here](https://github.com/dotchain/dotjs/blob/master/test/types/defs.js)
-for list definitions.
-
-### Custom change types
-
-DotJS comes with the ability to replace a value, splice an array or
-string (i.e. delete a sub-sequence and replace that sub-sequence with
-another) as well as shift a sub-sequence (in arrays or strings) to the
-right or left. These are represented by the **Replace**, **Splice**
-and **Move** classes
-([here](https://github.com/dotchain/dotjs/tree/master/core)).
-
-In addition, these types can be composed to form richer mutation
-types. For instance when the `description` field  was replaced, it was
-represented by a change at path `["description"]` using
-**PathChange**:
+The example above uses map-like objects ("structs") but can also be
+done with collection-like values. The following illustrates how to
+work with collection streams (running code [here](https://github.com/dotchain/dotjs/blob/master/examples/simple/custom_test.js)):
 
 ```js
-    new PathChange(["description"], new Replace(before, after)
+  // create a couple of tasks (which is defined in custom_struct.js)
+  let tasksValue = new Tasks(
+    new Task(false, "Incomplete 1"),
+    new Task(false, "incomplete 2")
+  );
+
+  // create a tasks stream out of that
+  let tasks = new TasksStream(tasksValue);
+
+  // get the description of the second task as a TextStream
+  let description = tasks.item(1).description();
+
+  // splice an task at index 0; this should change index of
+  // description to 2.
+  tasks = tasks.splice(0, 0, new Task(true, "Completed"));
+  description = description.latest();
+
+  // now update description: "incomplete 2" => "Incomplete 2"
+  description = description.splice(0, 1, "I");
+
+  // now confirm latest tasks matches at index 2
+  expect(tasks.latest().value[2].description)
+    .to.equal("Incomplete 2");
 ```
 
-Another way to combine mutations is by having a collection of changes
-using **Changes**.
+The example above illustrates some interesting traits:
 
-These types are low-level and rarely directly used. For instance, the
-TextStream class directly exposes the `splice()` method.  And
-replacing sub-streams automatically causes the correct `PathChange`
-to be used.
+1. Collection streams expose array methods like **splice**, **push**,
+**pop**.  In addition, sub-streams of individual entries can be
+created using **item(idx)** calls.
 
-Occasionally though, custom mutation types will be needed and it is
-possible to define them.  There isn't an example for this yet but
-hopefully, I'll add one soon.
+2. Item streams maintain their index appropriately when the collection
+is edited.  In the example above, the parent edit inserted a task
+before the item index but when the edit of the description field
+happened, it landed on the same item it used to refer to.
 
 ### Network connection
 
 The network client API simply provides a change stream that can then
 be connected to the app state with bulk of the code simply not even
-being aware of teh network synchronization:
+being aware of the network synchronization:
 
 ```js
   // start a session
@@ -260,6 +266,49 @@ which can be extended to various db solutions.  At this point, the
 only existing DB solutions are via the [golang
 backends](https://github.com/dotchain/dot#server) but more native JS
 options will happen soon.
+
+### Changes and Values
+
+The low-level implementation of dotjs uses the concept of changes and
+values.  A change is an immutable data representing a specific
+mutation of a value.  DotJS defines three core changes (*Replace*,
+*Splice* and *Move*) and a couple of **composition** changes to build
+richer changes using the other three as building blocks:
+
+* *PathChange* takes a *path* (such as `["description"]` for the
+descrpition field and `[5, "description"]` for the description field
+of the 5th element) and a change to apply at that path.
+
+* *Changes* takes a collection of changes to apply in sequence,
+
+All changes in dotjs implement the *merge()* method to figure out how
+two changes to the same value can be transformed (using operations
+transformation).
+
+Values in dotjs implement the `apply(change)` method to apply any of
+these changes immutably.  The standard values are `Null` (because
+`null` itself is not a valid value as it does not have the apply
+method), `Text` (to represent an editable text) and `Atomic` (to
+represent a value that is treated as an atomic single value without
+edits).  There are also generic list and map types but these are meant
+to be used rarely if at all with the custom list and struct types (as
+illustrated in examples above) preferred.
+
+These changes and value types are documented ([here](core.md)).
+
+These types are low-level and rarely directly used. For instance, the
+TextStream class directly exposes the `splice()` method.  And
+replacing sub-streams automatically causes the correct `PathChange`
+to be used.
+
+Occasionally though, custom mutation types will be needed and it is
+possible to define them.  There isn't an example for this yet but
+hopefully, I'll add one soon.
+
+### Streams
+
+The [streams](streams.md) component implements a set of useful
+primitives for working direclty on streams.
 
 ### Golang and Javascript interop
 

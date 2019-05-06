@@ -6,6 +6,15 @@
 
 import { Stream } from "./stream";
 
+/**
+ * branch creates a branched stream.  Updates to the returned branched
+ * stream or the parent stream are not automatically carried over to
+ * each other.  Instead, returned branch stream implements push() and
+ * pull() to do this on demand.
+ *
+ * @param {Stream} s - parent stream
+ * @returns {Stream}
+ */
 export function branch(s) {
   const child = new Stream();
   return new Branch({ parent: s, child }, child);

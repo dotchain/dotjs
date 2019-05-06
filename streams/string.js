@@ -8,7 +8,15 @@ import { Stream } from "./stream.js";
 import { ValueStream } from "./value.js";
 import { Replace, Atomic } from "../core/index.js";
 
+/* StringStream defines an atomic string value stream.
+ *
+ * For the most part, applications should use TextStream instead.
+ */
 export class StringStream extends ValueStream {
+  /**
+   * @param {string} value - initial string value
+   * @param {Stream] [stream] - the change stream
+   */
   constructor(value, stream) {
     if (value instanceof Atomic) {
       value = value.value;

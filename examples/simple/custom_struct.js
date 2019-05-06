@@ -9,6 +9,8 @@ import { Decoder } from "dotjs";
 import {
   StructDef,
   StructBase,
+  ListDef,
+  ListBase,
   Bool,
   Text,
   makeStreamClass
@@ -16,7 +18,7 @@ import {
 
 let taskDef = null;
 
-// define a task type with boolean done and string description
+// Task has a boolean done field and text description
 export class Task extends StructBase {
   constructor(done, description) {
     super();
@@ -41,8 +43,28 @@ taskDef = new StructDef("task", Task)
   .withField("done", "Done", Bool)
   .withField("description", "Description", Text);
 
-// register actual type with decoder (only needed if used across the network)
+// register type with decoder (only needed if used across the network)
 Decoder.registerValueClass(Task);
 
 // create a task stream automatically.
 export const TaskStream = makeStreamClass(Task);
+
+let tasksDef = null;
+
+// Tasks is just a collection of Task
+export class Tasks extends ListBase {
+  static listDef() {
+    return tasksDef;
+  }
+
+  static get Stream() {
+    return TasksStream;
+  }
+}
+
+tasksDef = new ListDef("tasks", Tasks, Task);
+
+// register type with decoder (only needed if used across the network)
+Decoder.registerValueClass(Tasks);
+
+export const TasksStream = makeStreamClass(Tasks);
