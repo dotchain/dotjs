@@ -8,6 +8,11 @@ import { Substream } from "./substream.js";
 import { ValueStream } from "./value.js";
 import { Replace, Map, PathChange, Null } from "../core/index.js";
 
+/* MapStream implements a generic map stream.
+ *
+ * This is present for completeness with the preferred
+ * approach being custom structs.
+ */
 export class MapStream extends ValueStream {
   constructor(pairs, stream) {
     let map = pairs;

@@ -7,6 +7,11 @@
 import { PathChange, Changes, Replace, Move, Splice } from "../core/index.js";
 
 const sentinel = {};
+
+/* Substream refers to a field embedded within the value,
+ * such as a class member or array item. It tracks that inner value
+ * automatically carrying updates on the local streaam over to the parent
+ * stream and vice-versa. */
 export class Substream {
   constructor(parent, path) {
     this.parent = parent;

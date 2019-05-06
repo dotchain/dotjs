@@ -7,6 +7,22 @@
 import { Changes } from "../core/index.js";
 import { Stream } from "./stream";
 
+/**
+ * undoable creates an undo stream.
+ *
+ * All changes to the parent stream are tracked and calls to
+ * undo() and redo() on the returned stream correspondingly
+ * behaving like global undo/redo: i.e. they revert or reapply
+ * the corresponding changes and behave like an undo stack in
+ * an editor.
+ *
+ * This is resilient to interleaving upstream changes, appropriately
+ * transforming the local change to preserve the intent of the
+ * change.
+ *
+ * @param {Stream} s - parent stream
+ * @returns {Stream}
+ */
 export function undoable(s) {
   const info = { changes: [], s };
   return new Undo(info, s);

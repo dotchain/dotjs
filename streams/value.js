@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Ramesh Vyaghrapuri. All rights reserved.
+// Copyright (C) 2019 rameshvk. All rights reserved.
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
@@ -7,6 +7,7 @@
 import { Replace } from "../core/index.js";
 import { Stream } from "./stream.js";
 
+/* ValueStream is the generic value stream. */
 export class ValueStream {
   constructor(value, stream) {
     this.value = value;

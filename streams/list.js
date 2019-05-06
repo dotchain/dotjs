@@ -15,6 +15,11 @@ import {
   Move
 } from "../core/index.js";
 
+/* ListStream implements a generic list stream.
+ *
+ * This is present for completeness with the preferred
+ * approach being custom lists.
+ */
 export class ListStream extends ValueStream {
   constructor(value, stream) {
     let l = value;

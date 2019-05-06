@@ -90,7 +90,7 @@ Implements a collection of change values
 <a name="Changes+merge"></a>
 
 ### changes.merge() ⇒ <code>Array.&lt;Change&gt;</code>
-Merge another change and return modified version of 
+Merge another change and return modified version of
 the other and current change.
 
 current + returned[0] and other + returned[1] are guaranteed
@@ -131,7 +131,7 @@ value.slice(1, 3) and re-inserting it at index 0.
 <a name="Move+merge"></a>
 
 ### move.merge() ⇒ <code>Array.&lt;Change&gt;</code>
-Merge another change and return modified version of 
+Merge another change and return modified version of
 the other and current change.
 
 current + returned[0] and other + returned[1] are guaranteed
@@ -188,7 +188,7 @@ Example: root.rows[3] will have path ["rows", 3].
 <a name="PathChange+merge"></a>
 
 ### pathChange.merge() ⇒ <code>Array.&lt;Change&gt;</code>
-Merge another change and return modified version of 
+Merge another change and return modified version of
 the other and current change.
 
 current + returned[0] and other + returned[1] are guaranteed
@@ -226,7 +226,7 @@ before and after must be valid Value types (that implement apply()).
 <a name="Replace+merge"></a>
 
 ### replace.merge() ⇒ <code>Array.&lt;Change&gt;</code>
-Merge another change and return modified version of 
+Merge another change and return modified version of
 the other and current change.
 
 current + returned[0] and other + returned[1] are guaranteed
