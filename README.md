@@ -241,8 +241,10 @@ be connected to the app state with bulk of the code simply not even
 being aware of the network synchronization:
 
 ```js
-  // start a session
-  const conn = new Conn(url, fetch);
+  // create a network connection
+  const conn = new Transformer(new Conn(url, fetch));
+
+  // create a session
   const session = new Session().withLog(console);
 
   // connect that session to a text stream
@@ -289,7 +291,14 @@ only existing DB solutions are via the [golang
 backends](https://github.com/dotchain/dot#server) but more native JS
 options will happen soon.
 
-### Changes and Values
+### Module primitives and JSDoc documentation
+
+The JSDoc for dotjs is split into a few parts:
+
+1. [Core](core.md) documents the changes and values.
+2. [Streams](streams.md) documents the primitive stream types.
+3. [Session](session.md) documents session management and networking.
+4. [Types](types.md) documents custom struct, list and stream types.
 
 The low-level implementation of dotjs uses the concept of changes and
 values.  A change is an immutable data representing a specific
@@ -316,8 +325,6 @@ edits).  There are also generic list and map types but these are meant
 to be used rarely if at all with the custom list and struct types (as
 illustrated in examples above) preferred.
 
-These changes and value types are documented ([here](core.md)).
-
 These types are low-level and rarely directly used. For instance, the
 TextStream class directly exposes the `splice()` method.  And
 replacing sub-streams automatically causes the correct `PathChange`
@@ -326,11 +333,6 @@ to be used.
 Occasionally though, custom mutation types will be needed and it is
 possible to define them.  There isn't an example for this yet but
 hopefully, I'll add one soon.
-
-### Streams
-
-The [streams](streams.md) component implements a set of useful
-primitives for working direclty on streams.
 
 ### Golang and Javascript interop
 

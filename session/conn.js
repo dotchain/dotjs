@@ -9,22 +9,42 @@ import { Operation } from "./op.js";
 import { AppendRequest, GetSinceRequest } from "./request.js";
 import { Response } from "./response.js";
 
+/**
+ * Conn creates a network connection or use with Session. See {@link Transformer}.
+ */
 export class Conn {
+  /**
+   * @param {string} url - url to post requests to
+   * @param {function} fetch - window.fetch implementation or polyfill
+   */
   constructor(url, fetch) {
     this._request = Conn._request.bind(null, url, fetch);
     this._limit = 1000;
     this._duration = 30 * 1000 * 1000 * 1000;
   }
 
+  /** withPollMilliseconds specifies poll interval to pass on to server */
   withPollMilliseconds(ms) {
     this._duration = ms * 1000 * 1000;
     return this;
   }
 
+  /**
+   * write ops using fetch
+   * @param [Operation[]] ops - ops to write
+   * @returns {Promise}
+   */
   write(ops) {
     return this._request(new AppendRequest(ops));
   }
 
+  /**
+   * read ops using fetch
+   * @param [int] version - version of op to start fetching from
+   * @param [limit] limit - max number of ops to fetch
+   * @param [duration] duration - max long poll interval to pass to server
+   * @returns {Promise}
+   */
   read(version, limit, duration) {
     duration = duration || this._duration;
     return this._request(new GetSinceRequest(version, limit, duration));

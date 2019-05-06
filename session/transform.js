@@ -9,16 +9,26 @@ import { Operation } from "./op.js";
 import { AppendRequest, GetSinceRequest } from "./request.js";
 import { Response } from "./response.js";
 
+/** Transformer wraps a {@link Conn} object, transforming all incoming ops */
 export class Transformer {
+  /**
+   * @param {Conn} conn -- the connection to wrap.
+   * @param {Object} [cache] -- an optional ops cache.
+   * @param {Object} cache.untransformed -- a map of version => raw operation.
+   * @param {Object} cache.transformed - a map of version => transformed op.
+   * @param {Object} cache.merge - a map of version to array of merge ops.
+   */
   constructor(conn, cache) {
     this._c = conn;
     this._cache = cache || { untransformed: {}, transformed: {}, merge: {} };
   }
 
+  /** write passes through to the underlying {@link Conn} */
   write(ops) {
     return this._c.write(ops);
   }
 
+  /** read is the work horse, fetching ops from {@link Conn} and transforming it as needed */
   async read(version, limit) {
     const transformed = this._cache.transformed[version];
     let ops = [];

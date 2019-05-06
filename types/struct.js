@@ -15,7 +15,7 @@ import {
   ValueStream
 } from "../index.js";
 
-// StructBase can be used to simplify creating structs
+/** StructBase is the base class for custom structs. */
 export class StructBase {
   toJSON() {
     return this.constructor.structDef().toJSON(this);
@@ -29,18 +29,36 @@ export class StructBase {
     return this.structDef().typeName;
   }
 
+  /* derived classes must override this
+   * @return {StructDef}
+   */
+  static get structDef() {}
+
   static fromJSON(decoder, json) {
     return this.structDef().fromJSON(decoder, json);
   }
 }
 
+/** StructDef defines a struct by providing its fields and constructors */
 export class StructDef {
+  /* @param {string} typeName - this is used across the network.
+   * @param {StructBase} ctor - this is typically extended from StructBase.
+   */
   constructor(typeName, ctor) {
     this.typeName = typeName;
     this._ctor = ctor;
     this._fields = [];
   }
 
+  /* specify the field characteristics
+   * @param {string} propName - name of the prop in the struct.
+   * @param {string} serializationName - name used across the network.
+   * @param {class} propCtor - the class of the prop.
+   * @returns {StructDef}
+   * for atomic properties, use one of the types constructurs such as
+   * {@link Int}, {@link Bool} or {@link Text}.
+   *
+   */
   withField(propName, serializationName, propCtor) {
     this._fields.push(new Field(propName, serializationName, propCtor));
     return this;
@@ -179,12 +197,30 @@ class Field {
   }
 }
 
+/** Bool field constructor to be used with {@link StructDef.withField} */
 export const Bool = nativeType("bool", "Bool");
+
+/** Int field constructor to be used with {@link StructDef.withField} */
 export const Int = nativeType("int", "Int");
+
+/** String field constructor to be used with {@link StructDef.withField}.
+ * See also {@link Text} */
 export const String = nativeType("string", "String");
+
+/** TExt field constructor to be used with {@link StructDef.withField}.
+ * This supports splicing the text itself rather than just replacing it.
+ */
 export class Text extends CoreText {
   static wrap(v) {
     return new Text(v);
+  }
+
+  static toJSON(v) {
+    return new Text(v).toJSON();
+  }
+
+  static fromJSON(decoder, json) {
+    return Text.fromJSON(decoder, json).text;
   }
 
   static unwrap(v) {
@@ -196,8 +232,13 @@ export class Text extends CoreText {
   }
 }
 
+/** Date field constructor to be used with {@link StructDef.withField} */
 export const Date = nativeType("time.Time", "Time");
+
+/** Float field constructor to be used with {@link StructDef.withField} */
 export const Float = nativeType("float64", "Float");
+
+/** Generic field constructor to be used with {@link StructDef.withField} */
 export const AnyType = null;
 
 function nativeType(typeName, displayName, streamClass) {

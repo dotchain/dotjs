@@ -9,7 +9,12 @@ import { Operation } from "./op.js";
 import { AppendRequest, GetSinceRequest, Request } from "./request.js";
 import { Response } from "./response.js";
 
+/** Server wraps a {@link Conn} into an express middleware */
 export class Server {
+  /**
+   * @param {Connn|Transformer} conn -- the connection to use as destination.
+   * @param {Object} bodyParser -- use require("body-parser")
+   */
   constructor(conn, bodyParser) {
     this._conn = conn;
     this._decoder = new Decoder();
@@ -19,6 +24,7 @@ export class Server {
     }
   }
 
+  /**  the expressjs entrypoint */
   handle(req, res, next) {
     if (!req.is("application/x-sjson")) {
       const ct = req.get("Content-Type");
