@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { Replace, Splice, Move } from "../core/index.js";
+import { Replace, Splice, Move, PathChange } from "../core/index.js";
 import { Stream, Substream, ValueStream } from "../streams/index.js";
 
 import { ListBase, ListDef } from "./list.js";
@@ -41,7 +41,8 @@ export function makeStreamClass(baseClass) {
     t.prototype.item = function(idx, optCtor) {
       const ctor = optCtor || (eltCtor && eltCtor.Stream) || ValueStream;
       const sub = new Substream(this.stream, [idx]);
-      return new ctor(this.value[idx], sub);
+      const streamClass = removable(ctor, baseClass);
+      return new streamClass(this.value[idx], sub);
     };
 
     t.prototype.splice = function(idx, removeCount, ...replacements) {
@@ -98,4 +99,22 @@ export function makeStreamClass(baseClass) {
   }
 
   return t;
+}
+
+function removable(itemStreamClass, listClass) {
+  return class RemovableItem extends itemStreamClass {
+    remove() {
+      const path = this.stream.path.slice(0);
+      const offset = path.pop();
+      console.log("listClass is", listClass.name, path);
+      const before = new listClass(this.value);
+      const splice = new Splice(offset, before, new listClass());
+      const c = new PathChange(path, splice);
+      this.stream.parent.append(c);
+    }
+
+    static create(value, stream) {
+      return new this(value, stream);
+    }
+  };
 }
