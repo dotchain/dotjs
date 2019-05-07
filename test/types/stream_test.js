@@ -32,6 +32,17 @@ describe("ListStream", () => {
     expect(s.latest().value).to.deep.equal(new Tasks(new Task(false, "3")));
   });
 
+  it("should remove item", () => {
+    let s = new TasksStream(
+      new Tasks(new Task(false, "1"), new Task(false, "2"))
+    );
+
+    let t = s.item(0);
+    t.remove();
+
+    expect(s.latest().value).to.deep.equal(new Tasks(new Task(false, "2")));
+  });
+
   it("should splice", () => {
     const s = new TasksStream(new Tasks(new Task(false, "2")));
 
