@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Ramesh Vyaghrapuri. All rights reserved.
+// Copyright (C) 2019 rqmeshvk. All rights reserved.
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
@@ -22,7 +22,7 @@ export class Encoder {
     value = value.valueOf();
     switch (typeof value) {
       case "boolean":
-        return { bool: Encoder.encodeBoolBalue(value) };
+        return { bool: Encoder.encodeBoolValue(value) };
       case "number":
         return Encoder.encodeNumber(value);
       case "string":
