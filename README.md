@@ -22,31 +22,14 @@ The dotjs project provides high-level APIs for distributed synchronization of ri
 3. [Installation](#installation)
 4. [Tests](#tests)
 5. [Demo](#demo)
+6. [Roadmap](#roadmap)
 
 ## Status
 
 This ES6 package is a port of the [Go implementation](https://github.com/dotchain/dot) that should fully interoperate with that version.
 
-The roadmap:
+The package is usable right now and mainly needs testing.  See [Roadmap](#Roadmaap)
 
-1. ~Port minimal dot/changes and dot/changes/types. **Done**~
-    * ~This includes encoding/decoding to match [sjson](https://github.com/dotchain/dot/tree/master/ops/sjson).~
-    * ~Only the Map type is needed initially as this can produce fairly rich types.~
-    * ~Only PathChange, ChangeSet and Replace change type are needed initially.~
-2. ~Implement streams interface. This will likely be a bit different than the golang version.~
-3. ~Implement operations but only the client-side of it.~
-4. ~Implement a browser demo against golang backend.~
-5. ~Implement array operations and basic array types.~
-6. ~Implement streams for array elements.~
-7. ~Implement string JS types.~
-8. ~Implement session with local transformations.~
-9. ~Implement server handler (no storage yet though)~
-10. ~Implement in-memory backend and wire e2e tests to it.~
-11. ~Add custom struct and collection type factories.~
-12. ~Add Move mutation type.~
-13. Build actual TODO-MVC example. ** In Progress **
-14. Implement e2e tests for interop: js vs golang (front-end vs backend and vice versa).
-15. Add refs.
 
 ## Example Walkthrough
 
@@ -395,11 +378,39 @@ npm install https://github.com/dotchain/dotjs
 
 ## Demo
 
-The demo is a silly command line app:
+A full TODO-MVC demo is available [here](https://dotchain.github.io/demos/todomvc.es6/index.html).
 
-* Start the server via `go run demo/server.go` (obviously requires golang)
-* Run the client via `node -r esm demo/client.js`
+The source for that demo is over at [dotchain/demos](https://github.com/dotchain/demos/tree/master/todomvc.es6).
 
-The client currently blocks for 30s on the first call but should print
-a message every second after that.
+The server portion of the demo is not documented yet (but it is just another version of eithere [server.go](https://github.com/dotchain/dotjs/blob/master/demo/server.go) or [server.js](https://github.com/dotchain/dotjs/blob/master/test/e2e/server.js).
+
+## Roadmap
+
+The roadmap:
+
+1. Add more tests as some key functionality is still not well covered.
+2. Build full interop suite for ES6 vs Go, Front-End vs Back-End
+3. Document how to write structs and lists so that they can interop between Go and JS.
+4. Implement Refs and native JS backends.
+5. Implement filter and other data transforms that require stateful translation of changes but help write reactive declarative code.
+
+
+Done:
+
+1. ~Port minimal dot/changes and dot/changes/types. **Done**~
+    * ~This includes encoding/decoding to match [sjson](https://github.com/dotchain/dot/tree/master/ops/sjson).~
+    * ~Only the Map type is needed initially as this can produce fairly rich types.~
+    * ~Only PathChange, ChangeSet and Replace change type are needed initially.~
+2. ~Implement streams interface. This will likely be a bit different than the golang version.~
+3. ~Implement operations but only the client-side of it.~
+4. ~Implement a browser demo against golang backend.~
+5. ~Implement array operations and basic array types.~
+6. ~Implement streams for array elements.~
+7. ~Implement string JS types.~
+8. ~Implement session with local transformations.~
+9. ~Implement server handler (no storage yet though)~
+10. ~Implement in-memory backend and wire e2e tests to it.~
+11. ~Add custom struct and collection type factories.~
+12. ~Add Move mutation type.~
+13. ~Build actual TODO-MVC example.~
 
