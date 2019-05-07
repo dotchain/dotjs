@@ -18,10 +18,10 @@ The dotjs project provides high-level APIs for distributed synchronization of ri
     8. [Network backend](#network-backend)
     9. [Module primitives and JSDoc documentation](#module-primitives-and-jsdoc-documentation)
     10. [Golang and Javascript interop](#golang-and-javascript-interop)
-3. [Reference Documentation](#reference-documentation)
-4. [Installation](#installation)
-5. [Tests](#tests)
-6. [Demo](#demo)
+    11. [Comparison to RxJS and other reactive frameworks](#comparison-to-rxjs-and-other-reactive-frameworks)
+3. [Installation](#installation)
+4. [Tests](#tests)
+5. [Demo](#demo)
 
 ## Status
 
@@ -344,10 +344,28 @@ possible.  The exact procedure here needs to be documented but the
 basic idea is to maintain a 1-1 correspondence between a golang struct
 and the corresponding StructDef.
 
-## Reference Documentation
+### Comparison to RxJS and other reactive frameworks
 
-The [core](core.md) classes implement values and changes.  The
-streams, session and types are not yet documented.
+The streams based programming might seem similar to
+(RxJS)(https://github.com/ReactiveX/rxjs) or other reactive
+frameworks.
+
+0. Streams in dotjs are **convergent** as the focus of dotjs is to
+enable simple distributed synchronization, not just reactive code.
+1. Streams in DotJS do not use the observer pattern. In particular,
+there are no methods to listen for changes. Instead, changes are
+**pulled** and **pushed** explicitly.  It is possible to implement
+notifications in the underlying Stream but notifications but the
+actual payload of notifications is dependent on the context (i.e. two
+stream instances of the same family may need to get different `next`
+values to converge) and so it gets a bit confusing when using that
+approach.
+2. Derived stream simply implement the `next` method (like how
+sub-streams do) which allows all computation to be lazy. If a derived
+stream is no longer used, it does not have to manage lifecyle and
+unregister itself.
+3. The lack of callbacks leads to a more pleasant synchronous style of
+code that is easier to read.
 
 ## Installation
 
