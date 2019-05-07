@@ -279,10 +279,20 @@ function nativeType(typeName, displayName, streamClass) {
       return fromJSON(decoder, json);
     }
     static get Stream() {
-      return streamClass || ValueStream;
+      return streamClass || AtomicStream;
     }
   };
 
   const typed = { [displayName]: t };
   return typed[displayName];
+}
+
+class AtomicStream extends ValueStream {
+  static toValue(b) {
+    return new Atomic(Boolean(b));
+  }
+
+  static create(v, stream) {
+    return new AtomicStream(v.value, stream);
+  }
 }
