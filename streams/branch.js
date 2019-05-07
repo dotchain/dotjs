@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { Stream } from "./stream";
+import { Stream } from "./stream.js";
 
 /**
  * branch creates a branched stream.  Updates to the returned branched
