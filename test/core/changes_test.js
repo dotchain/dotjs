@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Ramesh Vyaghrapuri. All rights reserved.
+// Copyright (C) 2019 rameshvk. All rights reserved.
 // Use of this source code is governed by a MIT-style license
 // that can be found in the LICENSE file.
 
@@ -24,8 +24,10 @@ describe("Changes", () => {
   it("merges with null", () => {
     let c = new Changes();
     expect(c.merge(null)).deep.equal([null, c]);
+    expect(c.reverseMerge(null)).deep.equal([null, c]);
     c = new Changes([new Replace(new Atomic(1), new Atomic(2))]);
     expect(c.merge(null)).to.deep.equal([null, c]);
+    expect(c.reverseMerge(null)).deep.equal([null, c]);
   });
 
   it("merges with replaces", () => {
@@ -45,6 +47,21 @@ describe("Changes", () => {
     ];
     expect(other.merge(c)).to.deep.equal(expected2);
     expect(c.reverseMerge(other)).to.deep.equal([expected2[1], expected2[0]]);
+  });
+
+  it("iterates", () => {
+    let c = new Changes();
+    for (let inner of c) {
+      expect(inner).to.equal({});
+    }
+    const c1 = new Replace(new Atomic(1), new Atomic(2));
+    const c2 = new Replace(new Atomic(2), new Atomic(3));
+    c = new Changes(c1, [c2]);
+    const expected = [c2, c1];
+    for (let inner of c) {
+      expect(inner).to.equal(expected.pop());
+    }
+    expect(expected).to.deep.equal([]);
   });
 });
 

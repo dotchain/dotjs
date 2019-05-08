@@ -157,7 +157,7 @@ export class PathChange {
     }
     if (change instanceof PathChange) {
       const otherPath = change.path || [];
-      return this._pc(path.concat(otherPath), change.change);
+      return this.create(path.concat(otherPath), change.change);
     }
     return new PathChange(path, change);
   }

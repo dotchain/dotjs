@@ -13,6 +13,7 @@ import {
   Move,
   Text,
   PathChange,
+  Changes,
   Decoder
 } from "../../index.js";
 
@@ -35,6 +36,10 @@ describe("List", () => {
     const before = new List();
     const repl = new Replace(before, new Text("a"));
     expect(before.apply(repl)).to.equal(repl.after);
+    let alt = new PathChange(null, repl);
+    expect(before.apply(alt)).to.equal(repl.after);
+    alt = new Changes(repl);
+    expect(before.apply(alt)).to.equal(repl.after);
   });
 
   it("should apply Splice", () => {

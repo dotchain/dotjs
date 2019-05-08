@@ -24,10 +24,6 @@ export class Move {
    *
    */
   constructor(offset, count, distance) {
-    const isNumber = x => typeof x === "number";
-    if (!isNumber(offset) || !isNumber(count) || !isNumber(distance)) {
-      throw new Error("wat");
-    }
     this.offset = offset;
     this.count = count;
     this.distance = distance;
