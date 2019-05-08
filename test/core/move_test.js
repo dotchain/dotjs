@@ -27,6 +27,7 @@ describe("Move", () => {
   it("merges with null", () => {
     const move = new Move(1, 2, 3);
     expect(move.merge(null)).to.deep.equal([null, move]);
+    expect(move.reverseMerge(null)).to.deep.equal([null, move]);
   });
 
   it("merges with replace", () => {
@@ -34,6 +35,7 @@ describe("Move", () => {
     const replace = new Replace(new Text("before"), new Text("after"));
     const expected = new Replace(replace.before.apply(move), replace.after);
     expect(move.merge(replace)).to.deep.equal([expected, null]);
+    expect(move.reverseMerge(replace)).to.deep.equal([expected, null]);
   });
 
   it("merges with pathchange", () => {
@@ -44,6 +46,7 @@ describe("Move", () => {
       const pc = new PathChange([+idx], inner);
       const expected = new PathChange([indexMap[idx]], inner);
       expect(move.merge(pc)).to.deep.equal([expected, move]);
+      expect(move.reverseMerge(pc)).to.deep.equal([expected, move]);
     }
   });
 
@@ -56,8 +59,6 @@ describe("Move", () => {
     const cs = new Changes([pc, pc]);
     expect(move.merge(cs)).to.deep.equal([cs, move]);
   });
-
-  it("merges with splice", () => {});
 });
 
 describe("Move - interop serialization", () => {

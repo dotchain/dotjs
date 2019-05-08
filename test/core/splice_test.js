@@ -27,6 +27,7 @@ describe("Splice", () => {
   it("merges with null", () => {
     const splice = new Splice(5, new Text("hello"), new Text("world"));
     expect(splice.merge(null)).to.deep.equal([null, splice]);
+    expect(splice.reverseMerge(null)).to.deep.equal([null, splice]);
   });
 
   it("merges with delete", () => {
@@ -63,6 +64,7 @@ describe("Splice", () => {
     const inner = new Replace(new Text("before"), new Text("after"));
     const pc = new PathChange([3], inner);
     expect(splice.merge(pc)).to.deep.equal([pc, splice]);
+    expect(splice.reverseMerge(pc)).to.deep.equal([pc, splice]);
   });
 
   it("merges with PathChange, > end", () => {
@@ -71,6 +73,7 @@ describe("Splice", () => {
     const pc = new PathChange([10], inner);
     const expected = new PathChange([9], inner);
     expect(splice.merge(pc)).to.deep.equal([expected, splice]);
+    expect(splice.reverseMerge(pc)).to.deep.equal([expected, splice]);
   });
 
   it("merges with PathChange, conflict", () => {
@@ -79,6 +82,7 @@ describe("Splice", () => {
     const pc = new PathChange([5], inner);
     const expected = new Splice(5, new List([new Text("hoo")]), new List());
     expect(splice.merge(pc)).to.deep.equal([null, expected]);
+    expect(splice.reverseMerge(pc)).to.deep.equal([null, expected]);
   });
 });
 

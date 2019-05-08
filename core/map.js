@@ -74,9 +74,7 @@ export class Map {
   }
 
   static fromJSON(decoder, json) {
-    if (json == null) {
-      return new Map();
-    }
+    json = json || [];
     const pairs = [];
     for (let kk = 0; kk < json.length; kk += 2) {
       pairs.push([decoder.decode(json[kk]), decoder.decodeValue(json[kk + 1])]);

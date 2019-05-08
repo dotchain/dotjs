@@ -17,15 +17,6 @@ export class ImmutableMap {
     );
   }
 
-  has(key) {
-    for (let pair of this._pairs) {
-      if (this._equal(pair[0], key)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   get(key) {
     for (let pair of this._pairs) {
       if (this._equal(pair[0], key)) {
