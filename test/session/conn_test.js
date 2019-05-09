@@ -42,7 +42,7 @@ function connTest(proxy) {
       });
     });
 
-    const conn = new Conn("some url", fetch, new Decoder());
+    const conn = new Conn("some url", fetch).withPollMilliseconds(30);
     return conn.write(getSampleOps()).then(x => {
       expect(x).to.equal(null);
       return expectGoldenFile("request-append.js", req);
@@ -75,6 +75,23 @@ function connTest(proxy) {
     const conn = new Conn("some url", fetch, new Decoder());
     return conn.write(getSampleOps()).catch(x => {
       expect(x.toString()).to.deep.equal(new Error("booya").toString());
+    });
+  });
+
+  it("should throw write network errors #2", () => {
+    const fetch = proxy(() => {
+      return Promise.resolve({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error"
+      });
+    });
+
+    const conn = new Conn("some url", fetch, new Decoder());
+    return conn.write(getSampleOps()).catch(x => {
+      expect(x.toString()).to.deep.equal(
+        new Error("500 Internal Server Error").toString()
+      );
     });
   });
 

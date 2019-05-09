@@ -55,6 +55,18 @@ describe("Splice", () => {
     expect(splice.merge(changes)).to.deep.equal([r, l]);
   });
 
+  it("merges with empty path pathchange", () => {
+    const splice = new Splice(5, new Text("hello"), new Text("world"));
+    const other = new PathChange(
+      null,
+      new Splice(5, new Text("hello"), new Text("world2"))
+    );
+    expect(splice.merge(other)).to.deep.equal(splice.merge(other.change));
+    expect(splice.reverseMerge(other)).to.deep.equal(
+      splice.reverseMerge(other.change)
+    );
+  });
+
   it("merges with PathChange, < offset", () => {
     const splice = new Splice(
       5,

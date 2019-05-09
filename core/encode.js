@@ -28,13 +28,6 @@ export class Encoder {
       case "string":
         return { string: value };
     }
-
-    throw new Error(
-      "cannot encode unknown type: " +
-        value.constructor.name +
-        "\n" +
-        new Error().stack
-    );
   }
 
   static encodeBoolValue(b) {

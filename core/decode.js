@@ -14,10 +14,6 @@ export class Decoder {
       return null;
     }
 
-    if (typeof value !== "object") {
-      return value;
-    }
-
     for (let key in value) {
       switch (key) {
         case "bool":

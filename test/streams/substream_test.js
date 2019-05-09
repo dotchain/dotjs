@@ -11,6 +11,7 @@ import {
   PathChange,
   Splice,
   Move,
+  Changes,
   List,
   Stream,
   Replace,
@@ -112,6 +113,19 @@ describe("Substream", () => {
     s0.next.version.append(replace);
     expect(parent.next.change).to.deep.equal(
       new PathChange(["boo", 5, "hoo"], replace)
+    );
+  });
+
+  it("should append -- parent multi", () => {
+    let parent = new Stream();
+    let s0 = new Substream(parent, path);
+    const c = new Changes(new Move(100, 2, -99), new Move(100, 2, -99));
+    parent = parent.append(new PathChange(path.slice(0, 1), c));
+
+    const replace = new Replace(new Text("before"), new Text("after"));
+    s0.next.version.append(replace);
+    expect(parent.next.change).to.deep.equal(
+      new PathChange(["boo", 7, "hoo"], replace)
     );
   });
 
