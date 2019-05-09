@@ -112,7 +112,9 @@ function transform(c, path) {
         return { xform, path, ok };
       }
       path = p2;
-      result.push(updated);
+      if (xform) {
+        result.push(xform);
+      }
     }
     const xform = Changes.create(result);
     return { xform, path, ok: true };

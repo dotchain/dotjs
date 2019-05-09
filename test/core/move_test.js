@@ -50,6 +50,15 @@ describe("Move", () => {
     }
   });
 
+  it("merges with empty path pathchange", () => {
+    const move = new Move(1, 2, 3);
+    const other = new PathChange(null, new Move(100, 2, 3));
+    expect(move.merge(other)).to.deep.equal(move.merge(other.change));
+    expect(move.reverseMerge(other)).to.deep.equal(
+      move.reverseMerge(other.change)
+    );
+  });
+
   it("merges with changeset", () => {
     const move = new Move(1, 2, 3);
     const pc = new PathChange(
