@@ -15,18 +15,52 @@ describe("Session with Transformer", () => {
     Operation.useCrypto(require("crypto"));
   }
 
-  for (let testName in journalData.test) {
-    it(testName, () => {
-      const { raw, transformed, merge } = parseJournal(
-        journalData.test[testName]
-      );
-      const cache = { untransformed: raw, transformed: {}, merge: {} };
-      const t = new Transformer(null, cache);
-      return t.read(0, 100).then(() => {
-        expect(cache.transformed).to.deep.equal(transformed);
-        expect(cache.merge[2]).to.deep.equal(merge[2]);
+  it("passes through writes", () => {
+    let ops = null;
+    const conn = {
+      write: o => {
+        ops = o;
+      }
+    };
+    const t = new Transformer(conn);
+    const opsToWrite = [new Operation()];
+    t.write(opsToWrite);
+    expect(ops).to.equal(opsToWrite);
+  });
+
+  const withRawCache = [" with raw cache", " without raw cache"];
+  for (let rawCache of withRawCache) {
+    const useRawCache = rawCache == withRawCache[0];
+    for (let testName in journalData.test) {
+      it(testName + rawCache, () => {
+        const { raw, transformed, merge } = parseJournal(
+          journalData.test[testName]
+        );
+        const cache = { untransformed: {}, transformed: {}, merge: {} };
+        let conn = {
+          read(version, limit) {
+            const result = [];
+            for (let kk = version; kk <= version + limit; kk++) {
+              if (raw[version + kk]) {
+                result.push(raw[version + kk]);
+              }
+            }
+            return result;
+          }
+        };
+        if (useRawCache) {
+          cache.untransformed = raw;
+          conn = null;
+        }
+
+        const t = new Transformer(conn, cache);
+        return t.read(0, 100).then(() => {
+          expect(cache.transformed).to.deep.equal(transformed);
+          expect(cache.merge[2]).to.deep.equal(merge[2]);
+          expect(cache.untransformed).to.deep.equal(raw);
+        });
       });
-    });
+    }
   }
 });
 

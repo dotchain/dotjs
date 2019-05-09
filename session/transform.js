@@ -29,7 +29,7 @@ export class Transformer {
   }
 
   /** read is the work horse, fetching ops from {@link Conn} and transforming it as needed */
-  async read(version, limit) {
+  async read(version, limit, duration) {
     const transformed = this._cache.transformed[version];
     let ops = [];
     if (transformed) {
@@ -43,7 +43,7 @@ export class Transformer {
 
     const raw = this._cache.untransformed[version];
     if (!raw) {
-      ops = await this._c.read(version, limit);
+      ops = await this._c.read(version, limit, duration);
     } else {
       for (let count = 0; count < limit; count++) {
         const op = this._cache.untransformed[version + count];
