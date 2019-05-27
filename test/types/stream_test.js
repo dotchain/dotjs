@@ -10,12 +10,26 @@ import { Task, Tasks, TaskStream, TasksStream } from "./defs.js";
 
 describe("ListStream", () => {
   it("should provide substream access", () => {
-    const s = new TasksStream(new Tasks(new Task()));
-    const t = s.item(0);
-    expect(t.value).to.equal(s.value[0]);
+    let s = new TasksStream(new Tasks(new Task(), new Task(), new Task()));
+    const t = s.item(2);
 
-    t.replace(new Task(2));
-    expect(s.latest().value[0]).to.deep.equal(new Task(2));
+    // repeatedly calling item should not give different results
+    expect(s.item(2)).to.equal(t);
+    expect(t.value).to.equal(s.value[2]);
+
+    s.item(1).replace(new Task(2));
+    s = s.latest();
+    expect(s.value[1]).to.deep.equal(new Task(2));
+
+    // remove index 1 and expect last entry to match t still.
+    s = s.splice(1, 1);
+    
+    // fetching the item again should not have changed t
+    expect(s.item(1)).to.equal(t);
+
+    // though it should have updated t's stream to latest
+    expect(t.stream.path).to.deep.equal([1]);
+    expect(t.stream.parent).to.equal(s.stream);
   });
 
   it("should remap substream index", () => {

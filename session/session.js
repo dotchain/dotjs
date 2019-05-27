@@ -13,6 +13,7 @@ export class Session {
   constructor() {
     this._version = -1;
     this._unsent = [];
+    this._merge = [];
     this._unacked = [];
     this._acked = [];
     this._unmerged = [];
@@ -45,11 +46,13 @@ export class Session {
 
   /** configure state for restarting a session
    * @param {Operation[]} pending - the last value of session.pending
+   * @param {Operation[]} merge - thee last value of session.merge
    * @param {int} version - the last value of version
    * @returns {Session}
    */
-  withPending(pending, version) {
+  withPending(pending, merge, version) {
     this._unsent = pending || [];
+    this._merge = (merge || []).slice(0);
     this._unacked = this._unsent.slice(0);
     this._version = version;
     return this;
@@ -59,6 +62,10 @@ export class Session {
     return this._unacked.slice(0);
   }
 
+  get merge() {
+    return this._merge.slice(0);
+  }
+  
   get version() {
     return this._version;
   }
@@ -83,7 +90,11 @@ export class Session {
     for (let op of this._unmerged) {
       if (this._unacked.length && this._unacked[0].id == op.id) {
         this._unacked.shift();
+        this._merge.shift();
       } else {
+        for (let kk = 0; kk < this._merge.length; kk ++) {
+          [this._merge[kk], op] = op.merge(this._merge[kk]);
+        }
         this._stream = this._stream.reverseAppend(op.changes);
       }
       this._version = op.version;
