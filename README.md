@@ -261,7 +261,7 @@ and pushing if needed.
 4. The example does not show this but sessions can be stopped and
 restarted. Once a session stops, the `session.pending` and
 `session.version` properties can be passed to a new session (via
-`(new Session()).withPending(pending, version)`) and the new session
+`(new Session()).withPending(pending, merge, version)`) and the new session
 will continue from the point things were left at.  Note that the whole
 app state would also need to be saved and used to continued.
 

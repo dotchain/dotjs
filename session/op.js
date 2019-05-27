@@ -35,6 +35,19 @@ export class Operation {
     return [id, parentId, this.version, this.basis, c];
   }
 
+  merge(otherOp) {
+    if (!this.changes) {
+      return [otherOp, this];
+    }
+
+    const [l, r] = this.changes.merge(otherOp.changes)
+    return [otherOp.withChanges(l), this.withChanges(r)];
+  }
+
+  withChanges(c) {
+    return new Operation(this.id, this.parentId, this.version, this.basis, c);
+  }
+  
   static typeName() {
     return "ops.Operation";
   }

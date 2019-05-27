@@ -124,7 +124,7 @@ Session syncs a local stream with an network connection
 * [Session](#Session)
     * [.withLog(log)](#Session+withLog) ⇒ [<code>Session</code>](#Session)
     * [.withNow(now)](#Session+withNow) ⇒ [<code>Session</code>](#Session)
-    * [.withPending(pending, version)](#Session+withPending) ⇒ [<code>Session</code>](#Session)
+    * [.withPending(pending, merge, version)](#Session+withPending) ⇒ [<code>Session</code>](#Session)
     * [.pull(conn)](#Session+pull) ⇒ <code>Promise</code>
     * [.push(conn)](#Session+push) ⇒ <code>Promise</code>
 
@@ -152,7 +152,7 @@ configure time function
 
 <a name="Session+withPending"></a>
 
-### session.withPending(pending, version) ⇒ [<code>Session</code>](#Session)
+### session.withPending(pending, merge, version) ⇒ [<code>Session</code>](#Session)
 configure state for restarting a session
 
 **Kind**: instance method of [<code>Session</code>](#Session)  
@@ -160,6 +160,7 @@ configure state for restarting a session
 | Param | Type | Description |
 | --- | --- | --- |
 | pending | [<code>Array.&lt;Operation&gt;</code>](#Operation) | the last value of session.pending |
+| merge | [<code>Array.&lt;Operation&gt;</code>](#Operation) | thee last value of session.merge |
 | version | <code>int</code> | the last value of version |
 
 <a name="Session+pull"></a>

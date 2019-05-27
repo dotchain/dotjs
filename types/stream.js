@@ -10,6 +10,16 @@ import { Stream, Substream, ValueStream } from "../streams/index.js";
 import { ListBase, ListDef } from "./list.js";
 import { StructBase, StructDef } from "./struct.js";
 
+const cache = new WeakMap();
+function memoize(key, fn) {
+  let result = cache.get(key);
+  if (!result) {
+    result = fn();
+    cache.set(key, result);
+  }
+  return result;
+}
+
 /* makeStreamClass creates a stream class on top of the base class
  * @param {StructBase|ListBase} baseClass
  *
@@ -39,10 +49,15 @@ export function makeStreamClass(baseClass) {
   if (baseClass.listDef) {
     const eltCtor = baseClass.listDef()._eltCtor;
     t.prototype.item = function(idx, optCtor) {
-      const ctor = optCtor || (eltCtor && eltCtor.Stream) || ValueStream;
-      const sub = new Substream(this.stream, [idx]);
-      const streamClass = removable(ctor, baseClass);
-      return new streamClass(this.value[idx], sub);
+      const result = memoize(this.value[idx], () => {
+        const ctor = optCtor || (eltCtor && eltCtor.Stream) || ValueStream;
+        const sub = new Substream(this.stream, [idx]);
+        const streamClass = removable(ctor, baseClass);
+        return new streamClass(this.value[idx], sub);
+      });
+
+      result.stream = updateSubstream(result.stream, this.stream, [idx]);
+      return result;
     };
 
     t.prototype.splice = function(idx, removeCount, ...replacements) {
@@ -104,13 +119,14 @@ export function makeStreamClass(baseClass) {
 function removable(itemStreamClass, listClass) {
   return class RemovableItem extends itemStreamClass {
     remove() {
-      const path = this.stream.path.slice(0);
-      const offset = path.pop();
-      console.log("listClass is", listClass.name, path);
-      const before = new listClass(this.value);
-      const splice = new Splice(offset, before, new listClass());
-      const c = new PathChange(path, splice);
-      this.stream.parent.append(c);
+      if (this.stream.path && this.stream.path.length) {
+        const path = this.stream.path.slice(0);
+        const offset = path.pop();
+        const before = new listClass(this.value);
+        const splice = new Splice(offset, before, new listClass());
+        const c = new PathChange(path, splice);
+        this.stream.parent.append(c);
+      }
     }
 
     static create(value, stream) {
@@ -118,3 +134,16 @@ function removable(itemStreamClass, listClass) {
     }
   };
 }
+
+function updateSubstream(original, parent, path) {
+  if (original.parent === parent && arePathsEqual(path || [], original.path || [])) {
+    return original;
+  }
+  return new Substream(parent, path);
+}
+
+function arePathsEqual(p1, p2) {
+  const l = PathChange.commonPrefixLen(p1, p2);
+  return l === p1.length && l === p2.length;
+}
+

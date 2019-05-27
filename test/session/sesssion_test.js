@@ -15,7 +15,7 @@ describe("Session", () => {
   }
 
   it("writes pending", () => {
-    const s = new Session().withPending(getSampleOps(), 3);
+    const s = new Session().withPending(getSampleOps(), getSampleOps(), 3);
     let written = null;
 
     const conn = {
@@ -31,7 +31,7 @@ describe("Session", () => {
   });
 
   it("writes pending and more", () => {
-    const s = new Session().withPending(getSampleOps(), 3);
+    const s = new Session().withPending(getSampleOps(), getSampleOps(), 3);
     let written = null;
     let resolve = null;
 
@@ -70,7 +70,7 @@ describe("Session", () => {
   });
 
   it("reads", () => {
-    const s = new Session().withPending(null, 3);
+    const s = new Session().withPending(null, null, 3);
     const str = s.stream.append(new Replace(new Atomic(3), new Atomic(4)));
     let written = null;
 
