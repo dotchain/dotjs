@@ -9,7 +9,7 @@ import { Decoder } from "./decode.js";
 
 import { Replace } from "./replace.js";
 
-// Num represents a generic numeric type
+/** Num represents a generic numeric type */
 export class Num {
   constructor(num) {
     const n = parseFloat(+num)

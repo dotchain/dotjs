@@ -8,12 +8,22 @@ import { Dict } from "./dict.js";
 import { Decoder } from "./decode.js";
 import { Stream } from "./stream.js";
 import { Operation } from "./op.js";
+import { Conn } from "./conn.js";
+import { Transformer } from "./transform.js";
+import { Null } from "./null.js";
 
 /** Store implements a collection of tables with ability to sync via a
  * connection */
 export class Store {
+  /**
+   * @param {Conn|Transformer|string} conn - can be url or Conn
+   * @param {Object} serialized? - output of prev serialze() call
+   */
   constructor(conn, serialized) {
     const data = serialized || {root: [], session: {version: -1}};
+    if (typeof fetch == "function" && typeof conn == "string") {
+      conn = new Transformer(new Conn(conn, fetch));
+    }
     this._conn = conn;
     this._root = Dict.fromJSON(new Decoder(), data.root);
 
@@ -40,6 +50,23 @@ export class Store {
   /** collection returns a collection by name */
   collection(name) {
     return this._root.get(name);
+  }
+
+  /** resolve returns the value at the path */
+  resolve(path) {
+    let result = this;
+    for (let key of path) {
+      if (result instanceof Null) {
+        result.stream = new Substream(result.stream, key);
+      } else if (result.get) {
+        result = result.get(key);
+      } else if (result.collection) {
+        result = result.collection(key);
+      } else {
+        return new Null();
+      }
+    }
+    return result;
   }
   
   /** @type {Object} null or {change, version} */
