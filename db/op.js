@@ -4,7 +4,8 @@
 
 "use strict";
 
-import { Encoder, Decoder } from "../core/index.js";
+import { Encoder } from "./encode.js";
+import { Decoder } from "./decode.js";
 
 let getRandomValues = null;
 

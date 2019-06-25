@@ -1,0 +1,27 @@
+// Copyright (C) 2017 rameshvk. All rights reserved.
+// Use of this source code is governed by a MIT-style license
+// that can be found in the LICENSE file.
+
+"use strict";
+
+import { Value } from "./value.js";
+
+/** Null represents an empty value */
+export class Null extends Value {
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Null();
+  }
+
+  toJSON() {
+    return null;
+  }
+
+  static typeName() {
+    return "changes.empty";
+  }
+
+  static fromJSON() {
+    return new Null();
+  }
+}

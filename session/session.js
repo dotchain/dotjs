@@ -65,7 +65,7 @@ export class Session {
   get merge() {
     return this._merge.slice(0);
   }
-  
+
   get version() {
     return this._version;
   }
@@ -92,7 +92,7 @@ export class Session {
         this._unacked.shift();
         this._merge.shift();
       } else {
-        for (let kk = 0; kk < this._merge.length; kk ++) {
+        for (let kk = 0; kk < this._merge.length; kk++) {
           [this._merge[kk], op] = op.merge(this._merge[kk]);
         }
         this._stream = this._stream.reverseAppend(op.changes);
