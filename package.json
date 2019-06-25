@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "build": "jsdoc2md core/*.js > core.md && jsdoc2md streams/*.js  > streams.md && jsdoc2md session/*.js > session.md && jsdoc2md types/*.js > types.md",
+    "build": "jsdoc2md core/*.js > core.md && jsdoc2md streams/*.js  > streams.md && jsdoc2md session/*.js > session.md && jsdoc2md types/*.js > types.md && node x/generate_dist.js",
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "lint": "eslint --env mocha --env es6 core/ test/",
     "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
@@ -22,7 +22,8 @@
       "core/*.js",
       "streams/*.js",
       "session/*.js",
-      "types/*.js"
+      "types/*.js",
+      "db/*.js"
     ],
     "sourceMap": false,
     "instrument": true

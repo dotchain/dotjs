@@ -5,15 +5,13 @@
 "use strict";
 
 import { expect } from "chai";
-import {Dict} from "./dict.js";
-import {Text} from "./text.js";
-import {Stream} from "./stream.js";
+import { Dict, Text, Stream } from "../../db/index.js";
 
 describe("Dict", () => {
   it("should converge", () => {
-    const d = new Dict({hello: new Text("world")});
+    const d = new Dict({ hello: new Text("world") });
     d.stream = new Stream();
-    
+
     const hello = d.get("hello");
     const h2 = hello.splice(5, 0, "!");
 
@@ -24,9 +22,9 @@ describe("Dict", () => {
 
   it("should converge with defaults", () => {
     // missing keys are all assumed to contain {w: "world"}
-    const d = new Dict({}, () => new Dict({w: new Text("world")}));
+    const d = new Dict({}, () => new Dict({ w: new Text("world") }));
     d.stream = new Stream();
-    
+
     const h1 = d.get("hello");
     const h2 = d.get("hello");
 

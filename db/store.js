@@ -20,7 +20,7 @@ export class Store {
    * @param {Object} serialized? - output of prev serialze() call
    */
   constructor(conn, serialized) {
-    const data = serialized || {root: [], session: {version: -1}};
+    const data = serialized || { root: [], session: { version: -1 } };
     if (typeof fetch == "function" && typeof conn == "string") {
       conn = new Transformer(new Conn(conn, fetch));
     }
@@ -43,7 +43,7 @@ export class Store {
       // not yet pushed to server
       unsent: (data.session.pending || []).slice(0),
       // have received from server but not applied to model yet
-      unmerged: [],
+      unmerged: []
     };
   }
 
@@ -68,7 +68,7 @@ export class Store {
     }
     return result;
   }
-  
+
   /** @type {Object} null or {change, version} */
   get next() {
     const n = this._root.next;
@@ -76,22 +76,23 @@ export class Store {
       return null;
     }
 
-    const store =  new Store(this._conn, null);
+    const store = new Store(this._conn, null);
     store._root = n.version;
     store._session = this._session;
-    return {change: n.change, version: store};
+    return { change: n.change, version: store };
   }
-  
+
   pull() {
     const s = this._session;
 
     // apply server operations
     for (let op of s.unmerged) {
-      if (s.pending.length && s.pending[0].id == op.id) { // ack
+      if (s.pending.length && s.pending[0].id == op.id) {
+        // ack
         s.pending.shift();
         s.merge.shift();
       } else {
-        for (let kk = 0; kk < s.meerge.length; kk ++) {
+        for (let kk = 0; kk < s.meerge.length; kk++) {
           [s.merge[kk], op] = op.merge(s.merge[kk]);
         }
         s.stream = s.stream.reverseAppend(op.changes);
@@ -101,11 +102,10 @@ export class Store {
 
     // read more operations
     if (!s.reading) {
-      s.reading = this._conn.read(s.version + 1, 1000)
-        .then(ops => {
-          s.unmerged = s.unmerged.concat(ops || []);
-          s.reading = null;
-        });
+      s.reading = this._conn.read(s.version + 1, 1000).then(ops => {
+        s.unmerged = s.unmerged.concat(ops || []);
+        s.reading = null;
+      });
     }
     return s.reading;
   }
@@ -115,7 +115,7 @@ export class Store {
 
     // collect all pending activity on the root stream
     const len = (s.pending || []).length;
-    let pid = len > 0 ? s.pending[len-1].id : null; 
+    let pid = len > 0 ? s.pending[len - 1].id : null;
     for (let next = str.next; next != null; next = next.version.next) {
       const op = new Operation(null, pid, -1, this._version, next.change);
       s.unsent.push(op);
@@ -129,21 +129,20 @@ export class Store {
       if (len(ops) == 0) {
         return Promise.resolve(null);
       }
-      
-      s.writing = this._conn.write(ops)
-        .then(() => {
-          for (let op of ops) {
-            s.unsent.shift();
-          }
-          s.writing = null;
-        });
+
+      s.writing = this._conn.write(ops).then(() => {
+        for (let op of ops) {
+          s.unsent.shift();
+        }
+        s.writing = null;
+      });
     }
     return s.writing;
   }
-  
+
   serialize() {
-    const {version, pending, merge} = this._session;
-    const session = {version, pending, merge};
-    return {root: this._root.toJSON(), session};
+    const { version, pending, merge } = this._session;
+    const session = { version, pending, merge };
+    return { root: this._root.toJSON(), session };
   }
 }

@@ -4,55 +4,17 @@
 
 "use strict";
 
-import { Replace } from "./replace.js";
+import { Value } from "./value.js";
 
 /** Null represents an empty value */
-export class Null {
-  constructor() {
-    this.stream = null;
-  }
-
-  /** 
-   * replace substitutes this with another value 
-   * @returns {Value} r - r has same stream as this
-   **/
-  replace(replacement) {
-    const change = new Replace(this.clone(), replacement.clone());
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
-  }
-
+export class Null extends Value {
   /** clone makes a copy but with stream set to null */
   clone() {
     return new Null();
   }
 
-  /** @type {Object} null or {change, version} */
-  get next() {
-    const n = this.stream && this.stream.next;
-    if (!n) return null;
-    return this._nextf(n.change, n.version);
-  }
-
-  _nextf(change, version) {    
-    const v = this.apply(change);
-    if (v.hasOwnProperty("stream")) v.stream = version;
-    return {change, version: v};
-  }
-  
-  apply(c) {
-    if (!c) {
-      return this;
-    }
-
-    if (c instanceof Replace) {
-      return c.after;
-    }
-    return c.applyTo(this);
-  }
-
   toJSON() {
-    return [];
+    return null;
   }
 
   static typeName() {
@@ -63,4 +25,3 @@ export class Null {
     return new Null();
   }
 }
-

@@ -98,3 +98,53 @@ export class Stream {
     return [left, right];
   }
 }
+
+const noCache = {};
+
+/** DerivedStream is a base class for all derived streams */
+export class DerivedStream {
+  constructor(parent) {
+    this.parent = parent;
+    this._next = noCache;
+  }
+
+  append(c) {
+    return this.parent.append(c);
+  }
+
+  reverseAppend(c) {
+    return this.parent.reverseAppend(c);
+  }
+
+  push() {
+    this.parent.push();
+    return this;
+  }
+
+  pull() {
+    this.parent.pull();
+    return this;
+  }
+
+  undo() {
+    this.parent.undo();
+    return this;
+  }
+
+  redo() {
+    this.parent.redo();
+    return this;
+  }
+
+  get next() {
+    if (this._next !== noCache) {
+      return this._next;
+    }
+
+    const next = this._getNext();
+    if (next) {
+      this._next = next;
+    }
+    return next;
+  }
+}

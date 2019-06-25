@@ -136,7 +136,10 @@ function removable(itemStreamClass, listClass) {
 }
 
 function updateSubstream(original, parent, path) {
-  if (original.parent === parent && arePathsEqual(path || [], original.path || [])) {
+  if (
+    original.parent === parent &&
+    arePathsEqual(path || [], original.path || [])
+  ) {
     return original;
   }
   return new Substream(parent, path);
@@ -146,4 +149,3 @@ function arePathsEqual(p1, p2) {
   const l = PathChange.commonPrefixLen(p1, p2);
   return l === p1.length && l === p2.length;
 }
-

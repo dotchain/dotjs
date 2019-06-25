@@ -23,7 +23,7 @@ describe("ListStream", () => {
 
     // remove index 1 and expect last entry to match t still.
     s = s.splice(1, 1);
-    
+
     // fetching the item again should not have changed t
     expect(s.item(1)).to.equal(t);
 

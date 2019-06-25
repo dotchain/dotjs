@@ -7,12 +7,13 @@
 import { Replace } from "./replace.js";
 import { Splice } from "./splice.js";
 import { Move } from "./move.js";
+import { Value } from "./value.js";
 
 /** Text represents a string value */
-export class Text {
+export class Text extends Value {
   constructor(text) {
+    super();
     this.text = (text || "").toString();
-    this.stream = null;
   }
 
   slice(start, end) {
@@ -34,10 +35,10 @@ export class Text {
    */
   splice(offset, count, replacement) {
     if (!(replacement instanceof Text)) {
-      replacement = new Text(replacement)
+      replacement = new Text(replacement);
     }
 
-    const before = this.slice(offset, offset+count);
+    const before = this.slice(offset, offset + count);
     const change = new Splice(offset, before, replacement);
     const version = this.stream && this.stream.append(change);
     return this._nextf(change, version).version;
@@ -60,35 +61,12 @@ export class Text {
     const version = this.stream && this.stream.append(change);
     return this._nextf(change, version).version;
   }
-  
-  /** 
-   * replace substitutes this with another value 
-   * @returns {Value} r - r has same stream as this
-   **/
-  replace(replacement) {
-    const change = new Replace(this.clone(), replacement.clone());
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
-  }
 
   /** clone makes a copy but with stream set to null */
   clone() {
     return new Text(this.text);
   }
 
-  /** @type {Object} null or {change, version} */
-  get next() {
-    const n = this.stream && this.stream.next;
-    if (!n) return null;
-    return this._nextf(n.change, n.version);
-  }
-
-  _nextf(change, version) {    
-    const v = this.apply(change);
-    if (v.hasOwnProperty("stream")) v.stream = version;
-    return {change, version: v};
-  }
-    
   /**
    * Apply any change immutably.
    * @param {Change} c -- any change; can be null.
@@ -96,7 +74,7 @@ export class Text {
    */
   apply(c) {
     if (!c) {
-      return this;
+      return this.clone();
     }
 
     if (c instanceof Replace) {
@@ -130,7 +108,7 @@ export class Text {
   }
 
   static typeName() {
-    return "changes/types.S16";
+    return "dotdb.Text";
   }
 
   static fromJSON(decoder, json) {

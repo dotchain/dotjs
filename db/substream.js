@@ -4,7 +4,7 @@
 
 "use strict";
 
-import { PathChange} from "./path_change.js";
+import { PathChange } from "./path_change.js";
 import { Changes } from "./changes.js";
 import { Move } from "./move.js";
 import { Splice } from "./splice.js";
@@ -33,12 +33,12 @@ export class Substream {
       return this._next;
     }
 
-    if (this.parent.next == null) {
-      return null;
+    const n = this.parent.next ? getNext(this) : null;
+    if (n != null) {
+      this._next = n;
     }
 
-    this._next = getNext(this);
-    return this._next;
+    return n;
   }
 
   push() {
@@ -96,7 +96,7 @@ function transform(c, key) {
 
     const len = PathChange.commonPrefixLen([key], c.path);
     if (len == 0) {
-      return {xform: null, key, ok: true};
+      return { xform: null, key, ok: true };
     }
 
     const xform = PathChange.create(c.path.slice(1), c.change);
