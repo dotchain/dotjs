@@ -5,6 +5,7 @@
 "use strict";
 
 import { Replace } from "./replace.js";
+import { branch } from "./branch.js";
 
 /** Value is the base class for values.
  *
@@ -51,5 +52,44 @@ export class Value {
     }
 
     return c.applyTo(this);
+  }
+
+  /** branch returns a value that is on its own branch with push/pull support **/
+  branch() {
+    const result = this.clone();
+    result.stream = branch(this.stream);
+    return result;
+  }
+
+  /** push pushes the changes up to the parent */
+  push() {
+    if (this.stream) {
+      this.stream.push();
+    }
+    return this;
+  }
+
+  /** pull pulls changes from the parent */
+  pull() {
+    if (this.stream) {
+      this.stream.pull();
+    }
+    return this;
+  }
+
+  /** undoes the last change on this branch */
+  undo() {
+    if (this.stream) {
+      this.stream.undo();
+    }
+    return this;
+  }
+
+  /** redoes the last undo on this branch */
+  redo() {
+    if (this.stream) {
+      this.stream.redo();
+    }
+    return this;
   }
 }
