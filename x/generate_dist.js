@@ -9,7 +9,9 @@ const fs = require("fs");
 function main() {
   let names = fs
     .readdirSync(__dirname + "/../db")
-    .filter(name => name != "value.js" && name != "stream.js");
+    .filter(
+      name => name != "value.js" && name != "stream.js" && name != "index.js"
+    );
   names.unshift("value.js", "stream.js");
 
   let text = names

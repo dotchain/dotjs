@@ -82,6 +82,10 @@ export class Store {
     return { change: n.change, version: store };
   }
 
+  sync() {
+    return this.pull().then(() => this.push());
+  }
+
   pull() {
     const s = this._session;
 
