@@ -5,6 +5,7 @@
 "use strict";
 
 import { Encoder } from "./encode.js";
+import { Decoder } from "./decode.js";
 
 /** Implements a collection of change values */
 export class Changes {
@@ -111,3 +112,5 @@ export class Changes {
     return (elts && elts.length && new Changes(elts)) || null;
   }
 }
+
+Decoder.registerChangeClass(Changes);

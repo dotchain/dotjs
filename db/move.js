@@ -8,6 +8,7 @@ import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { Splice } from "./splice.js";
 import { Changes } from "./changes.js";
+import { Decoder } from "./decode.js";
 
 /**
  * Move represents shifting a sub-sequence over to a different spot.
@@ -511,3 +512,5 @@ export class Move {
     return new Move(offset, count, distance);
   }
 }
+
+Decoder.registerChangeClass(Move);

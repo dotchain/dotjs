@@ -7,6 +7,7 @@
 import { Encoder } from "./encode.js";
 import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
+import { Decoder } from "./decode.js";
 
 /**
  * Splice represents the change to replace a sub-sequence with another.
@@ -205,3 +206,5 @@ export class Splice {
     return s.after.length - s.before.length;
   }
 }
+
+Decoder.registerChangeClass(Splice);

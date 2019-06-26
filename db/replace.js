@@ -4,6 +4,7 @@
 
 "use strict";
 
+import { Decoder } from "./decode.js";
 import { Encoder } from "./encode.js";
 
 /** Replace represents a change one value to another **/
@@ -69,3 +70,5 @@ export class Replace {
     return new Replace(before, after);
   }
 }
+
+Decoder.registerChangeClass(Replace);

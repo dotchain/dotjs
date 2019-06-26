@@ -21,9 +21,9 @@ The dotjs project provides high-level APIs for distributed synchronization of ri
 
 ## Status
 
-This ES6 port of the [Go implementation](https://github.com/dotchain/dot) is ready with full interoperability.  See [library documentation](library.md) for documentation on how to use this.
+This ES6 port of the [Go implementation](https://github.com/dotchain/dot) is ready with full interoperability.  See [library documentation](library.md) for documentation on how to use the library.
 
-The recommended appraoch is to DOTDB which provides a better interface.  This is still in the works.
+The recommended approach is to DotDB which provides a better interface.  This is still in the works but is documented below.
 
 ## DotDB
 
@@ -38,7 +38,7 @@ The store is the root object providing access to all the functionality.  A store
 ```js
 
 import dotdb from "dotjs/dist/dotdb.js";
-let store = new Store(url, null);
+let store = new dotdb.Store(url, null);
 
 ```
 
@@ -47,7 +47,7 @@ sessions as they can cache the whole data if needed.
 
 ```js
 const serialized = store.serialize();
-let newStore = new Store(url, serialized);
+let newStore = new dotdb.Store(url, serialized);
 ```
 
 The url provided is the network URL to make XHR calls to.  The default
@@ -131,8 +131,8 @@ from another track their changes:
 
 ```js
 const initial = store.collection("table1").get("row1").get("col1");
-const first = initial.replace(new Text("column1"));
-const second = initial.replace(new Text("column2"));
+const first = initial.replace(new dotdb.Text("column1"));
+const second = initial.replace(new dotdb.Text("column2"));
 
 if (first.next.version.text != second.next.version.text) {
   throw new Error("unexpected");
@@ -188,7 +188,7 @@ if (col2.text != "hello") {
 }
 
 // references can be evaluated without them being stored in the db:
-const v = dotdb.run(store, new Ref(["table1", "row1", "col2"]));
+const v = dotdb.run(store, new dotdb.Ref(["table1", "row1", "col2"]));
 if (v.text != col2.text) {
   throw new Error("Unexpected col2");
 }
@@ -208,10 +208,10 @@ values).
 **Field** is one such function value:
 
 ```js
-const fieldFn = new Field();
+const fieldFn = new dotdb.Field();
 const evaluated = fieldFn.invoke(store, new dotdb.Dict({
   "obj": new dotdb.Ref(["table1", "row1"]),
-  "field": new Text("col1"),
+  "field": new dotdb.Text("col1"),
 }))
 
 // evaluated is now same as table1.row1.col1

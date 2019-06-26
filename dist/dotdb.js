@@ -411,6 +411,8 @@ class Changes {
   }
 }
 
+Decoder.registerChangeClass(Changes);
+
 /**
  * Conn creates a network connection or use with Session. See {@link Transformer}.
  */
@@ -1279,6 +1281,8 @@ class Move {
   }
 }
 
+Decoder.registerChangeClass(Move);
+
 /** Null represents an empty value */
 class Null extends Value {
   /** clone makes a copy but with stream set to null */
@@ -1663,6 +1667,8 @@ class Replace {
   }
 }
 
+Decoder.registerChangeClass(Replace);
+
 class Request {
   constructor(name, ops, version, limit, duration) {
     this.name = name;
@@ -1978,6 +1984,8 @@ class Splice {
     return s.after.length - s.before.length;
   }
 }
+
+Decoder.registerChangeClass(Splice);
 
 /** Store implements a collection of tables with ability to sync via a
  * connection */
@@ -2336,6 +2344,8 @@ class Text extends Value {
     return new Text(json);
   }
 }
+
+Decoder.registerValueClass(Text);
 
 /** Transformer wraps a {@link Conn} object, transforming all incoming ops */
 class Transformer {
