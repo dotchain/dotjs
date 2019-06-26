@@ -25,10 +25,9 @@ export class Store {
       conn = new Transformer(new Conn(conn, fetch));
     }
     this._conn = conn;
-    this._root = Dict.fromJSON(new Decoder(), data.root);
-
-    // setup the stream
-    this._root.stream = new Stream();
+    this._root = Dict.fromJSON(new Decoder(), data.root).setStream(
+      new Stream()
+    );
 
     // All root collections are "implict" and get created on access
     this._root.setDefaultFn(() => new Dict());

@@ -16,6 +16,12 @@ class Value {
     this.stream = null;
   }
 
+  /** setStream mutates the current value and updates it stream **/
+  setStream(s) {
+    this.stream = s;
+    return this;
+  }
+
   /**
    * replace substitutes this with another value
    * @returns {Value} r - r has same stream as this
@@ -33,10 +39,17 @@ class Value {
     return this._nextf(n.change, n.version);
   }
 
+  /** latest returns the latest version */
+  latest() {
+    let result = this;
+    for (let n = this.next; n; n = result.next) {
+      result = n.version;
+    }
+    return result;
+  }
+
   _nextf(change, version) {
-    const v = this.apply(change);
-    v.stream = version;
-    return { change, version: v };
+    return { change, version: this.apply(change).setStream(version) };
   }
 
   /** default apply only supports Replace */
@@ -54,9 +67,7 @@ class Value {
 
   /** branch returns a value that is on its own branch with push/pull support **/
   branch() {
-    const result = this.clone();
-    result.stream = branch(this.stream);
-    return result;
+    return this.clone().setStream(branch(this.stream));
   }
 
   /** push pushes the changes up to the parent */
@@ -557,9 +568,8 @@ class Dict extends Value {
 
   /** get looks up a key and returns the value (or a default value) */
   get(key) {
-    const val = this.map[key] || this._defaultFn();
-    val.stream = new Substream(this.stream, key);
-    return val;
+    const s = new Substream(this.stream, key);
+    return (this.map[key] || this._defaultFn()).setStream(s);
   }
 
   /** clone makes a copy but with stream set to null */
@@ -716,9 +726,7 @@ class FieldStream extends DerivedStream {
 
     super(value.stream);
 
-    value = value.clone();
-    value.stream = this;
-    this.value = value;
+    this.value = value.clone().setStream(this);
     this.store = store;
     this.obj = obj;
     this.key = key;
@@ -1754,10 +1762,7 @@ class RunStream extends DerivedStream {
 
     super(value.stream);
 
-    value = value.clone();
-    value.stream = this;
-    this.value = value;
-
+    this.value = value.clone().setStream(this);
     this.store = store;
     this.obj = obj;
   }
@@ -2000,10 +2005,9 @@ class Store {
       conn = new Transformer(new Conn(conn, fetch));
     }
     this._conn = conn;
-    this._root = Dict.fromJSON(new Decoder(), data.root);
-
-    // setup the stream
-    this._root.stream = new Stream();
+    this._root = Dict.fromJSON(new Decoder(), data.root).setStream(
+      new Stream()
+    );
 
     // All root collections are "implict" and get created on access
     this._root.setDefaultFn(() => new Dict());

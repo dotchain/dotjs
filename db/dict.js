@@ -26,9 +26,8 @@ export class Dict extends Value {
 
   /** get looks up a key and returns the value (or a default value) */
   get(key) {
-    const val = this.map[key] || this._defaultFn();
-    val.stream = new Substream(this.stream, key);
-    return val;
+    const s = new Substream(this.stream, key);
+    return (this.map[key] || this._defaultFn()).setStream(s);
   }
 
   /** clone makes a copy but with stream set to null */
