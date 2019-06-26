@@ -62,7 +62,7 @@ export class Dict extends Value {
       clone[key] = this.map[key];
     }
     if (val instanceof Null) {
-      delete (clone, path[0]);
+      delete clone[path[0]];
     } else {
       clone[path[0]] = val;
     }

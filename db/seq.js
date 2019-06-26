@@ -10,6 +10,8 @@ import { PathChange } from "./path_change.js";
 import { Encoder } from "./encode.js";
 import { Move } from "./move.js";
 import { Value } from "./value.js";
+import { Substream } from "./substream.js";
+import { Decoder } from "./decode.js";
 
 /** Seq represents a sequence of values */
 export class Seq extends Value {
@@ -74,7 +76,12 @@ export class Seq extends Value {
   }
 
   get(idx) {
-    return this.entries[idx];
+    const v = this.entries[idx];
+    if (v) {
+      return v.setStream(new Substream(this.stream, idx));
+    }
+    // this is disconneected!
+    return new Null();
   }
 
   set(idx, val) {
@@ -99,6 +106,8 @@ export class Seq extends Value {
     return new Seq((json || []).map(x => decoder.decodeValue(x)));
   }
 }
+
+Decoder.registerValueClass(Seq);
 
 // applySeq implements apply() for list-like objects which have
 // get, set, slice and concat methods

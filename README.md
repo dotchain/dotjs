@@ -31,7 +31,7 @@ DotDB is a distributed, convergent, reactive database-like store built on top of
 
 DotDB is designed to work on browsers with collaborative edits automatically converging.  It is reactive in that **views** can be created which are automatically maintained when the underlying references change (either locally or remotely).
 
-DotDB allows rich types and hierarchies -- including the obligatory collaborative text -- with a databse like flavor but it doesn't implement SQL semantics.
+DotDB allows rich types and hierarchies -- including the obligatory collaborative text -- with a database like flavor but it doesn't implement SQL semantics.
 
 This is a standalone ES6 package with no external dependencies, available at **dist/dotdb.js**
 
