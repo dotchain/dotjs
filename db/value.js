@@ -6,6 +6,7 @@
 
 import { Replace } from "./replace.js";
 import { branch } from "./branch.js";
+import { Changes } from "./changes.js";
 
 /** Value is the base class for values.
  *
@@ -16,6 +17,12 @@ import { branch } from "./branch.js";
 export class Value {
   constructor() {
     this.stream = null;
+  }
+
+  /** setStream mutates the current value and updates it stream **/
+  setStream(s) {
+    this.stream = s;
+    return this;
   }
 
   /**
@@ -35,10 +42,17 @@ export class Value {
     return this._nextf(n.change, n.version);
   }
 
+  /** latest returns the latest version */
+  latest() {
+    let result = this;
+    for (let n = this.next; n; n = result.next) {
+      result = n.version;
+    }
+    return result;
+  }
+
   _nextf(change, version) {
-    const v = this.apply(change);
-    v.stream = version;
-    return { change, version: v };
+    return { change, version: this.apply(change).setStream(version) };
   }
 
   /** default apply only supports Replace */
@@ -56,9 +70,7 @@ export class Value {
 
   /** branch returns a value that is on its own branch with push/pull support **/
   branch() {
-    const result = this.clone();
-    result.stream = branch(this.stream);
-    return result;
+    return this.clone().setStream(branch(this.stream));
   }
 
   /** push pushes the changes up to the parent */

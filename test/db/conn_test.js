@@ -14,9 +14,15 @@ import { Encoder } from "../../db/encode.js";
 import { Decoder } from "../../db/decode.js";
 
 import { expectGoldenFile } from "./golden.js";
+import { Server } from "./server.js";
 
 describe("Conn", () => {
   connTest(fetch => fetch);
+});
+
+describe("Server", () => {
+  // proxy all fetch calls through a Server object
+  connTest(proxyFetch);
 });
 
 function connTest(proxy) {
@@ -158,4 +164,32 @@ function getSampleEncodedOps() {
       Encoder.encode(new Operation("id2", "parentId2", 11, 101, replace))
     ])
   );
+}
+
+// proxyFetch proxies a fetch call via a server
+function proxyFetch(fetch) {
+  const s = new Server(new Conn("some url", fetch), null);
+  return (url, opts) => {
+    return new Promise((resolve, reject) => {
+      const req = {
+        is: ct => ct === opts.headers["Content-Type"].trim(),
+        get: ct => opts[ct],
+        body: JSON.parse(opts.body)
+      };
+      const res = {
+        send(body) {
+          resolve({
+            ok: true,
+            json: () => JSON.parse(body)
+          });
+        }
+      };
+      const next = err => {
+        if (err) {
+          reject(err);
+        }
+      };
+      s.handle(req, res, next);
+    });
+  };
 }

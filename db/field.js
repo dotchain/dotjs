@@ -32,9 +32,7 @@ class FieldStream extends DerivedStream {
 
     super(value.stream);
 
-    value = value.clone();
-    value.stream = this;
-    this.value = value;
+    this.value = value.clone().setStream(this);
     this.store = store;
     this.obj = obj;
     this.key = key;
