@@ -604,7 +604,7 @@ class Dict extends Value {
       clone[key] = this.map[key];
     }
     if (val instanceof Null) {
-      delete (clone, path[0]);
+      delete clone[path[0]];
     } else {
       clone[path[0]] = val;
     }
@@ -1861,7 +1861,12 @@ class Seq extends Value {
   }
 
   get(idx) {
-    return this.entries[idx];
+    const v = this.entries[idx];
+    if (v) {
+      return v.setStream(new Substream(this.stream, idx));
+    }
+    // this is disconneected!
+    return new Null();
   }
 
   set(idx, val) {
@@ -1886,6 +1891,8 @@ class Seq extends Value {
     return new Seq((json || []).map(x => decoder.decodeValue(x)));
   }
 }
+
+Decoder.registerValueClass(Seq);
 
 function applySeq(obj, c) {
   if (c == null) {
