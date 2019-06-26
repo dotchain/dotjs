@@ -8,6 +8,7 @@ import { Replace } from "./replace.js";
 import { Splice } from "./splice.js";
 import { Move } from "./move.js";
 import { Value } from "./value.js";
+import { Decoder } from "./decode.js";
 
 /** Text represents a string value */
 export class Text extends Value {
@@ -115,3 +116,5 @@ export class Text extends Value {
     return new Text(json);
   }
 }
+
+Decoder.registerValueClass(Text);
