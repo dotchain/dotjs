@@ -15,9 +15,13 @@ export class Num extends Value {
   constructor(num) {
     super();
     this.n = parseFloat(+num);
-    if (isNaN(n) || !isFinite(n)) {
+    if (isNaN(this.n) || !isFinite(this.n)) {
       throw new Error("not a number: " + num);
     }
+  }
+
+  valueOf() {
+    return this.n;
   }
 
   /** clone makes a copy but with stream set to null */
@@ -26,7 +30,7 @@ export class Num extends Value {
   }
 
   toJSON() {
-    return Encoder.encode(this.n);
+    return this.n;
   }
 
   static typeName() {

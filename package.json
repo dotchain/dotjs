@@ -14,6 +14,7 @@
     "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
     "test": "nyc mocha --require esm test/**/*_test.js && karma start --e2e",
     "mocha": "mocha --require esm test/**/*_test.js",
+    "mochadb": "mocha --require esm test/db/*_test.js",    
     "karma": "karma start",
     "e2e": "karma start --e2e"
   },

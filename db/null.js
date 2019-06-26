@@ -5,6 +5,7 @@
 "use strict";
 
 import { Value } from "./value.js";
+import { Decoder } from "./decode.js";
 
 /** Null represents an empty value */
 export class Null extends Value {
@@ -14,7 +15,7 @@ export class Null extends Value {
   }
 
   toJSON() {
-    return null;
+    return [];
   }
 
   static typeName() {
@@ -25,3 +26,5 @@ export class Null extends Value {
     return new Null();
   }
 }
+
+Decoder.registerValueClass(Null);

@@ -23,21 +23,21 @@ The dotjs project provides high-level APIs for distributed synchronization of ri
 
 This ES6 port of the [Go implementation](https://github.com/dotchain/dot) is ready with full interoperability.  See [library documentation](library.md) for documentation on how to use the library.
 
-The recommended approach is to DotDB which provides a better interface.  This is still in the works but is documented below.
+The recommended approach is to use DotDB which provides an easier interface.
 
 ## DotDB
 
-DotDB is a distributed, convergent, reactive database-like store built on top of the DOT/operational-transformation approach.
+DotDB is a distributed, convergent, reactive database-like store built on top of the DOT's operational-transformation approach.
 
 DotDB is designed to work on browsers with collaborative edits automatically converging.  It is reactive in that **views** can be created which are automatically maintained when the underlying references change (either locally or remotely).
 
-DotDB allows rich types -- including the obligatory collaborative text -- with a databse like flavor but it doesn't implement SQL semantics.
+DotDB allows rich types and hierarchies -- including the obligatory collaborative text -- with a databse like flavor but it doesn't implement SQL semantics.
 
 This is a standalone ES6 package with no external dependencies, available at **dist/dotdb.js**
 
 ### Store
 
-The store is the root object providing access to all the functionality.  A store can be created like so:
+The store is the root versioned object in DotDB.  A store can be created like so:
 
 ```js
 
@@ -82,9 +82,10 @@ if (next) {
 ```
 
 All values in DotDB act this way: they are immutable for all practical
-purposes with changes available via the `next` properties.  Even
-mutating a value results in the old value being unchanged.  In fact,
-if multiple mutations are done on the same base value, the mutatios
+purposes with changes available via the `next` properties.  Mutating a
+value results in the old value being unchanged with the updated value
+returned as well as added via `next` onto the old value.  When
+multiple mutations are done on the same base value, the mutations
 converge:
 
 ```js
@@ -170,7 +171,7 @@ branch.
 
 ### Refs
 
-References allow objects to hold value that point to elsewhere in the
+References allow objects to hold a value that points elsewhere in the
 store (including within other references):
 
 ```js
@@ -222,12 +223,13 @@ const evaluated = fieldFn.invoke(store, new dotdb.Dict({
 ```
 
 As shown in the example, the arguments to Field are of the form of a
-hash with `obj` and `field` (which are themselves evaluated).  The
-interesting thing about calculations is that if the underlying args
-passed to it is modified, the evaluated value changes correspondingly
--- using the `next.version` pattern.
+hash with `obj` and `field` (which are themselves evaluated).
 
-**Calculations are reactive**
+#### Calculations are reactive
+
+The interesting thing about calculations is that if the underlying
+args passed to it is modified, the evaluated value changes
+correspondingly -- using the `next.version` pattern.
 
 ### Views
 

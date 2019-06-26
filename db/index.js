@@ -6,6 +6,7 @@
 
 export { Store } from "./store.js";
 export { Dict } from "./dict.js";
+export { Seq } from "./seq.js";
 export { Text } from "./text.js";
 export { Num } from "./num.js";
 export { Null } from "./null.js";
