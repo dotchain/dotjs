@@ -12,6 +12,7 @@ export { Num } from "./num.js";
 export { Null } from "./null.js";
 export { Ref } from "./ref.js";
 export { Field, field } from "./field.js";
+export { View, invoke } from "./view.js";
 export { run } from "./run.js";
 export { Conn } from "./conn.js";
 export { Transformer } from "./transform.js";
