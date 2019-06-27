@@ -25,7 +25,7 @@ function main() {
     })
     .join("");
   text +=
-    "\nmodule.exports = {Store, Dict, Text, Null, Ref, Field, run, field, Conn, Transformer, Stream};";
+    "\nmodule.exports = {Store, Dict, Seq, Text, Num, Null, Ref, Field, run, field, Conn, Transformer, Stream, DerivedStream};";
   fs.writeFileSync(__dirname + "/../dist/dotdb.js", preamble + text);
 }
 

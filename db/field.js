@@ -56,7 +56,7 @@ class FieldStream extends DerivedStream {
 
     const valuen = this.parent && this.parent.next;
     if (valuen) {
-      // runuated value has changed
+      // evaluated value has changed
       const version = new FieldStream(
         this.store,
         this.obj,
@@ -70,7 +70,12 @@ class FieldStream extends DerivedStream {
   }
 }
 
+/** Field is a calculation that when invoked returns obj.field */
 export class Field extends Value {
+  clone() {
+    return new Field();
+  }
+
   invoke(store, args) {
     const obj = field(store, args, new Text("obj"));
     const key = field(store, args, new Text("field"));
