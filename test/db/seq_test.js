@@ -12,7 +12,7 @@ import { Move } from "../../db/move.js";
 import { PathChange } from "../../db/path_change.js";
 import { Splice } from "../../db/splice.js";
 import { Changes } from "../../db/changes.js";
-import { Text, Seq, Stream } from "../../db/index.js";
+import { Text, Seq, Stream, SeqIterator } from "../../db/index.js";
 
 describe("Seq stream", () => {
   it("should converge", () => {
@@ -27,6 +27,16 @@ describe("Seq stream", () => {
     expect(hello.next.version.text).to.equal("hello world");
     expect(s.next.version.get(0).text).to.equal("hello world");
     expect(s.next.version.get(1).text).to.equal("world");
+  });
+
+  it("should iterate", () => {
+    const s = new Seq([new Text("hello"), new Text("world")]);
+    let count = 0;
+    for (let value of s[SeqIterator]()) {
+      expect(s.get(count).text).to.equal(value.text);
+      count++;
+    }
+    expect(count).to.equal(2);
   });
 });
 

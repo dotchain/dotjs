@@ -6,6 +6,25 @@
 
 const fs = require("fs");
 
+const exported = [
+  "Store",
+  "Dict",
+  "Seq",
+  "Text",
+  "Num",
+  "Null",
+  "Ref",
+  "Field",
+  "Conn",
+  "Transformer",
+  "Stream",
+  "DerivedStream",
+  "MapIterator",
+  "SeqIterator",
+  "run",
+  "field"
+];
+
 function main() {
   let names = fs
     .readdirSync(__dirname + "/../db")
@@ -24,8 +43,7 @@ function main() {
         .replace(/^".*$/gm, "");
     })
     .join("");
-  text +=
-    "\nmodule.exports = {Store, Dict, Seq, Text, Num, Null, Ref, Field, run, field, Conn, Transformer, Stream, DerivedStream};";
+  text += "\nmodule.exports = {" + exported.join(", ") + "}";
   fs.writeFileSync(__dirname + "/../dist/dotdb.js", preamble + text);
 }
 

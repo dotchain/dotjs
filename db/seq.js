@@ -12,6 +12,8 @@ import { Move } from "./move.js";
 import { Value } from "./value.js";
 import { Substream } from "./substream.js";
 import { Decoder } from "./decode.js";
+import { Num } from "./num.js";
+import { SeqIterator } from "./iterators.js";
 
 /** Seq represents a sequence of values */
 export class Seq extends Value {
@@ -92,6 +94,12 @@ export class Seq extends Value {
 
   apply(c) {
     return applySeq(this, c);
+  }
+
+  *[SeqIterator]() {
+    for (let kk = 0; kk < this.entries.length; kk++) {
+      yield this.entries[kk];
+    }
   }
 
   toJSON() {
