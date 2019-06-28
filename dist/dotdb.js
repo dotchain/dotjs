@@ -611,6 +611,12 @@ class Dict extends Value {
     return new Dict(clone);
   }
 
+  *[MapIterator]() {
+    for (let key in this.map) {
+      yield [key, this.map[key]];
+    }
+  }
+
   toJSON() {
     let all = [];
     for (let key in this.map) {
@@ -790,6 +796,12 @@ class Field extends Value {
 }
 
 Decoder.registerValueClass(Field);
+
+/** MapIterator is implemented by map-like values and yield key-value pairs */
+const MapIterator = Symbol("MapIterator");
+
+/** SeqIterator is implemented by seq-like values and yield just values */
+const SeqIterator = Symbol("SeqIterator");
 
 /**
  * Move represents shifting a sub-sequence over to a different spot.
@@ -1884,6 +1896,12 @@ class Seq extends Value {
     return applySeq(this, c);
   }
 
+  *[SeqIterator]() {
+    for (let kk = 0; kk < this.entries.length; kk++) {
+      yield this.entries[kk];
+    }
+  }
+
   toJSON() {
     return Encoder.encodeArrayValue(this.entries);
   }
@@ -2769,10 +2787,12 @@ module.exports = {
   Null,
   Ref,
   Field,
-  run,
-  field,
   Conn,
   Transformer,
   Stream,
-  DerivedStream
+  DerivedStream,
+  MapIterator,
+  SeqIterator,
+  run,
+  field
 };

@@ -17,3 +17,4 @@ export { run } from "./run.js";
 export { Conn } from "./conn.js";
 export { Transformer } from "./transform.js";
 export { Stream, DerivedStream } from "./stream.js";
+export { MapIterator, SeqIterator } from "./iterators.js";

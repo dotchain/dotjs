@@ -11,6 +11,8 @@ import { Replace } from "./replace.js";
 import { Substream } from "./substream.js";
 import { Null } from "./null.js";
 import { Value } from "./value.js";
+import { Text } from "./text.js";
+import { MapIterator } from "./iterators.js";
 
 /** Dict represents a map/hash/dictionary/collection with string keys */
 export class Dict extends Value {
@@ -67,6 +69,12 @@ export class Dict extends Value {
       clone[path[0]] = val;
     }
     return new Dict(clone);
+  }
+
+  *[MapIterator]() {
+    for (let key in this.map) {
+      yield [key, this.map[key]];
+    }
   }
 
   toJSON() {

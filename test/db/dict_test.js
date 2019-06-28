@@ -10,7 +10,7 @@ import { Replace } from "../../db/replace.js";
 import { PathChange } from "../../db/path_change.js";
 import { Changes } from "../../db/changes.js";
 import { Decoder } from "../../db/decode.js";
-import { Null, Num, Dict, Text, Stream } from "../../db/index.js";
+import { Null, Num, Dict, Text, Stream, MapIterator } from "../../db/index.js";
 
 describe("Dict stream", () => {
   it("should converge", () => {
@@ -41,6 +41,16 @@ describe("Dict stream", () => {
 
     const h2x = h2.next.version.get("w");
     expect(h2x.text).to.equal("world!");
+  });
+
+  it("should iterate", () => {
+    const d = new Dict({ hello: new Text("one"), world: new Text("two") });
+    let count = 0;
+    for (let [key, value] of d[MapIterator]()) {
+      expect(d.get(key).text).to.equal(value.text);
+      count++;
+    }
+    expect(count).to.equal(2);
   });
 });
 
