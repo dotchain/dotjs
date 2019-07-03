@@ -11,7 +11,6 @@ import { Replace } from "./replace.js";
 import { Substream } from "./substream.js";
 import { Null } from "./null.js";
 import { Value } from "./value.js";
-import { Text } from "./text.js";
 import { MapIterator } from "./iterators.js";
 
 /** Dict represents a map/hash/dictionary/collection with string keys */

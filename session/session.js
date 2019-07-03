@@ -4,7 +4,6 @@
 
 "use strict";
 
-import { Conn } from "./conn.js";
 import { Stream } from "../streams/index.js";
 import { Operation } from "./op.js";
 
@@ -151,7 +150,7 @@ export class Session {
     return (this._writing = conn
       .write(ops)
       .then(() => {
-        for (let op of ops) {
+        for (let count = 0; count < ops.length; count++) {
           this._unsent.shift();
         }
         this._writing = null;

@@ -31,7 +31,7 @@ class Branch {
     for (let next = info.child.next; next != null; next = info.child.next) {
       const { change, version } = next;
       info.parent = info.parent.append(change);
-      info.child = next.version;
+      info.child = version;
     }
 
     return this;
@@ -42,7 +42,7 @@ class Branch {
     for (let next = info.parent.next; next != null; next = info.parent.next) {
       const { change, version } = next;
       info.child = info.child.reverseAppend(change);
-      info.parent = next.version;
+      info.parent = version;
     }
 
     return this;

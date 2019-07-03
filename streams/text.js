@@ -4,7 +4,6 @@
 
 "use strict";
 
-import { Stream } from "./stream.js";
 import { ValueStream } from "./value.js";
 import { Replace, Splice, Move, Text } from "../core/index.js";
 

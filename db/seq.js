@@ -12,7 +12,7 @@ import { Move } from "./move.js";
 import { Value } from "./value.js";
 import { Substream } from "./substream.js";
 import { Decoder } from "./decode.js";
-import { Num } from "./num.js";
+import { Null } from "./null.js";
 import { SeqIterator } from "./iterators.js";
 
 /** Seq represents a sequence of values */
