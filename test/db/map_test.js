@@ -69,7 +69,7 @@ describe("Map dict", () => {
       result[key] = +val;
     }
     expect(result).to.deep.equal({ hello: 100, world: 2 });
-    expect(fn.count.n).to.equal(4);
+    expect(fn.count.n).to.equal(3);
   });
 
   it("should keep up with map additions", () => {
@@ -91,7 +91,7 @@ describe("Map dict", () => {
     expect(result).to.deep.equal({ hello: 1, world: 2, boo: 10 });
     expect(future).instanceOf(Null);
     expect(+future.latest()).to.equal(10);
-    expect(fn.count.n).to.equal(5);
+    expect(fn.count.n).to.equal(3);
   });
 
   it("should keep up with map deletions", () => {
@@ -112,7 +112,7 @@ describe("Map dict", () => {
 
     expect(result).to.deep.equal({ world: 2 });
     expect(hello.latest()).instanceOf(Null);
-    expect(fn.count.n).to.equal(3);
+    expect(fn.count.n).to.equal(2);
   });
 
   it("should proxy changes on mapped values", () => {

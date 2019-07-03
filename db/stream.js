@@ -99,13 +99,11 @@ export class Stream {
   }
 }
 
-const noCache = {};
-
 /** DerivedStream is a base class for all derived streams */
 export class DerivedStream {
   constructor(parent) {
     this.parent = parent;
-    this._next = noCache;
+    this._next = null;
   }
 
   append(c) {
@@ -137,7 +135,7 @@ export class DerivedStream {
   }
 
   get next() {
-    if (this._next !== noCache) {
+    if (this._next) {
       return this._next;
     }
 

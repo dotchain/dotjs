@@ -16,6 +16,7 @@ import { branch } from "./branch.js";
 export class Value {
   constructor() {
     this.stream = null;
+    this._next = null;
   }
 
   /** setStream mutates the current value and updates it stream **/
@@ -36,9 +37,21 @@ export class Value {
 
   /** @type {Object} null or {change, version} */
   get next() {
-    const n = this.stream && this.stream.next;
+    if (this._next !== null || !this.stream) {
+      return this._next;
+    }
+
+    let n = this.stream.next;
+    for (; n && !n.change; n = n.version.next) {
+      // the following *mutation* is not strictly needed but improves
+      // performance when an value is referred to by multiple derived
+      // computations. it also helps better garbage collection of streams
+      this.stream = n.version;
+    }
+
     if (!n) return null;
-    return this._nextf(n.change, n.version);
+    this._next = this._nextf(n.change, n.version);
+    return this._next;
   }
 
   /** latest returns the latest version */
