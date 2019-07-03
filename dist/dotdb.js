@@ -49,7 +49,12 @@ class Value {
   }
 
   _nextf(change, version) {
-    return { change, version: this.apply(change).setStream(version) };
+    return {
+      change,
+      version: this.apply(change)
+        .clone()
+        .setStream(version)
+    };
   }
 
   /** default apply only supports Replace */
@@ -613,7 +618,7 @@ class Dict extends Value {
 
   *[MapIterator]() {
     for (let key in this.map) {
-      yield [key, this.map[key]];
+      yield [key, this.get(key)];
     }
   }
 
@@ -731,7 +736,6 @@ class FieldStream extends DerivedStream {
     }
 
     super(value.stream);
-
     this.value = value.clone().setStream(this);
     this.store = store;
     this.obj = obj;
@@ -757,11 +761,12 @@ class FieldStream extends DerivedStream {
     const valuen = this.parent && this.parent.next;
     if (valuen) {
       // evaluated value has changed
+      const value = this.value.apply(valuen.change);
       const version = new FieldStream(
         this.store,
         this.obj,
         this.key,
-        valuen.version
+        value.setStream(valuen.version)
       );
       return { change: valuen.change, version };
     }
@@ -802,6 +807,193 @@ const MapIterator = Symbol("MapIterator");
 
 /** SeqIterator is implemented by seq-like values and yield just values */
 const SeqIterator = Symbol("SeqIterator");
+
+/** map calls the provided fn on all keys of the object */
+function map(store, obj, fn) {
+  const f = (key, val) =>
+    invoke(store, fn, toDict({ key: new Text(key), it: val }));
+  return new MapStream(obj, f, null).value;
+}
+
+/** toDict takes a map where the values are streams and converts it to
+ * a live dict */
+
+function toDict(m) {
+  return new MapStream(new Dict(m), null, m).value;
+}
+
+/** MapStream implement a mapped dictionary-like stream */
+class MapStream extends DerivedStream {
+  constructor(base, fn, value) {
+    super(base.stream);
+    this.base = base;
+    this.fn = fn || ((k, v) => v);
+    if (!value) {
+      if (typeof this.base[MapIterator] !== "function") {
+        value = null;
+      } else {
+        value = {};
+
+        for (let [key, val] of this.base[MapIterator]()) {
+          value[key] = this.fn(key, val);
+        }
+      }
+    }
+    this._value = value;
+  }
+
+  append(c) {
+    // proxy any changes to a field over to this._value
+    const updated = {};
+    if (!this._appendChanges(c, updated, false)) {
+      return this;
+    }
+
+    const value = Object.assign({}, this._value, updated);
+    return new MapStream(this.base, this.fn, value);
+  }
+
+  reverseAppend(c) {
+    // proxy any changes to a field over to this._value
+    const updated = {};
+    if (!this._appendChanges(c, updated, true)) {
+      return this;
+    }
+
+    const value = Object.assign({}, this._value, updated);
+    return new MapStream(this.base, this.fn, value);
+  }
+
+  get value() {
+    if (!this._value) {
+      return new Null().setStream(this);
+    }
+
+    const m = {};
+    for (let key in this._value) {
+      m[key] = this._value[key].clone();
+    }
+    return new Dict(m).setStream(this);
+  }
+
+  _getNext() {
+    const basen = this.base.next;
+
+    if (!this._value) {
+      if (!basen) {
+        return null;
+      }
+      const version = new MapStream(basen.version, this.fn, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
+
+    if (basen && typeof basen.version[MapIterator] !== "function") {
+      const version = new MapStream(basen.version, this.fn, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
+
+    const updated = Object.assign({}, this._value);
+    const changes = [];
+
+    if (basen) {
+      this._updateKeys(basen.version, basen.change, updated, changes);
+    }
+
+    for (let key in this._value) {
+      if (!updated.hasOwnProperty(key)) continue;
+      const val = this._value[key];
+      const n = val.next;
+      if (n) {
+        changes.push(new PathChange([key], n.change));
+        updated[key] = n.version;
+      }
+    }
+
+    if (changes.length === 0) {
+      return null;
+    }
+
+    const change = changes.length == 1 ? changes[0] : new Changes(changes);
+    const version = new MapStream(
+      basen ? basen.version : this.base,
+      this.fn,
+      updated
+    );
+    return { change, version };
+  }
+
+  _updateKeys(base, c, updated, changes) {
+    if (!c) {
+      return;
+    }
+
+    if (c instanceof Changes) {
+      for (let cx of c) {
+        this._updateNewKeys(base, cx, updated, changes);
+      }
+      return;
+    }
+
+    if (!(c instanceof PathChange)) {
+      return;
+    }
+
+    if ((c.path || []).length == 0) {
+      return this._updateNewKeys(base, c.change, updated, changes);
+    }
+
+    const key = c.path[0];
+    const existed = updated.hasOwnProperty(key);
+    const nowExists = !(base.get(key) instanceof Null);
+
+    if (!existed && nowExists) {
+      updated[key] = this.fn(key, base.get(key));
+      const replace = new Replace(new Null(), updated[key].clone());
+      changes.push(new PathChange([key], replace));
+    } else if (existed && !nowExists) {
+      return;
+      const replace = new Replace(new Null(), updated[key].clone());
+      delete updated[key];
+      changes.push(new PathChange([key], replace.revert()));
+    }
+  }
+
+  _appendChanges(c, updated, reverse) {
+    if (c instanceof Changes) {
+      let result = false;
+      for (let cx of c) {
+        result = result || this._appendChanges(cx, updated, reverse);
+      }
+      return result;
+    }
+
+    if (!(c instanceof PathChange)) {
+      return false;
+    }
+
+    if (!c.path || c.path.length === 0) {
+      return this._appendChanges(c.change, reverse);
+    }
+
+    const key = c.path[0];
+    if (this._value.hasOwnProperty(key)) {
+      const cx = PathChange.create(c.path.slice(1), c.change);
+      const val = this._value[key];
+      updated[key] = val
+        .clone()
+        .apply(cx)
+        .setStream(
+          val.stream &&
+            (reverse ? val.stream.reverseAppend(cx) : val.stream.append(cx))
+        );
+      return true;
+    }
+
+    return false;
+  }
+}
 
 /**
  * Move represents shifting a sub-sequence over to a different spot.
@@ -1806,8 +1998,9 @@ class RunStream extends DerivedStream {
 
     const valuen = this.parent && this.parent.next;
     if (valuen) {
-      // runuated value has changed
-      const version = new RunStream(this.store, this.obj, valuen.version);
+      // evaluated value has changed
+      const value = this.value.apply(valuen.change).setStream(valuen.version);
+      const version = new RunStream(this.store, this.obj, value);
       return { change: valuen.change, version };
     }
 
@@ -2293,14 +2486,11 @@ class Store {
   }
 }
 
-const sentinel = {};
-
 /* Substream refers to a field embedded within a container stream */
-class Substream {
+class Substream extends DerivedStream {
   constructor(parent, key) {
-    this.parent = parent;
+    super(parent);
     this.key = key;
-    this._next = sentinel;
   }
 
   append(c) {
@@ -2311,48 +2501,19 @@ class Substream {
     return this.parent.reverseAppend(new PathChange([this.key], c));
   }
 
-  get next() {
-    if (this._next !== sentinel) {
-      return this._next;
+  _getNext() {
+    const next = this.parent.next;
+    if (!next) {
+      return null;
     }
 
-    const n = this.parent.next ? getNext(this) : null;
-    if (n != null) {
-      this._next = n;
+    const { xform, key, ok } = transform(next.change, this.key);
+    if (!ok) {
+      return null;
     }
 
-    return n;
+    return { change: xform, version: new Substream(next.version, key) };
   }
-
-  push() {
-    this.parent.push();
-    return this;
-  }
-
-  pull() {
-    this.parent.pull();
-    return this;
-  }
-
-  undo() {
-    this.parent.undo();
-    return this;
-  }
-
-  redo() {
-    this.parent.redo();
-    return this;
-  }
-}
-
-function getNext(s) {
-  const next = s.parent.next;
-  const { xform, key, ok } = transform(next.change, s.key);
-  if (!ok) {
-    return null;
-  }
-
-  return { change: xform, version: new Substream(next.version, key) };
 }
 
 function transform(c, key) {
@@ -2670,7 +2831,7 @@ class Transformer {
 
 /** invoke invokes a function reactively */
 function invoke(store, fn, args) {
-  return new InvokeStream(store, fn, args, null).value;
+  return new InvokeStream(store, run(store, fn), run(store, args), null).value;
 }
 
 class InvokeStream extends DerivedStream {
@@ -2699,7 +2860,7 @@ class InvokeStream extends DerivedStream {
 
     const fnNext = this.fn.next;
     const argsNext = this.args.next;
-    if (fnNext || argNext) {
+    if (fnNext || argsNext) {
       const fn = fnNext ? fnNext.version : this.fn;
       const args = argsNext ? argsNext.version : this.args;
       const updated = new InvokeStream(this.store, fn, args, null).value;
@@ -2710,11 +2871,12 @@ class InvokeStream extends DerivedStream {
     const valuen = this.parent && this.parent.next;
     if (valuen) {
       // evaluated value has changed
+      const value = this.value.apply(valuen.change);
       const version = new InvokeStream(
         this.store,
         this.fn,
         this.args,
-        valuen.version
+        value.setStream(valuen.version)
       );
       return { change: valuen.change, version };
     }
@@ -2794,5 +2956,6 @@ module.exports = {
   MapIterator,
   SeqIterator,
   run,
-  field
+  field,
+  map
 };

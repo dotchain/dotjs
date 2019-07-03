@@ -11,7 +11,7 @@ import { Replace } from "../../db/replace.js";
 import { Splice } from "../../db/splice.js";
 import { PathChange } from "../../db/path_change.js";
 import { Changes } from "../../db/changes.js";
-import { Null, Text, Stream, Seq } from "../../db/index.js";
+import { Null, Text, Seq } from "../../db/index.js";
 
 describe("Splice", () => {
   it("reverts", () => {

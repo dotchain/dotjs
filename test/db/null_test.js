@@ -6,9 +6,7 @@
 
 import { expect } from "chai";
 
-import { Encoder } from "../../db/encode.js";
 import { Decoder } from "../../db/decode.js";
-import { Replace } from "../../db/replace.js";
 import { Num, Null, Stream } from "../../db/index.js";
 
 describe("Null", () => {

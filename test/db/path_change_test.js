@@ -10,7 +10,6 @@ import { Decoder } from "../../db/decode.js";
 import { Replace } from "../../db/replace.js";
 import { Move } from "../../db/move.js";
 import { PathChange } from "../../db/path_change.js";
-import { Changes } from "../../db/changes.js";
 import { Num, Null, Text, Dict } from "../../db/index.js";
 
 describe("PathChange", () => {

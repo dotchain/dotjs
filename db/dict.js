@@ -73,7 +73,7 @@ export class Dict extends Value {
 
   *[MapIterator]() {
     for (let key in this.map) {
-      yield [key, this.map[key]];
+      yield [key, this.get(key)];
     }
   }
 

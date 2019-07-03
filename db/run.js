@@ -43,8 +43,9 @@ class RunStream extends DerivedStream {
 
     const valuen = this.parent && this.parent.next;
     if (valuen) {
-      // runuated value has changed
-      const version = new RunStream(this.store, this.obj, valuen.version);
+      // evaluated value has changed
+      const value = this.value.apply(valuen.change).setStream(valuen.version);
+      const version = new RunStream(this.store, this.obj, value);
       return { change: valuen.change, version };
     }
 

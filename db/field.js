@@ -31,7 +31,6 @@ class FieldStream extends DerivedStream {
     }
 
     super(value.stream);
-
     this.value = value.clone().setStream(this);
     this.store = store;
     this.obj = obj;
@@ -57,11 +56,12 @@ class FieldStream extends DerivedStream {
     const valuen = this.parent && this.parent.next;
     if (valuen) {
       // evaluated value has changed
+      const value = this.value.apply(valuen.change);
       const version = new FieldStream(
         this.store,
         this.obj,
         this.key,
-        valuen.version
+        value.setStream(valuen.version)
       );
       return { change: valuen.change, version };
     }

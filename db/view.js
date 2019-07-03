@@ -12,12 +12,13 @@ import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { Substream } from "./substream.js";
 import { DerivedStream } from "./stream.js";
+import { run } from "./run.js";
 import { field } from "./field.js";
 import { Null } from "./null.js";
 
 /** invoke invokes a function reactively */
 export function invoke(store, fn, args) {
-  return new InvokeStream(store, fn, args, null).value;
+  return new InvokeStream(store, run(store, fn), run(store, args), null).value;
 }
 
 class InvokeStream extends DerivedStream {
@@ -46,7 +47,7 @@ class InvokeStream extends DerivedStream {
 
     const fnNext = this.fn.next;
     const argsNext = this.args.next;
-    if (fnNext || argNext) {
+    if (fnNext || argsNext) {
       const fn = fnNext ? fnNext.version : this.fn;
       const args = argsNext ? argsNext.version : this.args;
       const updated = new InvokeStream(this.store, fn, args, null).value;
@@ -57,11 +58,12 @@ class InvokeStream extends DerivedStream {
     const valuen = this.parent && this.parent.next;
     if (valuen) {
       // evaluated value has changed
+      const value = this.value.apply(valuen.change);
       const version = new InvokeStream(
         this.store,
         this.fn,
         this.args,
-        valuen.version
+        value.setStream(valuen.version)
       );
       return { change: valuen.change, version };
     }
