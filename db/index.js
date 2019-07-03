@@ -9,6 +9,7 @@ export { Dict } from "./dict.js";
 export { Seq } from "./seq.js";
 export { Text } from "./text.js";
 export { Num } from "./num.js";
+export { Bool } from "./bool.js";
 export { Null } from "./null.js";
 export { Ref } from "./ref.js";
 export { Field, field } from "./field.js";

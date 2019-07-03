@@ -12,6 +12,7 @@ const exported = [
   "Seq",
   "Text",
   "Num",
+  "Bool",
   "Null",
   "Ref",
   "Field",
