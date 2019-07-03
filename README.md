@@ -23,21 +23,66 @@ The dotjs project provides high-level APIs for distributed synchronization of ri
 
 This ES6 port of the [Go implementation](https://github.com/dotchain/dot) is ready with full interoperability.  See [library documentation](library.md) for documentation on how to use the library.
 
-The recommended approach is to use DotDB which provides an easier interface.
+The recommended approach is to use DotDB which provides an easier
+interface to work with.
 
 ## DotDB
 
-DotDB is a distributed, convergent, reactive database-like store built on top of the DOT's operational-transformation approach.
+DotDB is a distributed, convergent, reactive database-like store built
+on top of the DOT's operational-transformation approach. 
 
-DotDB is designed to work on browsers with collaborative edits automatically converging.  It is reactive in that **views** can be created which are automatically maintained when the underlying references change (either locally or remotely).
-
-DotDB allows rich types and hierarchies -- including the obligatory collaborative text -- with a database like flavor but it doesn't implement SQL semantics.
+DotDB is designed to work on browsers with collaborative edits
+automatically converging.  It is reactive in that **views** can be
+created which are automatically maintained when the underlying
+references change (either locally or remotely). 
 
 This is a standalone ES6 package with no external dependencies, available at **dist/dotdb.js**
 
+### Types
+
+DotDB allows rich types and hierarchies -- including the obligatory
+collaborative text -- with a database like flavor but it doesn't
+implement SQL semantics (transactions) or use SQL as the query
+language.
+
+The basic primitive types in DotDB are:
+
+1, **Null** (no value).  This is gennerally not explicitly stored but
+simply the resulting of fetching a key or a ref that does not exist.
+2. **Num** (any rational number): `new dotdb.Num(5.3)`
+3. **Bool** (a boolean): `new dotdb.Bool(true)`
+4. **Text** (unicode editable string): `new dotdb.Text("hello")`
+
+In addition, DotDB supports composite types:
+
+1. **Dict** is a map-like collection of any DotDB values (primitive or
+composite).  The key must be a string.
+2. **Seq** is an array-like collection of any DotDB values.
+
+Note: **Dict** is generally preferred over **Seq** for most actual
+storage needs as this is both simpler and more efficient.  When
+ordering is required, a field can specify the order and the whole
+collection sorted to yield the **Seq**.
+
+All derived objects are expected to be of the same shape as the
+above.
+
+There are two other special types of values:
+
+1. **Runnable** values are value that need to be evaluated.  An
+example is **Ref** which holds the path (reference) to another object
+in the current.  The value of **Ref** should be treated as the value
+it points to.  All runnable values implement a method: `run(store)` to
+yield the actual result of evaluating them.
+2. **Functions** are values that need to be invoked with
+arguments. An example is `Field`. Functions implement a `invoke(store,
+args)` method where the `args` field is a `Dict` with keys being the
+named parameters required by the function.
+
 ### Store
 
-The store is the root versioned object in DotDB.  A store can be created like so:
+The store is the root versioned object in DotDB.  A store can be
+created like so: 
 
 ```js
 
@@ -57,7 +102,7 @@ let newStore = new dotdb.Store(url, serialized);
 The url provided is the network URL to make XHR calls to.  The default
 connection management can be overridden by passing a custom `Conn`
 object which implements `read(version, limit)` and `write(ops)`
-methods (both of which are promises).
+methods (both of which are async/promise-based).
 
 The store does not make any network calls until `store.sync()` is
 called, at which point the provided `url` is used for a push/pull
@@ -70,7 +115,7 @@ Refresh](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimatio
 
 ### Convergent streams
 
-The sync() call on the store does not actually make any changes to the
+The `sync()` call on the store does not actually make any changes to the
 store directly.  The store is effectively an immutable object with the
 next version available via the `next` property:
 
@@ -84,7 +129,7 @@ if (next) {
 All values in DotDB act this way: they are immutable for all practical
 purposes with changes available via the `next` properties.  Mutating a
 value results in the old value being unchanged with the updated value
-returned as well as added via `next` onto the old value.  When
+returned (as well as added via `next` onto the old value).  When
 multiple mutations are done on the same base value, the mutations
 converge:
 
@@ -233,14 +278,39 @@ correspondingly -- using the `next.version` pattern.
 
 ### Views
 
-Views are values that capture a function value as well as the
-arguments to the function.  These are "runnable" and so calling
-`dotdb.run(store, view)` will effectively provide the reactive
-calculation for the underlying expressison.
+Views are **runnable** values that esseentially invoke a function with
+argumeents:
 
 ```js
-NYI
+const viewDef = new dotdb.View(
+  new Dict({
+    viewFn: new dotdb.Field(), // function to execute is field
+    obj: new dotdb.Ref(["table1", "row1"]),
+    field: new dotdb.Text("col1"),
+  })
+const view = dotdb.Run(store, viewDef);
+);
+
 ```
+the example above creates a **view** for `table1.row1.col1`.  As the
+store changes, the view tracks the computed value at all times.  For
+example, if `table1.row1` is itself a `Ref` or a `View`, it is
+evaluated  and then the `col1` value is extracted from it.
+
+The difference between simply calling
+`store.collection('table1').get('row1').get('col1')` vs constructing
+the view is that **views are formulas that can be stored within the
+database**. 
+
+The `map` function, for example, provides a way to construct a view
+that modifies an existing table or row.  It is useful to store this
+incantation within DotDB itself (and posisbly even refer to this
+view to construct more complicated views).
+
+Note that DotDB does not automatically evaluate all views.  The caller
+still has to call `dotdb.Run(store, viewDef)` to create a stream for
+the evaluation but once created, the stream will keep updating with
+calls to `next()` like all regular values.
 
 ## Installation
 
@@ -255,7 +325,7 @@ yarn add https://github.com/dotchain/dotjs
 or
 
 ```
-npm install https://github.com/dotchain/dotjs
+npm install https://github.com/dotchain/doatjs
 ```
 
 ## Tests
