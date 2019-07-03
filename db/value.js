@@ -6,7 +6,6 @@
 
 import { Replace } from "./replace.js";
 import { branch } from "./branch.js";
-import { Changes } from "./changes.js";
 
 /** Value is the base class for values.
  *

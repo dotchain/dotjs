@@ -5,7 +5,6 @@
 "use strict";
 
 import { Changes } from "../core/index.js";
-import { Stream } from "./stream";
 
 /**
  * undoable creates an undo stream.
@@ -77,7 +76,7 @@ class Undo {
     for (let next = info.s.next; next != null; next = info.s.next) {
       const { change, version } = next;
       info.changes.push({ type, change });
-      info.s = next.version;
+      info.s = version;
     }
   }
 
@@ -92,6 +91,7 @@ class Undo {
             return this._revertAt(info, last - kk, "undo");
           }
           skips--;
+          break;
         case "undo":
           skips++;
       }
@@ -108,8 +108,10 @@ class Undo {
             return this._revertAt(info, last - kk, "redo");
           }
           skips--;
+          break;
         case "redo":
           skips++;
+          break;
         case "local":
           return;
       }

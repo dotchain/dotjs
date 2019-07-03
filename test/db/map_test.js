@@ -112,7 +112,7 @@ describe("Map dict", () => {
 
     expect(result).to.deep.equal({ world: 2 });
     expect(hello.latest()).instanceOf(Null);
-    expect(fn.count.n).to.equal(4);
+    expect(fn.count.n).to.equal(3);
   });
 
   it("should proxy changes on mapped values", () => {

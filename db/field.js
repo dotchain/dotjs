@@ -91,7 +91,7 @@ export class Field extends Value {
   }
 
   static fromJSON() {
-    return new FieldFn();
+    return new Field();
   }
 }
 

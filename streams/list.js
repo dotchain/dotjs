@@ -6,14 +6,7 @@
 
 import { Substream } from "./substream.js";
 import { ValueStream } from "./value.js";
-import {
-  Splice,
-  List,
-  PathChange,
-  Replace,
-  Null,
-  Move
-} from "../core/index.js";
+import { Splice, List, Replace, Move } from "../core/index.js";
 
 /* ListStream implements a generic list stream.
  *

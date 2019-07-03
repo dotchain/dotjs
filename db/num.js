@@ -4,10 +4,7 @@
 
 "use strict";
 
-import { Encoder } from "./encode.js";
 import { Decoder } from "./decode.js";
-
-import { Replace } from "./replace.js";
 import { Value } from "./value.js";
 
 /** Num represents a generic numeric type */

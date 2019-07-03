@@ -4,11 +4,8 @@
 
 "use strict";
 
-import { Encoder } from "./encode.js";
-import { Decoder } from "./decode.js";
 import { Changes } from "./changes.js";
 import { Text } from "./text.js";
-import { Value } from "./value.js";
 import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { DerivedStream } from "./stream.js";
@@ -162,7 +159,6 @@ class MapStream extends DerivedStream {
       const replace = new Replace(new Null(), updated[key].clone());
       changes.push(new PathChange([key], replace));
     } else if (existed && !nowExists) {
-      return;
       const replace = new Replace(new Null(), updated[key].clone());
       delete updated[key];
       changes.push(new PathChange([key], replace.revert()));

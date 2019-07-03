@@ -5,13 +5,14 @@
 "use strict";
 
 import { Encoder } from "./encode.js";
-import { Decoder } from "./decode.js";
 
 let getRandomValues = null;
 
+/*eslint-disable */
 if (typeof crypto !== "undefined") {
   getRandomValues = b => crypto.getRandomValues(b);
 }
+/*eslint-enable */
 
 /** Operation is the change and metadata needed for network transmission */
 export class Operation {
