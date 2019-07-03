@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Null, Num, Stream } from "../../db/index.js";
+import { Num, Stream } from "../../db/index.js";
 
 describe("Num", () => {
   it("should ignore empty changes", () => {

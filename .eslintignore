@@ -1,0 +1,3 @@
+test/db/golden.js
+test/session/golden.js
+test/db/server.js

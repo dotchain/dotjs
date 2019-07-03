@@ -22,7 +22,8 @@ const exported = [
   "MapIterator",
   "SeqIterator",
   "run",
-  "field"
+  "field",
+  "map"
 ];
 
 function main() {

@@ -43,7 +43,7 @@ describe("Field", () => {
       .get("col1")
       .replace(new Text("world"));
 
-    expect(f.next.version.text).to.equal("world");
+    expect(f.latest().text).to.equal("world");
   });
 
   it("should track field", () => {
@@ -55,6 +55,21 @@ describe("Field", () => {
       .get("field")
       .replace(new Text("col2"));
 
-    expect(f.next.version).to.be.an.instanceof(Null);
+    expect(f.latest()).to.be.an.instanceof(Null);
+  });
+
+  it("should proxy changes", () => {
+    const s = newStore();
+    const fn = new Field();
+    const f = fn.invoke(s, s.collection("table1").get("args"));
+    f.replace(new Text("world"));
+
+    expect(
+      s
+        .collection("table1")
+        .get("row1")
+        .get("col1")
+        .latest().text
+    ).to.equal("world");
   });
 });

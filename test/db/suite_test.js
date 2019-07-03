@@ -6,7 +6,6 @@
 
 import { expect } from "chai";
 
-import { Replace } from "../../db/replace.js";
 import { Move } from "../../db/move.js";
 import { Splice } from "../../db/splice.js";
 import { PathChange } from "../../db/path_change.js";

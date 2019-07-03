@@ -38,6 +38,21 @@ describe("Seq stream", () => {
     }
     expect(count).to.equal(2);
   });
+
+  it("should track index with splice", () => {
+    let s = new Seq([new Text("hello"), new Text("world")]).setStream(
+      new Stream()
+    );
+
+    let item = s.get(1);
+
+    s = s.splice(0, 0, new Seq([new Text("something")]));
+    item = item.replace(new Text("new world"));
+
+    s = s.latest();
+
+    expect(s.get(2).text).to.equal(item.text);
+  });
 });
 
 describe("Seq value", () => {

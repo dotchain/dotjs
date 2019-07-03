@@ -51,14 +51,14 @@ class FakeConn {
     this._rejectWrite = null;
   }
 
-  read(version, limit) {
+  read(/* version, limit */) {
     return new Promise((resolve, reject) => {
       this._resolveRead = resolve;
       this._rejectRead = reject;
     });
   }
 
-  write(version, limit) {
+  write(/* ops */) {
     return new Promise((resolve, reject) => {
       this._resolveWrite = resolve;
       this._rejectWrite = reject;

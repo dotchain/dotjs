@@ -52,7 +52,12 @@ export class Value {
   }
 
   _nextf(change, version) {
-    return { change, version: this.apply(change).setStream(version) };
+    return {
+      change,
+      version: this.apply(change)
+        .clone()
+        .setStream(version)
+    };
   }
 
   /** default apply only supports Replace */

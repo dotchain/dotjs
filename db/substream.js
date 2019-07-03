@@ -9,15 +9,13 @@ import { Changes } from "./changes.js";
 import { Move } from "./move.js";
 import { Splice } from "./splice.js";
 import { Replace } from "./replace.js";
-
-const sentinel = {};
+import { DerivedStream } from "./stream.js";
 
 /* Substream refers to a field embedded within a container stream */
-export class Substream {
+export class Substream extends DerivedStream {
   constructor(parent, key) {
-    this.parent = parent;
+    super(parent);
     this.key = key;
-    this._next = sentinel;
   }
 
   append(c) {
@@ -28,48 +26,19 @@ export class Substream {
     return this.parent.reverseAppend(new PathChange([this.key], c));
   }
 
-  get next() {
-    if (this._next !== sentinel) {
-      return this._next;
+  _getNext() {
+    const next = this.parent.next;
+    if (!next) {
+      return null;
     }
 
-    const n = this.parent.next ? getNext(this) : null;
-    if (n != null) {
-      this._next = n;
+    const { xform, key, ok } = transform(next.change, this.key);
+    if (!ok) {
+      return null;
     }
 
-    return n;
+    return { change: xform, version: new Substream(next.version, key) };
   }
-
-  push() {
-    this.parent.push();
-    return this;
-  }
-
-  pull() {
-    this.parent.pull();
-    return this;
-  }
-
-  undo() {
-    this.parent.undo();
-    return this;
-  }
-
-  redo() {
-    this.parent.redo();
-    return this;
-  }
-}
-
-function getNext(s) {
-  const next = s.parent.next;
-  const { xform, key, ok } = transform(next.change, s.key);
-  if (!ok) {
-    return null;
-  }
-
-  return { change: xform, version: new Substream(next.version, key) };
 }
 
 function transform(c, key) {

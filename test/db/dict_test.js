@@ -61,9 +61,9 @@ describe("Dict", () => {
   });
 
   it("should immutably set keys", () => {
-    let n = new Dict().setStream(new Stream());
-    let njson = JSON.stringify(n);
-    let n2 = n.get("hello").replace(new Num(5));
+    const n = new Dict().setStream(new Stream());
+    const njson = JSON.stringify(n);
+    n.get("hello").replace(new Num(5));
     expect(njson).to.equal(JSON.stringify(n));
     expect(+n.next.version.get("hello")).to.equal(5);
   });
