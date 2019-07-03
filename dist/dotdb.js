@@ -264,6 +264,37 @@ class DerivedStream {
   }
 }
 
+/** Bool represents true/false */
+class Bool extends Value {
+  constructor(b) {
+    super();
+    this.b = Boolean(b);
+  }
+
+  valueOf() {
+    return this.b;
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Bool(this.b);
+  }
+
+  toJSON() {
+    return this.b;
+  }
+
+  static typeName() {
+    return "dotdb.Bool";
+  }
+
+  static fromJSON(decoder, json) {
+    return new Bool(json);
+  }
+}
+
+Decoder.registerValueClass(Bool);
+
 /**
  * branch creates a branched stream.  Updates to the returned branched
  * stream or the parent stream are not automatically carried over to
@@ -2941,6 +2972,7 @@ module.exports = {
   Seq,
   Text,
   Num,
+  Bool,
   Null,
   Ref,
   Field,
