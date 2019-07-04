@@ -50,7 +50,7 @@ language.
 The basic primitive types in DotDB are:
 
 1. **Null** (no value).  This is gennerally not explicitly stored but
-simply the resulting of fetching a key or a ref that does not exist.
+simply the resulting of fetching a key or a ref that does not exist: `new dotdb.Null()`
 2. **Num** (any rational number): `new dotdb.Num(5.3)`
 3. **Bool** (a boolean): `new dotdb.Bool(true)`
 4. **Text** (unicode editable string): `new dotdb.Text("hello")`
@@ -58,8 +58,8 @@ simply the resulting of fetching a key or a ref that does not exist.
 In addition, DotDB supports composite types:
 
 1. **Dict** is a map-like collection of any DotDB values (primitive or
-composite).  The key must be a string.
-2. **Seq** is an array-like collection of any DotDB values.
+composite).  The key must be a string: `new dotdb.Dict({hello: new dotb.Text("world")})`
+2. **Seq** is an array-like collection of any DotDB values: `new dotdb.Seq([new Text("hello")])`
 
 Note: **Dict** is generally preferred over **Seq** for most actual
 storage needs as this is both simpler and more efficient.  When
@@ -73,7 +73,7 @@ There are two other special types of values:
 
 1. **Runnable** values are value that need to be evaluated.  An
 example is **Ref** which holds the path (reference) to another object
-in the current.  The value of **Ref** should be treated as the value
+in the current store.  The value of **Ref** should be treated as the value
 it points to.  All runnable values implement a method: `run(store)` to
 yield the actual result of evaluating them.
 2. **Functions** are values that need to be invoked with

@@ -9,7 +9,6 @@ import { expect } from "chai";
 import { Value } from "../../db/value.js";
 
 import {
-  map,
   filter,
   field,
   Null,

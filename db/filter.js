@@ -5,13 +5,11 @@
 "use strict";
 
 import { Changes } from "./changes.js";
-import { Text } from "./text.js";
 import { Replace } from "./replace.js";
 import { PathChange } from "./path_change.js";
 import { DerivedStream } from "./stream.js";
 import { Null } from "./null.js";
 import { Dict } from "./dict.js";
-import { invoke } from "./view.js";
 import { MapIterator } from "./iterators.js";
 import { Bool } from "./bool.js";
 import { map } from "./map.js";
@@ -53,35 +51,35 @@ class FilterStream extends DerivedStream {
 
   _getNext() {
     let filtersn = this.filters.next;
-    if (!filtersn) {
-      if (!this._value) return null;
-      filtersn = { change: null, version: this.filters };
+    let basen = this.base.next;
+
+    if (!filtersn && !basen) {
+      return null;
     }
 
-    const basen = this.base.next;
+    const filters = filtersn ? filtersn.version : this.filters;
     const base = basen ? basen.version : this.base;
 
-    if (!this._value || typeof filtersn.version[MapIterator] !== "function") {
-      const version = new FilterStream(base, filtersn.version, null);
+    if (!this._value || typeof filters[MapIterator] !== "function") {
+      const version = new FilterStream(base, filters, null);
       const change = new Replace(this.value.clone(), version.value.clone());
       return { change, version };
     }
 
     const changes = [];
     const addRemoveKeys = {};
-    const value = Object.assign({}, this._value);
+    const value = {};
 
-    for (let [key, val] of filtersn.version[MapIterator]()) {
+    for (let [key, val] of filters[MapIterator]()) {
       if (val instanceof Bool && val.b) {
-        if (!value.hasOwnProperty(key)) {
+        if (!this._value.hasOwnProperty(key)) {
           value[key] = base.get(key).clone();
           const r = new Replace(new Null(), value[key].clone());
           changes.push(new PathChange([key], r));
           addRemoveKeys[key] = true;
         }
-      } else if (value.hasOwnProperty(key)) {
-        const r = new Replace(value[key].clone(), new Null());
-        delete value[key];
+      } else if (this._value.hasOwnProperty(key)) {
+        const r = new Replace(this._value[key].clone(), new Null());
         changes.push(new PathChange([key], r));
         addRemoveKeys[key] = true;
       }
@@ -94,11 +92,17 @@ class FilterStream extends DerivedStream {
       value,
       changes
     );
+
     if (!changes.length) {
       return null;
     }
+
     const change = new Changes(changes);
-    const version = new FilterStream(base, filtersn.version, value);
+    const version = new FilterStream(
+      base,
+      filters,
+      Object.assign({}, this._value, value)
+    );
     return { change, version };
   }
 
