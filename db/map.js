@@ -23,7 +23,6 @@ export function map(store, obj, fn) {
 
 /** toDict takes a map where the values are streams and converts it to
  * a live dict */
-
 export function toDict(m) {
   return new MapStream(new Dict(m), null, m).value;
 }

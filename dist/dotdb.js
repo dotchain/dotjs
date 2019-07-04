@@ -5,121 +5,213 @@
 
 "use strict";
 
-/** Value is the base class for values.
- *
- * It should not be used directly but by subclassing.
- * Subclasses should implement clone(), toJSON(), static typeName() as
- * well as static fromJSON and optionally override apply().
- */
-class Value {
-  constructor() {
-    this.stream = null;
-    this._next = null;
+const valueTypes = {};
+const changeTypes = {};
+
+class Decoder {
+  decode(value) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    for (let key in value) {
+      switch (key) {
+        case "bool":
+          return value.bool;
+        case "int":
+          return value.int;
+        case "float64":
+          return +value.float64;
+        case "string":
+          return value.string;
+        case "time.Time":
+          return new Date(value[key]);
+      }
+    }
+
+    const val = this.decodeValue(value);
+    if (val !== undefined) {
+      return val;
+    }
+
+    return this.decodeChange(value);
   }
 
-  /** setStream mutates the current value and updates it stream **/
-  setStream(s) {
-    this.stream = s;
-    return this;
+  decodeValue(v) {
+    for (let key in v) {
+      if (valueTypes.hasOwnProperty(key)) {
+        return valueTypes[key].fromJSON(this, v[key]);
+      }
+    }
+  }
+
+  decodeChange(c) {
+    if (c === null) {
+      return null;
+    }
+
+    for (let key in c) {
+      if (changeTypes.hasOwnProperty(key)) {
+        return changeTypes[key].fromJSON(this, c[key]);
+      }
+    }
+  }
+
+  // registerValueClass registers value types. This is needed
+  // for encoding/decoding value types
+  //
+  // Value classes should include a static method typeName() which
+  // provides the associated golang type
+  static registerValueClass(valueConstructor) {
+    valueTypes[valueConstructor.typeName()] = valueConstructor;
+  }
+
+  // registerChangeClass registers change types. This is needed
+  // for encoding/decoding change types
+  //
+  // Change classes should include a static method typeName() which
+  // provides the associated golang type
+  static registerChangeClass(changeConstructor) {
+    changeTypes[changeConstructor.typeName()] = changeConstructor;
+  }
+}
+
+class Encoder {
+  static encode(value) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (value && value.constructor && value.constructor.typeName) {
+      return { [value.constructor.typeName()]: value };
+    }
+
+    if (value instanceof Date) {
+      return { "time.Time": Encoder.encodeDateValue(value) };
+    }
+
+    value = value.valueOf();
+    switch (typeof value) {
+      case "boolean":
+        return { bool: Encoder.encodeBoolValue(value) };
+      case "number":
+        return Encoder.encodeNumber(value);
+      case "string":
+        return { string: value };
+    }
+  }
+
+  static encodeBoolValue(b) {
+    return b.valueOf();
+  }
+
+  static encodeNumber(i) {
+    if (Number.isSafeInteger(i)) {
+      return { int: i };
+    }
+    return { float64: i.toString() };
+  }
+
+  static encodeDateValue(date) {
+    const pad = (n, width) => n.toString().padStart(width, "0");
+    const offset = date.getTimezoneOffset();
+    return (
+      pad(date.getFullYear(), 4) +
+      "-" +
+      pad(date.getMonth() + 1, 2) +
+      "-" +
+      pad(date.getDate(), 2) +
+      "T" +
+      pad(date.getHours(), 2) +
+      ":" +
+      pad(date.getMinutes(), 2) +
+      ":" +
+      pad(date.getSeconds(), 2) +
+      "." +
+      pad(date.getMilliseconds(), 3) +
+      (offset > 0 ? "-" : "+") +
+      pad(Math.floor(Math.abs(offset) / 60), 2) +
+      ":" +
+      pad(Math.abs(offset) % 60, 2)
+    );
+  }
+
+  static encodeArrayValue(a) {
+    if (a === undefined || a === null) {
+      return null;
+    }
+
+    return a.map(Encoder.encode);
+  }
+}
+
+const encode = Encoder.encode;
+
+/** Replace represents a change one value to another **/
+class Replace {
+  /**
+   * before and after must be valid Value types (that implement apply()).
+   *
+   * @param {Value} before - the value as it was before.
+   * @param {Value} after - the value as it is after.
+   */
+  constructor(before, after) {
+    this.before = before;
+    this.after = after;
+  }
+
+  /** @returns {Replace} - the inverse of the replace */
+  revert() {
+    return new Replace(this.after, this.before);
+  }
+
+  _isDelete() {
+    return this.after.constructor.typeName() == "changes.empty";
   }
 
   /**
-   * replace substitutes this with another value
-   * @returns {Value} r - r has same stream as this
-   **/
-  replace(replacement) {
-    const change = new Replace(this.clone(), replacement.clone());
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
+  merge(other) {
+    if (other == null) {
+      return [null, this];
+    }
+    if (other instanceof Replace) {
+      return this._mergeReplace(other);
+    }
+    const [left, right] = other.reverseMerge(this);
+    return [right, left];
   }
 
-  /** @type {Object} null or {change, version} */
-  get next() {
-    if (this._next !== null || !this.stream) {
-      return this._next;
+  _mergeReplace(other) {
+    if (this._isDelete() && other._isDelete()) {
+      return [null, null];
     }
-
-    let n = this.stream.next;
-    for (; n && !n.change; n = n.version.next) {
-      // the following *mutation* is not strictly needed but improves
-      // performance when an value is referred to by multiple derived
-      // computations. it also helps better garbage collection of streams
-      this.stream = n.version;
-    }
-
-    if (!n) return null;
-    this._next = this._nextf(n.change, n.version);
-    return this._next;
+    return [new Replace(this.after, other.after), null];
   }
 
-  /** latest returns the latest version */
-  latest() {
-    let result = this;
-    for (let n = this.next; n; n = result.next) {
-      result = n.version;
-    }
-    return result;
+  toJSON() {
+    return Encoder.encodeArrayValue([this.before, this.after]);
   }
 
-  _nextf(change, version) {
-    return {
-      change,
-      version: this.apply(change)
-        .clone()
-        .setStream(version)
-    };
+  static typeName() {
+    return "changes.Replace";
   }
 
-  /** default apply only supports Replace */
-  apply(c) {
-    if (!c) {
-      return this.clone();
-    }
-
-    if (c instanceof Replace) {
-      return c.after;
-    }
-
-    return c.applyTo(this);
-  }
-
-  /** branch returns a value that is on its own branch with push/pull support **/
-  branch() {
-    return this.clone().setStream(branch(this.stream));
-  }
-
-  /** push pushes the changes up to the parent */
-  push() {
-    if (this.stream) {
-      this.stream.push();
-    }
-    return this;
-  }
-
-  /** pull pulls changes from the parent */
-  pull() {
-    if (this.stream) {
-      this.stream.pull();
-    }
-    return this;
-  }
-
-  /** undoes the last change on this branch */
-  undo() {
-    if (this.stream) {
-      this.stream.undo();
-    }
-    return this;
-  }
-
-  /** redoes the last undo on this branch */
-  redo() {
-    if (this.stream) {
-      this.stream.redo();
-    }
-    return this;
+  static fromJSON(decoder, json) {
+    const before = decoder.decodeValue(json[0]);
+    const after = decoder.decodeValue(json[1]);
+    return new Replace(before, after);
   }
 }
+
+Decoder.registerChangeClass(Replace);
 
 /**
  * Stream tracks all future changes to a particular value.
@@ -264,37 +356,6 @@ class DerivedStream {
   }
 }
 
-/** Bool represents true/false */
-class Bool extends Value {
-  constructor(b) {
-    super();
-    this.b = Boolean(b);
-  }
-
-  valueOf() {
-    return this.b;
-  }
-
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Bool(this.b);
-  }
-
-  toJSON() {
-    return this.b;
-  }
-
-  static typeName() {
-    return "dotdb.Bool";
-  }
-
-  static fromJSON(decoder, json) {
-    return new Bool(json);
-  }
-}
-
-Decoder.registerValueClass(Bool);
-
 /**
  * branch creates a branched stream.  Updates to the returned branched
  * stream or the parent stream are not automatically carried over to
@@ -362,6 +423,153 @@ class Branch {
     return this;
   }
 }
+
+/** Value is the base class for values.
+ *
+ * It should not be used directly but by subclassing.
+ * Subclasses should implement clone(), toJSON(), static typeName() as
+ * well as static fromJSON and optionally override apply().
+ */
+class Value {
+  constructor() {
+    this.stream = null;
+    this._next = null;
+  }
+
+  /** setStream mutates the current value and updates it stream **/
+  setStream(s) {
+    this.stream = s;
+    return this;
+  }
+
+  /**
+   * replace substitutes this with another value
+   * @returns {Value} r - r has same stream as this
+   **/
+  replace(replacement) {
+    const change = new Replace(this.clone(), replacement.clone());
+    const version = this.stream && this.stream.append(change);
+    return this._nextf(change, version).version;
+  }
+
+  /** @type {Object} null or {change, version} */
+  get next() {
+    if (this._next !== null || !this.stream) {
+      return this._next;
+    }
+
+    let n = this.stream.next;
+    for (; n && !n.change; n = n.version.next) {
+      // the following *mutation* is not strictly needed but improves
+      // performance when an value is referred to by multiple derived
+      // computations. it also helps better garbage collection of streams
+      this.stream = n.version;
+    }
+
+    if (!n) return null;
+    this._next = this._nextf(n.change, n.version);
+    return this._next;
+  }
+
+  /** latest returns the latest version */
+  latest() {
+    let result = this;
+    for (let n = this.next; n; n = result.next) {
+      result = n.version;
+    }
+    return result;
+  }
+
+  _nextf(change, version) {
+    return {
+      change,
+      version: this.apply(change)
+        .clone()
+        .setStream(version)
+    };
+  }
+
+  /** default apply only supports Replace */
+  apply(c) {
+    if (!c) {
+      return this.clone();
+    }
+
+    if (c instanceof Replace) {
+      return c.after;
+    }
+
+    return c.applyTo(this);
+  }
+
+  /** branch returns a value that is on its own branch with push/pull support **/
+  branch() {
+    return this.clone().setStream(branch(this.stream));
+  }
+
+  /** push pushes the changes up to the parent */
+  push() {
+    if (this.stream) {
+      this.stream.push();
+    }
+    return this;
+  }
+
+  /** pull pulls changes from the parent */
+  pull() {
+    if (this.stream) {
+      this.stream.pull();
+    }
+    return this;
+  }
+
+  /** undoes the last change on this branch */
+  undo() {
+    if (this.stream) {
+      this.stream.undo();
+    }
+    return this;
+  }
+
+  /** redoes the last undo on this branch */
+  redo() {
+    if (this.stream) {
+      this.stream.redo();
+    }
+    return this;
+  }
+}
+
+/** Bool represents true/false */
+class Bool extends Value {
+  constructor(b) {
+    super();
+    this.b = Boolean(b);
+  }
+
+  valueOf() {
+    return this.b;
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Bool(this.b);
+  }
+
+  toJSON() {
+    return this.b;
+  }
+
+  static typeName() {
+    return "dotdb.Bool";
+  }
+
+  static fromJSON(decoder, json) {
+    return new Bool(json);
+  }
+}
+
+Decoder.registerValueClass(Bool);
 
 /** Implements a collection of change values */
 class Changes {
@@ -471,6 +679,152 @@ class Changes {
 
 Decoder.registerChangeClass(Changes);
 
+let getRandomValues = null;
+
+/*eslint-disable */
+if (typeof crypto !== "undefined") {
+  getRandomValues = b => crypto.getRandomValues(b);
+}
+/*eslint-enable */
+
+/** Operation is the change and metadata needed for network transmission */
+class Operation {
+  /**
+   * @param {string} [id] - the id is typically auto-generated.
+   * @param {string} [parentId] - the id of the previous unacknowledged local op.
+   * @param {int} [version] - the zero-based index is updated by the server.
+   * @param {int} basis -- the version of the last applied acknowledged op.
+   * @param {Change} changes -- the actual change being sent to the server.
+   */
+  constructor(id, parentId, version, basis, changes) {
+    this.id = id || Operation.newId();
+    this.parentId = parentId;
+    this.version = version;
+    this.basis = basis;
+    this.changes = changes;
+  }
+
+  toJSON() {
+    const unencoded = [this.id, this.parentId, this.changes];
+    const [id, parentId, c] = Encoder.encodeArrayValue(unencoded);
+    return [id, parentId, this.version, this.basis, c];
+  }
+
+  merge(otherOp) {
+    if (!this.changes) {
+      return [otherOp, this];
+    }
+
+    const [l, r] = this.changes.merge(otherOp.changes);
+    return [otherOp.withChanges(l), this.withChanges(r)];
+  }
+
+  withChanges(c) {
+    return new Operation(this.id, this.parentId, this.version, this.basis, c);
+  }
+
+  static typeName() {
+    return "ops.Operation";
+  }
+
+  static fromJSON(decoder, json) {
+    const [id, parentId, version, basis, changes] = json;
+    return new Operation(
+      decoder.decode(id),
+      decoder.decode(parentId),
+      version,
+      basis,
+      decoder.decodeChange(changes)
+    );
+  }
+
+  static newId() {
+    const bytes = new Uint8Array(16);
+    getRandomValues(bytes);
+    const toHex = x => ("00" + x.toString(16)).slice(-2);
+    return Array.prototype.map.call(bytes, toHex).join("");
+  }
+
+  /*
+   * useCrypto should be used to provide the polyfill for crypto
+   * @param [Object] crypto - the crypto module
+   * @param [function] cyrpto.randomFillSync -- this is only function used here
+   */
+  static useCrypto(crypto) {
+    getRandomValues = crypto.randomFillSync;
+  }
+}
+
+class Request {
+  constructor(name, ops, version, limit, duration) {
+    this.name = name;
+    this.ops = ops;
+    this.version = version;
+    this.limit = limit;
+    this.duration = duration;
+  }
+
+  toJSON() {
+    const ops = Encoder.encodeArrayValue(this.ops);
+    return [this.name, ops, this.version, this.limit, this.duration];
+  }
+
+  static typeName() {
+    return "ops/nw.request";
+  }
+
+  static fromJSON(decoder, json) {
+    const [name, ops, version, limit, duration] = json;
+    const opx = (ops || []).map(op =>
+      Operation.fromJSON(decoder, op[Operation.typeName()])
+    );
+    if (name == "Append") {
+      return new AppendRequest(opx);
+    } else {
+      return new GetSinceRequest(version, limit, duration);
+    }
+  }
+}
+
+class AppendRequest extends Request {
+  constructor(ops) {
+    super("Append", ops, -1, -1, 0);
+  }
+}
+
+class GetSinceRequest extends Request {
+  constructor(version, limit, duration) {
+    super("GetSince", null, version, limit, duration);
+  }
+}
+
+class Response {
+  constructor(ops, err) {
+    this.ops = ops || [];
+    this.err = err || null;
+  }
+
+  toJSON() {
+    let err = null;
+    if (this.err) {
+      const s = this.err.toString().replace("Error: ", "");
+      err = { "ops/nw.strError": s };
+    }
+
+    return [Encoder.encodeArrayValue(this.ops || []), err];
+  }
+
+  static typeName() {
+    return "ops/nw.response";
+  }
+
+  static fromJSON(decoder, json) {
+    const err = (json[1] && new Error(json[1]["ops/nw.strError"])) || null;
+    const decode = op => Operation.fromJSON(decoder, op[Operation.typeName()]);
+    return new Response((json[0] || []).map(decode), err);
+  }
+}
+
 /**
  * Conn creates a network connection or use with Session. See {@link Transformer}.
  */
@@ -530,511 +884,361 @@ class Conn {
   }
 }
 
-const valueTypes = {};
-const changeTypes = {};
+/** PathChange represents an embedded value changing at the specified path. */
+class PathChange {
+  /**
+   * The path is a sequence of index or key name to refer to the embeded value.
+   *
+   * Example: root.rows[3] will have path ["rows", 3].
+   *
+   * @param {Any[]} path - path to inner value.
+   * @param {Change} change - any change applied to inner value at path.
+   */
+  constructor(path, change) {
+    if (path == undefined) {
+      path = null;
+    }
+    if (change === undefined) {
+      change = null;
+    }
 
-class Decoder {
-  decode(value) {
-    if (value === undefined || value === null) {
+    this.path = path;
+    this.change = change;
+  }
+
+  /** @returns {Change} - the inverse of this change */
+  revert() {
+    if (this.change == null) {
       return null;
     }
 
-    for (let key in value) {
-      switch (key) {
-        case "bool":
-          return value.bool;
-        case "int":
-          return value.int;
-        case "float64":
-          return +value.float64;
-        case "string":
-          return value.string;
-        case "time.Time":
-          return new Date(value[key]);
-      }
-    }
-
-    const val = this.decodeValue(value);
-    if (val !== undefined) {
-      return val;
-    }
-
-    return this.decodeChange(value);
+    return PathChange.create(this.path, this.change.revert());
   }
 
-  decodeValue(v) {
-    for (let key in v) {
-      if (valueTypes.hasOwnProperty(key)) {
-        return valueTypes[key].fromJSON(this, v[key]);
-      }
-    }
-  }
-
-  decodeChange(c) {
-    if (c === null) {
-      return null;
+  reverseMerge(other) {
+    if (this.path === null || this.path.length === 0) {
+      const [left, right] = other.merge(this.change);
+      return [right, left];
     }
 
-    for (let key in c) {
-      if (changeTypes.hasOwnProperty(key)) {
-        return changeTypes[key].fromJSON(this, c[key]);
-      }
+    if (other instanceof Replace) {
+      const before = other.before.apply(this);
+      return [new Replace(before, other.after), null];
     }
+    throw new Error("unexpected PathChange.reverseMerge");
   }
 
-  // registerValueClass registers value types. This is needed
-  // for encoding/decoding value types
-  //
-  // Value classes should include a static method typeName() which
-  // provides the associated golang type
-  static registerValueClass(valueConstructor) {
-    valueTypes[valueConstructor.typeName()] = valueConstructor;
-  }
-
-  // registerChangeClass registers change types. This is needed
-  // for encoding/decoding change types
-  //
-  // Change classes should include a static method typeName() which
-  // provides the associated golang type
-  static registerChangeClass(changeConstructor) {
-    changeTypes[changeConstructor.typeName()] = changeConstructor;
-  }
-}
-
-/** Dict represents a map/hash/dictionary/collection with string keys */
-class Dict extends Value {
-  constructor(initial, defaultFn) {
-    super();
-    this.map = initial || {};
-    this._defaultFn = defaultFn || (() => new Null());
-  }
-
-  setDefaultFn(defaultFn) {
-    this._defaultFn = defaultFn || (() => new Null());
-  }
-
-  /** get looks up a key and returns the value (or a default value) */
-  get(key) {
-    const s = new Substream(this.stream, key);
-    return (this.map[key] || this._defaultFn()).setStream(s);
-  }
-
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Dict(this.map);
-  }
-
-  apply(c) {
-    if (!c) {
-      return this.clone();
+  /**
+   * Merge another change and return modified version of
+   * the other and current change.
+   *
+   * current + returned[0] and other + returned[1] are guaranteed
+   * to result in the same state.
+   *
+   * @returns {Change[]}
+   */
+  merge(other) {
+    if (other == null) {
+      return [null, this];
     }
 
-    if (c instanceof Replace) {
-      return c.after;
+    if (this.change == null) {
+      return [other, null];
     }
 
-    if (c instanceof PathChange) {
-      if (c.path === null || c.path.length === 0) {
-        return this.apply(c.change);
-      }
-      return this._applyPath(c.path, c.change);
+    if (this.path == null) {
+      return this.change.merge(other);
     }
 
-    return c.applyTo(this);
+    if (!(other instanceof PathChange)) {
+      other = new PathChange(null, other);
+    }
+
+    const len = PathChange.commonPrefixLen(this.path, other.path);
+    const ownLen = (this.path && this.path.length) || 0;
+    const otherLen = (other.path && other.path.length) || 0;
+
+    if (len != ownLen && len != otherLen) {
+      return [other, this];
+    }
+
+    if (len == ownLen && len == otherLen) {
+      const [left, right] = this.change.merge(other.change);
+      return [
+        PathChange.create(other.path, left),
+        PathChange.create(this.path, right)
+      ];
+    }
+
+    if (len == ownLen) {
+      const [left, right] = this.change.merge(
+        PathChange.create(other.path.slice(len), other.change)
+      );
+      return [
+        PathChange.create(this.path, left),
+        PathChange.create(this.path, right)
+      ];
+    }
+
+    const [left, right] = other.merge(this);
+    return [right, left];
   }
 
-  _applyPath(path, c) {
-    let val = this.map[path[0]] || this._defaultFn();
-    val = val.apply(new PathChange(path.slice(1), c));
-    const clone = {};
-    for (let key in this.map) {
-      clone[key] = this.map[key];
+  applyTo(value) {
+    if (this.path === null || this.path.length === 0) {
+      return value.apply(this.change);
     }
-    if (val instanceof Null) {
-      delete clone[path[0]];
-    } else {
-      clone[path[0]] = val;
-    }
-    return new Dict(clone);
-  }
-
-  *[MapIterator]() {
-    for (let key in this.map) {
-      yield [key, this.get(key)];
-    }
+    throw new Error("Unexpected use of PathChange.applyTo");
   }
 
   toJSON() {
-    let all = [];
-    for (let key in this.map) {
-      all.push(key, Encoder.encode(this.map[key]));
-    }
-    return all;
+    const path = Encoder.encodeArrayValue(this.path);
+    return [path, Encoder.encode(this.change)];
   }
 
   static typeName() {
-    return "dotdb.Dict";
+    return "changes.PathChange";
   }
 
   static fromJSON(decoder, json) {
-    json = json || [];
-    const map = {};
-    for (let kk = 0; kk < json.length; kk += 2) {
-      map[json[kk]] = decoder.decodeValue(json[kk + 1]);
-    }
-    return new Dict(map);
-  }
-}
+    let path = json[0];
 
-Decoder.registerValueClass(Dict);
-
-class Encoder {
-  static encode(value) {
-    if (value === undefined || value === null) {
-      return null;
+    if (path !== null) {
+      path = path.map(x => decoder.decode(x));
     }
 
-    if (value && value.constructor && value.constructor.typeName) {
-      return { [value.constructor.typeName()]: value };
-    }
-
-    if (value instanceof Date) {
-      return { "time.Time": Encoder.encodeDateValue(value) };
-    }
-
-    value = value.valueOf();
-    switch (typeof value) {
-      case "boolean":
-        return { bool: Encoder.encodeBoolValue(value) };
-      case "number":
-        return Encoder.encodeNumber(value);
-      case "string":
-        return { string: value };
-    }
+    const change = decoder.decodeChange(json[1]);
+    return new PathChange(path, change);
   }
 
-  static encodeBoolValue(b) {
-    return b.valueOf();
-  }
-
-  static encodeNumber(i) {
-    if (Number.isSafeInteger(i)) {
-      return { int: i };
+  static commonPrefixLen(p1, p2) {
+    if (p1 == null || p2 == null) {
+      return 0;
     }
-    return { float64: i.toString() };
-  }
-
-  static encodeDateValue(date) {
-    const pad = (n, width) => n.toString().padStart(width, "0");
-    const offset = date.getTimezoneOffset();
-    return (
-      pad(date.getFullYear(), 4) +
-      "-" +
-      pad(date.getMonth() + 1, 2) +
-      "-" +
-      pad(date.getDate(), 2) +
-      "T" +
-      pad(date.getHours(), 2) +
-      ":" +
-      pad(date.getMinutes(), 2) +
-      ":" +
-      pad(date.getSeconds(), 2) +
-      "." +
-      pad(date.getMilliseconds(), 3) +
-      (offset > 0 ? "-" : "+") +
-      pad(Math.floor(Math.abs(offset) / 60), 2) +
-      ":" +
-      pad(Math.abs(offset) % 60, 2)
-    );
-  }
-
-  static encodeArrayValue(a) {
-    if (a === undefined || a === null) {
-      return null;
-    }
-
-    return a.map(Encoder.encode);
-  }
-}
-
-const encode = Encoder.encode;
-
-function field(store, obj, key) {
-  return new FieldStream(store, run(store, obj), run(store, key), null).value;
-}
-
-class FieldStream extends DerivedStream {
-  constructor(store, obj, key, value) {
-    if (!value) {
-      if (!key.text) {
-        value = new Null();
-      } else if (obj.collection) {
-        value = obj.collection(key.text);
-      } else if (obj.get) {
-        value = obj.get(key.text);
-      } else {
-        value = new Null();
+    let len = 0;
+    for (; len < p1.length && len < p2.length; len++) {
+      const encode = x => Encoder.encode(x);
+      if (JSON.stringify(encode(p1[len])) != JSON.stringify(encode(p2[len]))) {
+        return len;
       }
     }
-
-    super(value.stream);
-    this.value = value.clone().setStream(this);
-    this.store = store;
-    this.obj = obj;
-    this.key = key;
+    return len;
   }
 
-  _getNext() {
-    const n = this.store.next;
-    if (n) {
-      this.store = n.version;
+  static create(path, change) {
+    if (path == null || path.length == 0) {
+      return change;
     }
-
-    const objn = this.obj.next;
-    const keyn = this.key.next;
-    if (objn || keyn) {
-      const obj = objn ? objn.version : this.obj;
-      const key = keyn ? keyn.version : this.key;
-      const updated = new FieldStream(this.store, obj, key, null).value;
-      const change = new Replace(this.value.clone(), updated.clone());
-      return { change, version: updated.stream };
+    if (change == null) {
+      return null;
     }
-
-    const valuen = this.parent && this.parent.next;
-    if (valuen) {
-      // evaluated value has changed
-      const value = this.value.apply(valuen.change);
-      const version = new FieldStream(
-        this.store,
-        this.obj,
-        this.key,
-        value.setStream(valuen.version)
-      );
-      return { change: valuen.change, version };
+    if (change instanceof PathChange) {
+      const otherPath = change.path || [];
+      return this.create(path.concat(otherPath), change.change);
     }
-
-    return null;
+    return new PathChange(path, change);
   }
 }
 
-/** Field is a calculation that when invoked returns obj.field */
-class Field extends Value {
-  clone() {
-    return new Field();
+/**
+ * Splice represents the change to replace a sub-sequence with another.
+ * It can be used with strings or array-like values.
+ */
+class Splice {
+  /**
+   * @param {Number} offset -- where the sub-sequence starts.
+   * @param {Value} before -- the subsequnce as it was before.
+   * @param {Value} value - the subsequence as it is after.
+   */
+  constructor(offset, before, after) {
+    this.offset = offset;
+    this.before = before;
+    this.after = after;
   }
 
-  invoke(store, args) {
-    const obj = field(store, args, new Text("obj"));
-    const key = field(store, args, new Text("field"));
-    return field(store, obj, key);
+  revert() {
+    return new Splice(this.offset, this.after, this.before);
+  }
+
+  reverseMerge(other) {
+    if (other == null) {
+      return [null, this];
+    }
+    if (other instanceof Replace) {
+      return this._mergeReplace(other);
+    }
+
+    if (other instanceof Splice) {
+      const [left, right] = other._mergeSplice(this);
+      return [right, left];
+    }
+
+    if (other instanceof PathChange) {
+      return this._mergePath(other, true);
+    }
+
+    const [self, otherx] = other.reverseMerge(this);
+    return [otherx, self];
+  }
+
+  merge(other) {
+    if (other == null) {
+      return [null, this];
+    }
+
+    if (other instanceof Replace) {
+      return this._mergeReplace(other);
+    }
+
+    if (other instanceof Splice) {
+      return this._mergeSplice(other);
+    }
+
+    if (other instanceof PathChange) {
+      return this._mergePath(other, false);
+    }
+    const [left, right] = other.reverseMerge(this);
+    return [right, left];
+  }
+
+  _mergePath(o, reverse) {
+    if (o.path == null || o.path.length === 0) {
+      if (reverse) {
+        return this.reverseMerge(o.change);
+      }
+      return this.merge(o.change);
+    }
+
+    const newPath = this.mapPath(o.path);
+    if (newPath == null) {
+      const p = [o.path[0] - this.offset].concat(o.path.slice(1));
+      const before = this.before.apply(new PathChange(p, o.change));
+      return [null, new Splice(this.offset, before, this.after)];
+    }
+    return [new PathChange(newPath, o.change), this];
+  }
+
+  mapPath(path) {
+    const idx = path[0];
+    if (idx < this.offset) {
+      return path;
+    }
+
+    if (idx >= this.offset + this.before.length) {
+      const idx2 = idx + this.after.length - this.before.length;
+      return [idx2].concat(path.slice(1));
+    }
+
+    // path obliterated
+    return null;
+  }
+
+  _mergeSplice(o) {
+    if (Splice._end(this) <= o.offset) {
+      // [ ] < >
+      const offset = o.offset + Splice._diff(this);
+      const other = new Splice(offset, o.before, o.after);
+      return [other, this];
+    }
+
+    if (Splice._end(o) <= this.offset) {
+      // < > [ ]
+      const offset = this.offset + Splice._diff(o);
+      const updated = new Splice(offset, this.before, this.after);
+      return [o, updated];
+    }
+
+    if (this.offset < o.offset && Splice._end(this) < Splice._end(o)) {
+      // [ < ] >
+      const oOffset = this.offset + this.after.length;
+      const end = Splice._end(this);
+      const oBefore = o.before.slice(end - o.offset, o.before.length);
+      const before = this.before.slice(0, o.offset - this.offset);
+      return [
+        new Splice(oOffset, oBefore, o.after),
+        new Splice(this.offset, before, this.after)
+      ];
+    }
+
+    if (this.offset == o.offset && this.before.length < o.before.length) {
+      // <[ ] >
+      const oBefore = o.before.slice(this.before.length, o.before.length);
+      const oOffset = o.offset + this.after.length;
+      const other = new Splice(oOffset, oBefore, o.after);
+
+      return [
+        other,
+        new Splice(this.offset, this.before.slice(0, 0), this.after)
+      ];
+      // golang behavior is below
+      // const oBefore = o.before.apply(new Splice(0, this.before, this.after));
+      // return [new Splice(o.offset, oBefore, o.after), null];
+    }
+
+    if (this.offset <= o.offset && Splice._end(this) >= Splice._end(o)) {
+      // [ < > ]
+      const diff = o.offset - this.offset;
+      const slice = this.before.slice(diff, diff + o.before.length);
+      const before = this.before.apply(new Splice(diff, slice, o.after));
+      return [null, new Splice(this.offset, before, this.after)];
+    }
+
+    if (this.offset > o.offset && Splice._end(this) <= Splice._end(o)) {
+      // < [ ]>
+      const diff = this.offset - o.offset;
+      const slice = o.before.slice(diff, diff + this.before.length);
+      const oBefore = o.before.apply(
+        new Splice(this.offset - o.offset, slice, this.after)
+      );
+      return [new Splice(o.offset, oBefore, o.after), null];
+    }
+
+    // < [ > ]
+    const oBefore = o.before.slice(0, this.offset - o.offset);
+    const offset = o.offset + o.after.length;
+    const before = this.before.slice(
+      Splice._end(o) - this.offset,
+      this.before.length
+    );
+    return [
+      new Splice(o.offset, oBefore, o.after),
+      new Splice(offset, before, this.after)
+    ];
+  }
+
+  _mergeReplace(other) {
+    const after = other.before.apply(this);
+    return [new Replace(after, other.after), null];
   }
 
   toJSON() {
-    return null;
+    return [
+      this.offset,
+      Encoder.encode(this.before),
+      Encoder.encode(this.after)
+    ];
   }
 
   static typeName() {
-    return "dotdb.Field";
+    return "changes.Splice";
   }
 
-  static fromJSON() {
-    return new Field();
-  }
-}
-
-Decoder.registerValueClass(Field);
-
-/** MapIterator is implemented by map-like values and yield key-value pairs */
-const MapIterator = Symbol("MapIterator");
-
-/** SeqIterator is implemented by seq-like values and yield just values */
-const SeqIterator = Symbol("SeqIterator");
-
-/** map calls the provided fn on all keys of the object */
-function map(store, obj, fn) {
-  const f = (key, val) =>
-    invoke(store, fn, toDict({ key: new Text(key), it: val }));
-  return new MapStream(obj, f, null).value;
-}
-
-/** toDict takes a map where the values are streams and converts it to
- * a live dict */
-
-function toDict(m) {
-  return new MapStream(new Dict(m), null, m).value;
-}
-
-/** MapStream implement a mapped dictionary-like stream */
-class MapStream extends DerivedStream {
-  constructor(base, fn, value) {
-    super(base.stream);
-    this.base = base;
-    this.fn = fn || ((k, v) => v);
-    if (!value) {
-      if (typeof this.base[MapIterator] !== "function") {
-        value = null;
-      } else {
-        value = {};
-
-        for (let [key, val] of this.base[MapIterator]()) {
-          value[key] = this.fn(key, val);
-        }
-      }
-    }
-    this._value = value;
+  static fromJSON(decoder, json) {
+    const before = decoder.decodeValue(json[1]);
+    const after = decoder.decodeValue(json[2]);
+    return new Splice(json[0], before, after);
   }
 
-  append(c) {
-    // proxy any changes to a field over to this._value
-    const updated = {};
-    if (!this._appendChanges(c, updated, false)) {
-      return this;
-    }
-
-    const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
+  static _end(s) {
+    return s.offset + s.before.length;
   }
 
-  reverseAppend(c) {
-    // proxy any changes to a field over to this._value
-    const updated = {};
-    if (!this._appendChanges(c, updated, true)) {
-      return this;
-    }
-
-    const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
-  }
-
-  get value() {
-    if (!this._value) {
-      return new Null().setStream(this);
-    }
-
-    const m = {};
-    for (let key in this._value) {
-      m[key] = this._value[key].clone();
-    }
-    return new Dict(m).setStream(this);
-  }
-
-  _getNext() {
-    const basen = this.base.next;
-
-    if (!this._value) {
-      if (!basen) {
-        return null;
-      }
-      const version = new MapStream(basen.version, this.fn, null);
-      const change = new Replace(this.value.clone(), version.value.clone());
-      return { change, version };
-    }
-
-    if (basen && typeof basen.version[MapIterator] !== "function") {
-      const version = new MapStream(basen.version, this.fn, null);
-      const change = new Replace(this.value.clone(), version.value.clone());
-      return { change, version };
-    }
-
-    const updated = Object.assign({}, this._value);
-    const changes = [];
-
-    if (basen) {
-      this._updateKeys(basen.version, basen.change, updated, changes);
-    }
-
-    for (let key in this._value) {
-      if (!updated.hasOwnProperty(key)) continue;
-      const val = this._value[key];
-      const n = val.next;
-      if (n) {
-        changes.push(new PathChange([key], n.change));
-        updated[key] = n.version;
-      }
-    }
-
-    if (changes.length === 0) {
-      return null;
-    }
-
-    const change = changes.length == 1 ? changes[0] : new Changes(changes);
-    const version = new MapStream(
-      basen ? basen.version : this.base,
-      this.fn,
-      updated
-    );
-    return { change, version };
-  }
-
-  _updateKeys(base, c, updated, changes) {
-    if (!c) {
-      return;
-    }
-
-    if (c instanceof Changes) {
-      for (let cx of c) {
-        this._updateNewKeys(base, cx, updated, changes);
-      }
-      return;
-    }
-
-    if (!(c instanceof PathChange)) {
-      return;
-    }
-
-    if ((c.path || []).length == 0) {
-      return this._updateNewKeys(base, c.change, updated, changes);
-    }
-
-    const key = c.path[0];
-    const existed = updated.hasOwnProperty(key);
-    const nowExists = !(base.get(key) instanceof Null);
-
-    if (!existed && nowExists) {
-      updated[key] = this.fn(key, base.get(key));
-      const replace = new Replace(new Null(), updated[key].clone());
-      changes.push(new PathChange([key], replace));
-    } else if (existed && !nowExists) {
-      const replace = new Replace(new Null(), updated[key].clone());
-      delete updated[key];
-      changes.push(new PathChange([key], replace.revert()));
-    }
-  }
-
-  _appendChanges(c, updated, reverse) {
-    if (c instanceof Changes) {
-      let result = false;
-      for (let cx of c) {
-        result = result || this._appendChanges(cx, updated, reverse);
-      }
-      return result;
-    }
-
-    if (!(c instanceof PathChange)) {
-      return false;
-    }
-
-    if (!c.path || c.path.length === 0) {
-      return this._appendChanges(c.change, reverse);
-    }
-
-    const key = c.path[0];
-    if (this._value.hasOwnProperty(key)) {
-      const cx = PathChange.create(c.path.slice(1), c.change);
-      const val = this._value[key];
-      updated[key] = val
-        .clone()
-        .apply(cx)
-        .setStream(
-          val.stream &&
-            (reverse ? val.stream.reverseAppend(cx) : val.stream.append(cx))
-        );
-      return true;
-    }
-
-    return false;
+  static _diff(s) {
+    return s.after.length - s.before.length;
   }
 }
+
+Decoder.registerChangeClass(Splice);
 
 /**
  * Move represents shifting a sub-sequence over to a different spot.
@@ -1541,977 +1745,6 @@ class Move {
 
 Decoder.registerChangeClass(Move);
 
-/** Null represents an empty value */
-class Null extends Value {
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Null();
-  }
-
-  toJSON() {
-    return [];
-  }
-
-  static typeName() {
-    return "changes.empty";
-  }
-
-  static fromJSON() {
-    return new Null();
-  }
-}
-
-Decoder.registerValueClass(Null);
-
-/** Num represents a generic numeric type */
-class Num extends Value {
-  constructor(num) {
-    super();
-    this.n = parseFloat(+num);
-    if (isNaN(this.n) || !isFinite(this.n)) {
-      throw new Error("not a number: " + num);
-    }
-  }
-
-  valueOf() {
-    return this.n;
-  }
-
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Num(this.n);
-  }
-
-  toJSON() {
-    return this.n;
-  }
-
-  static typeName() {
-    return "dotdb.Num";
-  }
-
-  static fromJSON(decoder, json) {
-    return new Num(json);
-  }
-}
-
-Decoder.registerValueClass(Num);
-
-let getRandomValues = null;
-
-/*eslint-disable */
-if (typeof crypto !== "undefined") {
-  getRandomValues = b => crypto.getRandomValues(b);
-}
-/*eslint-enable */
-
-/** Operation is the change and metadata needed for network transmission */
-class Operation {
-  /**
-   * @param {string} [id] - the id is typically auto-generated.
-   * @param {string} [parentId] - the id of the previous unacknowledged local op.
-   * @param {int} [version] - the zero-based index is updated by the server.
-   * @param {int} basis -- the version of the last applied acknowledged op.
-   * @param {Change} changes -- the actual change being sent to the server.
-   */
-  constructor(id, parentId, version, basis, changes) {
-    this.id = id || Operation.newId();
-    this.parentId = parentId;
-    this.version = version;
-    this.basis = basis;
-    this.changes = changes;
-  }
-
-  toJSON() {
-    const unencoded = [this.id, this.parentId, this.changes];
-    const [id, parentId, c] = Encoder.encodeArrayValue(unencoded);
-    return [id, parentId, this.version, this.basis, c];
-  }
-
-  merge(otherOp) {
-    if (!this.changes) {
-      return [otherOp, this];
-    }
-
-    const [l, r] = this.changes.merge(otherOp.changes);
-    return [otherOp.withChanges(l), this.withChanges(r)];
-  }
-
-  withChanges(c) {
-    return new Operation(this.id, this.parentId, this.version, this.basis, c);
-  }
-
-  static typeName() {
-    return "ops.Operation";
-  }
-
-  static fromJSON(decoder, json) {
-    const [id, parentId, version, basis, changes] = json;
-    return new Operation(
-      decoder.decode(id),
-      decoder.decode(parentId),
-      version,
-      basis,
-      decoder.decodeChange(changes)
-    );
-  }
-
-  static newId() {
-    const bytes = new Uint8Array(16);
-    getRandomValues(bytes);
-    const toHex = x => ("00" + x.toString(16)).slice(-2);
-    return Array.prototype.map.call(bytes, toHex).join("");
-  }
-
-  /*
-   * useCrypto should be used to provide the polyfill for crypto
-   * @param [Object] crypto - the crypto module
-   * @param [function] cyrpto.randomFillSync -- this is only function used here
-   */
-  static useCrypto(crypto) {
-    getRandomValues = crypto.randomFillSync;
-  }
-}
-
-/** PathChange represents an embedded value changing at the specified path. */
-class PathChange {
-  /**
-   * The path is a sequence of index or key name to refer to the embeded value.
-   *
-   * Example: root.rows[3] will have path ["rows", 3].
-   *
-   * @param {Any[]} path - path to inner value.
-   * @param {Change} change - any change applied to inner value at path.
-   */
-  constructor(path, change) {
-    if (path == undefined) {
-      path = null;
-    }
-    if (change === undefined) {
-      change = null;
-    }
-
-    this.path = path;
-    this.change = change;
-  }
-
-  /** @returns {Change} - the inverse of this change */
-  revert() {
-    if (this.change == null) {
-      return null;
-    }
-
-    return PathChange.create(this.path, this.change.revert());
-  }
-
-  reverseMerge(other) {
-    if (this.path === null || this.path.length === 0) {
-      const [left, right] = other.merge(this.change);
-      return [right, left];
-    }
-
-    if (other instanceof Replace) {
-      const before = other.before.apply(this);
-      return [new Replace(before, other.after), null];
-    }
-    throw new Error("unexpected PathChange.reverseMerge");
-  }
-
-  /**
-   * Merge another change and return modified version of
-   * the other and current change.
-   *
-   * current + returned[0] and other + returned[1] are guaranteed
-   * to result in the same state.
-   *
-   * @returns {Change[]}
-   */
-  merge(other) {
-    if (other == null) {
-      return [null, this];
-    }
-
-    if (this.change == null) {
-      return [other, null];
-    }
-
-    if (this.path == null) {
-      return this.change.merge(other);
-    }
-
-    if (!(other instanceof PathChange)) {
-      other = new PathChange(null, other);
-    }
-
-    const len = PathChange.commonPrefixLen(this.path, other.path);
-    const ownLen = (this.path && this.path.length) || 0;
-    const otherLen = (other.path && other.path.length) || 0;
-
-    if (len != ownLen && len != otherLen) {
-      return [other, this];
-    }
-
-    if (len == ownLen && len == otherLen) {
-      const [left, right] = this.change.merge(other.change);
-      return [
-        PathChange.create(other.path, left),
-        PathChange.create(this.path, right)
-      ];
-    }
-
-    if (len == ownLen) {
-      const [left, right] = this.change.merge(
-        PathChange.create(other.path.slice(len), other.change)
-      );
-      return [
-        PathChange.create(this.path, left),
-        PathChange.create(this.path, right)
-      ];
-    }
-
-    const [left, right] = other.merge(this);
-    return [right, left];
-  }
-
-  applyTo(value) {
-    if (this.path === null || this.path.length === 0) {
-      return value.apply(this.change);
-    }
-    throw new Error("Unexpected use of PathChange.applyTo");
-  }
-
-  toJSON() {
-    const path = Encoder.encodeArrayValue(this.path);
-    return [path, Encoder.encode(this.change)];
-  }
-
-  static typeName() {
-    return "changes.PathChange";
-  }
-
-  static fromJSON(decoder, json) {
-    let path = json[0];
-
-    if (path !== null) {
-      path = path.map(x => decoder.decode(x));
-    }
-
-    const change = decoder.decodeChange(json[1]);
-    return new PathChange(path, change);
-  }
-
-  static commonPrefixLen(p1, p2) {
-    if (p1 == null || p2 == null) {
-      return 0;
-    }
-    let len = 0;
-    for (; len < p1.length && len < p2.length; len++) {
-      const encode = x => Encoder.encode(x);
-      if (JSON.stringify(encode(p1[len])) != JSON.stringify(encode(p2[len]))) {
-        return len;
-      }
-    }
-    return len;
-  }
-
-  static create(path, change) {
-    if (path == null || path.length == 0) {
-      return change;
-    }
-    if (change == null) {
-      return null;
-    }
-    if (change instanceof PathChange) {
-      const otherPath = change.path || [];
-      return this.create(path.concat(otherPath), change.change);
-    }
-    return new PathChange(path, change);
-  }
-}
-
-/** Ref represents a reference to a path */
-class Ref extends Value {
-  constructor(path) {
-    super();
-    this._path = path;
-  }
-
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Ref(this._path);
-  }
-
-  /** run returns the underlying value at the path */
-  run(store) {
-    let result = store;
-    for (let elt of this._path) {
-      if (result === store) {
-        result = store.collection(elt);
-      } else {
-        result = field(store, result, new Text(elt));
-      }
-    }
-    return result;
-  }
-
-  toJSON() {
-    return JSON.stringify(this._path);
-  }
-
-  static typeName() {
-    return "dotdb.Ref";
-  }
-
-  static fromJSON(decoder, json) {
-    return new Ref(JSON.parse(json));
-  }
-}
-
-Decoder.registerValueClass(Ref);
-
-/** Replace represents a change one value to another **/
-class Replace {
-  /**
-   * before and after must be valid Value types (that implement apply()).
-   *
-   * @param {Value} before - the value as it was before.
-   * @param {Value} after - the value as it is after.
-   */
-  constructor(before, after) {
-    this.before = before;
-    this.after = after;
-  }
-
-  /** @returns {Replace} - the inverse of the replace */
-  revert() {
-    return new Replace(this.after, this.before);
-  }
-
-  _isDelete() {
-    return this.after.constructor.typeName() == "changes.empty";
-  }
-
-  /**
-   * Merge another change and return modified version of
-   * the other and current change.
-   *
-   * current + returned[0] and other + returned[1] are guaranteed
-   * to result in the same state.
-   *
-   * @returns {Change[]}
-   */
-  merge(other) {
-    if (other == null) {
-      return [null, this];
-    }
-    if (other instanceof Replace) {
-      return this._mergeReplace(other);
-    }
-    const [left, right] = other.reverseMerge(this);
-    return [right, left];
-  }
-
-  _mergeReplace(other) {
-    if (this._isDelete() && other._isDelete()) {
-      return [null, null];
-    }
-    return [new Replace(this.after, other.after), null];
-  }
-
-  toJSON() {
-    return Encoder.encodeArrayValue([this.before, this.after]);
-  }
-
-  static typeName() {
-    return "changes.Replace";
-  }
-
-  static fromJSON(decoder, json) {
-    const before = decoder.decodeValue(json[0]);
-    const after = decoder.decodeValue(json[1]);
-    return new Replace(before, after);
-  }
-}
-
-Decoder.registerChangeClass(Replace);
-
-class Request {
-  constructor(name, ops, version, limit, duration) {
-    this.name = name;
-    this.ops = ops;
-    this.version = version;
-    this.limit = limit;
-    this.duration = duration;
-  }
-
-  toJSON() {
-    const ops = Encoder.encodeArrayValue(this.ops);
-    return [this.name, ops, this.version, this.limit, this.duration];
-  }
-
-  static typeName() {
-    return "ops/nw.request";
-  }
-
-  static fromJSON(decoder, json) {
-    const [name, ops, version, limit, duration] = json;
-    const opx = (ops || []).map(op =>
-      Operation.fromJSON(decoder, op[Operation.typeName()])
-    );
-    if (name == "Append") {
-      return new AppendRequest(opx);
-    } else {
-      return new GetSinceRequest(version, limit, duration);
-    }
-  }
-}
-
-class AppendRequest extends Request {
-  constructor(ops) {
-    super("Append", ops, -1, -1, 0);
-  }
-}
-
-class GetSinceRequest extends Request {
-  constructor(version, limit, duration) {
-    super("GetSince", null, version, limit, duration);
-  }
-}
-
-class Response {
-  constructor(ops, err) {
-    this.ops = ops || [];
-    this.err = err || null;
-  }
-
-  toJSON() {
-    let err = null;
-    if (this.err) {
-      const s = this.err.toString().replace("Error: ", "");
-      err = { "ops/nw.strError": s };
-    }
-
-    return [Encoder.encodeArrayValue(this.ops || []), err];
-  }
-
-  static typeName() {
-    return "ops/nw.response";
-  }
-
-  static fromJSON(decoder, json) {
-    const err = (json[1] && new Error(json[1]["ops/nw.strError"])) || null;
-    const decode = op => Operation.fromJSON(decoder, op[Operation.typeName()]);
-    return new Response((json[0] || []).map(decode), err);
-  }
-}
-
-function run(store, obj) {
-  return new RunStream(store, obj, null).value;
-}
-
-class RunStream extends DerivedStream {
-  constructor(store, obj, value) {
-    if (!value) {
-      value = obj;
-      if (value.run) {
-        value = run(store, value.run(store));
-      }
-    }
-
-    super(value.stream);
-
-    this.value = value.clone().setStream(this);
-    this.store = store;
-    this.obj = obj;
-  }
-
-  _getNext() {
-    const n = this.store.next;
-    if (n) {
-      this.store = n.version;
-    }
-
-    const objn = this.obj.next;
-    if (objn) {
-      // object definition has changed
-      const updated = run(this.store, objn.version);
-      const change = new Replace(this.value.clone(), updated.clone());
-      return { change, version: updated.stream };
-    }
-
-    const valuen = this.parent && this.parent.next;
-    if (valuen) {
-      // evaluated value has changed
-      const value = this.value.apply(valuen.change).setStream(valuen.version);
-      const version = new RunStream(this.store, this.obj, value);
-      return { change: valuen.change, version };
-    }
-
-    return null;
-  }
-}
-
-/** Seq represents a sequence of values */
-class Seq extends Value {
-  constructor(entries) {
-    super();
-    this.entries = entries || [];
-  }
-
-  /**
-   * splice splices a replacement sequence
-   *
-   * @param {Number} offset - where the replacement starts
-   * @param {Number} count - number of items to remove
-   * @param {Text|String} replacement - what to replace with
-   *
-   * @return {Text}
-   */
-  splice(offset, count, replacement) {
-    const before = this.slice(offset, offset + count);
-    const change = new Splice(offset, before, replacement);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
-  }
-
-  /**
-   * move shifts the sub-sequence by the specified distance.
-   * If distance is positive, the sub-sequence shifts over to the
-   * right by as many characters as specified in distance. Negative
-   * distance shifts left.
-   *
-   * @param {Number} offset - start of sub-sequence to shift
-   * @param {Number} count - size of sub-sequence to shift
-   * @param {Number} distance - distance to shift
-   *
-   * @return {Text}
-   */
-  move(offset, count, distance) {
-    const change = new Move(offset, count, distance);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
-  }
-
-  /** clone makes a copy but with stream set to null */
-  clone() {
-    return new Seq(this.entries);
-  }
-
-  slice(start, end) {
-    return new Seq(this.entries.slice(start, end));
-  }
-
-  _concat(...args) {
-    const entries = [];
-    for (let arg of args) {
-      entries.push(arg.entries);
-    }
-    return new Seq(this.entries.concat(...entries));
-  }
-
-  get length() {
-    return this.entries.length;
-  }
-
-  get(idx) {
-    const v = this.entries[idx];
-    if (v) {
-      return v.setStream(new Substream(this.stream, idx));
-    }
-    // this is disconneected!
-    return new Null();
-  }
-
-  set(idx, val) {
-    const slice = this.entries.slice(0);
-    slice[idx] = val;
-    return new Seq(slice);
-  }
-
-  apply(c) {
-    return applySeq(this, c);
-  }
-
-  *[SeqIterator]() {
-    for (let kk = 0; kk < this.entries.length; kk++) {
-      yield this.entries[kk];
-    }
-  }
-
-  toJSON() {
-    return Encoder.encodeArrayValue(this.entries);
-  }
-
-  static typeName() {
-    return "dotdb.Seq";
-  }
-
-  static fromJSON(decoder, json) {
-    return new Seq((json || []).map(x => decoder.decodeValue(x)));
-  }
-}
-
-Decoder.registerValueClass(Seq);
-
-function applySeq(obj, c) {
-  if (c == null) {
-    return obj.clone();
-  }
-
-  if (c instanceof Replace) {
-    return c.after;
-  }
-
-  if (c instanceof PathChange) {
-    if (c.path === null || c.path.length === 0) {
-      return obj.apply(c.change);
-    }
-    const pc = new PathChange(c.path.slice(1), c.change);
-    return obj.set(c.path[0], obj.get(c.path[0]).apply(pc));
-  }
-
-  if (c instanceof Splice) {
-    const left = obj.slice(0, c.offset);
-    const right = obj.slice(c.offset + c.before.length);
-    return left._concat(c.after, right);
-  }
-
-  if (c instanceof Move) {
-    let { offset: off, count, distance: dist } = c;
-    if (dist < 0) {
-      [off, count, dist] = [off + dist, -dist, count];
-    }
-    const l1 = obj.slice(0, off);
-    const l2 = obj.slice(off, off + count);
-    const l3 = obj.slice(off + count, off + count + dist);
-    const l4 = obj.slice(off + count + dist);
-    return l1._concat(l3, l2, l4);
-  }
-
-  return c.applyTo(obj);
-}
-
-/**
- * Splice represents the change to replace a sub-sequence with another.
- * It can be used with strings or array-like values.
- */
-class Splice {
-  /**
-   * @param {Number} offset -- where the sub-sequence starts.
-   * @param {Value} before -- the subsequnce as it was before.
-   * @param {Value} value - the subsequence as it is after.
-   */
-  constructor(offset, before, after) {
-    this.offset = offset;
-    this.before = before;
-    this.after = after;
-  }
-
-  revert() {
-    return new Splice(this.offset, this.after, this.before);
-  }
-
-  reverseMerge(other) {
-    if (other == null) {
-      return [null, this];
-    }
-    if (other instanceof Replace) {
-      return this._mergeReplace(other);
-    }
-
-    if (other instanceof Splice) {
-      const [left, right] = other._mergeSplice(this);
-      return [right, left];
-    }
-
-    if (other instanceof PathChange) {
-      return this._mergePath(other, true);
-    }
-
-    const [self, otherx] = other.reverseMerge(this);
-    return [otherx, self];
-  }
-
-  merge(other) {
-    if (other == null) {
-      return [null, this];
-    }
-
-    if (other instanceof Replace) {
-      return this._mergeReplace(other);
-    }
-
-    if (other instanceof Splice) {
-      return this._mergeSplice(other);
-    }
-
-    if (other instanceof PathChange) {
-      return this._mergePath(other, false);
-    }
-    const [left, right] = other.reverseMerge(this);
-    return [right, left];
-  }
-
-  _mergePath(o, reverse) {
-    if (o.path == null || o.path.length === 0) {
-      if (reverse) {
-        return this.reverseMerge(o.change);
-      }
-      return this.merge(o.change);
-    }
-
-    const newPath = this.mapPath(o.path);
-    if (newPath == null) {
-      const p = [o.path[0] - this.offset].concat(o.path.slice(1));
-      const before = this.before.apply(new PathChange(p, o.change));
-      return [null, new Splice(this.offset, before, this.after)];
-    }
-    return [new PathChange(newPath, o.change), this];
-  }
-
-  mapPath(path) {
-    const idx = path[0];
-    if (idx < this.offset) {
-      return path;
-    }
-
-    if (idx >= this.offset + this.before.length) {
-      const idx2 = idx + this.after.length - this.before.length;
-      return [idx2].concat(path.slice(1));
-    }
-
-    // path obliterated
-    return null;
-  }
-
-  _mergeSplice(o) {
-    if (Splice._end(this) <= o.offset) {
-      // [ ] < >
-      const offset = o.offset + Splice._diff(this);
-      const other = new Splice(offset, o.before, o.after);
-      return [other, this];
-    }
-
-    if (Splice._end(o) <= this.offset) {
-      // < > [ ]
-      const offset = this.offset + Splice._diff(o);
-      const updated = new Splice(offset, this.before, this.after);
-      return [o, updated];
-    }
-
-    if (this.offset < o.offset && Splice._end(this) < Splice._end(o)) {
-      // [ < ] >
-      const oOffset = this.offset + this.after.length;
-      const end = Splice._end(this);
-      const oBefore = o.before.slice(end - o.offset, o.before.length);
-      const before = this.before.slice(0, o.offset - this.offset);
-      return [
-        new Splice(oOffset, oBefore, o.after),
-        new Splice(this.offset, before, this.after)
-      ];
-    }
-
-    if (this.offset == o.offset && this.before.length < o.before.length) {
-      // <[ ] >
-      const oBefore = o.before.slice(this.before.length, o.before.length);
-      const oOffset = o.offset + this.after.length;
-      const other = new Splice(oOffset, oBefore, o.after);
-
-      return [
-        other,
-        new Splice(this.offset, this.before.slice(0, 0), this.after)
-      ];
-      // golang behavior is below
-      // const oBefore = o.before.apply(new Splice(0, this.before, this.after));
-      // return [new Splice(o.offset, oBefore, o.after), null];
-    }
-
-    if (this.offset <= o.offset && Splice._end(this) >= Splice._end(o)) {
-      // [ < > ]
-      const diff = o.offset - this.offset;
-      const slice = this.before.slice(diff, diff + o.before.length);
-      const before = this.before.apply(new Splice(diff, slice, o.after));
-      return [null, new Splice(this.offset, before, this.after)];
-    }
-
-    if (this.offset > o.offset && Splice._end(this) <= Splice._end(o)) {
-      // < [ ]>
-      const diff = this.offset - o.offset;
-      const slice = o.before.slice(diff, diff + this.before.length);
-      const oBefore = o.before.apply(
-        new Splice(this.offset - o.offset, slice, this.after)
-      );
-      return [new Splice(o.offset, oBefore, o.after), null];
-    }
-
-    // < [ > ]
-    const oBefore = o.before.slice(0, this.offset - o.offset);
-    const offset = o.offset + o.after.length;
-    const before = this.before.slice(
-      Splice._end(o) - this.offset,
-      this.before.length
-    );
-    return [
-      new Splice(o.offset, oBefore, o.after),
-      new Splice(offset, before, this.after)
-    ];
-  }
-
-  _mergeReplace(other) {
-    const after = other.before.apply(this);
-    return [new Replace(after, other.after), null];
-  }
-
-  toJSON() {
-    return [
-      this.offset,
-      Encoder.encode(this.before),
-      Encoder.encode(this.after)
-    ];
-  }
-
-  static typeName() {
-    return "changes.Splice";
-  }
-
-  static fromJSON(decoder, json) {
-    const before = decoder.decodeValue(json[1]);
-    const after = decoder.decodeValue(json[2]);
-    return new Splice(json[0], before, after);
-  }
-
-  static _end(s) {
-    return s.offset + s.before.length;
-  }
-
-  static _diff(s) {
-    return s.after.length - s.before.length;
-  }
-}
-
-Decoder.registerChangeClass(Splice);
-
-/** Store implements a collection of tables with ability to sync via a
- * connection */
-class Store {
-  /**
-   * @param {Conn|Transformer|string} conn - can be url or Conn
-   * @param {Object} serialized? - output of prev serialze() call
-   */
-  constructor(conn, serialized) {
-    const data = serialized || { root: [], session: { version: -1 } };
-    if (typeof fetch == "function" && typeof conn == "string") {
-      conn = new Transformer(new Conn(conn, fetch)); //eslint-disable-line
-    }
-    this._conn = conn;
-    this._root = Dict.fromJSON(new Decoder(), data.root).setStream(
-      new Stream()
-    );
-
-    // All root collections are "implict" and get created on access
-    this._root.setDefaultFn(() => new Dict());
-    this._session = {
-      stream: this._root.stream,
-      version: data.session.version,
-      pending: (data.session.pending || []).slice(0),
-      merge: (data.session.merge || []).slice(0),
-      reading: null,
-      writing: null,
-
-      // not yet pushed to server
-      unsent: (data.session.pending || []).slice(0),
-      // have received from server but not applied to model yet
-      unmerged: []
-    };
-  }
-
-  /** collection returns a collection by name */
-  collection(name) {
-    return this._root.get(name);
-  }
-
-  /** @type {Object} null or {change, version} */
-  get next() {
-    const n = this._root.next;
-    if (!n) {
-      return null;
-    }
-
-    const store = new Store(this._conn, null);
-    store._root = n.version;
-    store._session = this._session;
-    return { change: n.change, version: store };
-  }
-
-  sync() {
-    return this.pull().then(() => this.push());
-  }
-
-  pull() {
-    const s = this._session;
-
-    // apply server operations
-    for (let op of s.unmerged) {
-      if (s.pending.length && s.pending[0].id == op.id) {
-        // ack
-        s.pending.shift();
-        s.merge.shift();
-      } else {
-        for (let kk = 0; kk < s.meerge.length; kk++) {
-          [s.merge[kk], op] = op.merge(s.merge[kk]);
-        }
-        s.stream = s.stream.reverseAppend(op.changes);
-      }
-      s.version = op.version;
-    }
-
-    // read more operations
-    if (!s.reading) {
-      s.reading = this._conn.read(s.version + 1, 1000).then(ops => {
-        s.unmerged = s.unmerged.concat(ops || []);
-        s.reading = null;
-      });
-    }
-    return s.reading;
-  }
-
-  push() {
-    const s = this._session;
-
-    // collect all pending activity on the root stream
-    const len = (s.pending || []).length;
-    let pid = len > 0 ? s.pending[len - 1].id : null;
-    for (let next = s.stream.next; next != null; next = next.version.next) {
-      const op = new Operation(null, pid, -1, this._version, next.change);
-      s.unsent.push(op);
-      s.pending.push(op);
-      s.stream = next.version;
-    }
-
-    // write to connection
-    if (!s.writing) {
-      const ops = s.unsent.slice(0);
-      if (len(ops) == 0) {
-        return Promise.resolve(null);
-      }
-
-      s.writing = this._conn.write(ops).then(() => {
-        for (let kk = 0; kk < ops.length; kk++) {
-          s.unsent.shift();
-        }
-        s.writing = null;
-      });
-    }
-    return s.writing;
-  }
-
-  serialize() {
-    const { version, pending, merge } = this._session;
-    const session = { version, pending, merge };
-    return { root: this._root.toJSON(), session };
-  }
-}
-
 /* Substream refers to a field embedded within a container stream */
 class Substream extends DerivedStream {
   constructor(parent, key) {
@@ -2591,6 +1824,121 @@ function transform(c, key) {
 
   throw new Error("unknown change type: " + c.constructor.name);
 }
+
+/** Null represents an empty value */
+class Null extends Value {
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Null();
+  }
+
+  toJSON() {
+    return [];
+  }
+
+  static typeName() {
+    return "changes.empty";
+  }
+
+  static fromJSON() {
+    return new Null();
+  }
+}
+
+Decoder.registerValueClass(Null);
+
+/** MapIterator is implemented by map-like values and yield key-value pairs */
+const MapIterator = Symbol("MapIterator");
+
+/** SeqIterator is implemented by seq-like values and yield just values */
+const SeqIterator = Symbol("SeqIterator");
+
+/** Dict represents a map/hash/dictionary/collection with string keys */
+class Dict extends Value {
+  constructor(initial, defaultFn) {
+    super();
+    this.map = initial || {};
+    this._defaultFn = defaultFn || (() => new Null());
+  }
+
+  setDefaultFn(defaultFn) {
+    this._defaultFn = defaultFn || (() => new Null());
+  }
+
+  /** get looks up a key and returns the value (or a default value) */
+  get(key) {
+    const s = new Substream(this.stream, key);
+    return (this.map[key] || this._defaultFn()).setStream(s);
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Dict(this.map);
+  }
+
+  apply(c) {
+    if (!c) {
+      return this.clone();
+    }
+
+    if (c instanceof Replace) {
+      return c.after;
+    }
+
+    if (c instanceof PathChange) {
+      if (c.path === null || c.path.length === 0) {
+        return this.apply(c.change);
+      }
+      return this._applyPath(c.path, c.change);
+    }
+
+    return c.applyTo(this);
+  }
+
+  _applyPath(path, c) {
+    let val = this.map[path[0]] || this._defaultFn();
+    val = val.apply(new PathChange(path.slice(1), c));
+    const clone = {};
+    for (let key in this.map) {
+      clone[key] = this.map[key];
+    }
+    if (val instanceof Null) {
+      delete clone[path[0]];
+    } else {
+      clone[path[0]] = val;
+    }
+    return new Dict(clone);
+  }
+
+  *[MapIterator]() {
+    for (let key in this.map) {
+      yield [key, this.get(key)];
+    }
+  }
+
+  toJSON() {
+    let all = [];
+    for (let key in this.map) {
+      all.push(key, Encoder.encode(this.map[key]));
+    }
+    return all;
+  }
+
+  static typeName() {
+    return "dotdb.Dict";
+  }
+
+  static fromJSON(decoder, json) {
+    json = json || [];
+    const map = {};
+    for (let kk = 0; kk < json.length; kk += 2) {
+      map[json[kk]] = decoder.decodeValue(json[kk + 1]);
+    }
+    return new Dict(map);
+  }
+}
+
+Decoder.registerValueClass(Dict);
 
 /** Text represents a string value */
 class Text extends Value {
@@ -2700,6 +2048,546 @@ class Text extends Value {
 }
 
 Decoder.registerValueClass(Text);
+
+function run(store, obj) {
+  return new RunStream(store, obj, null).value;
+}
+
+class RunStream extends DerivedStream {
+  constructor(store, obj, value) {
+    if (!value) {
+      value = obj;
+      if (value.run) {
+        value = run(store, value.run(store));
+      }
+    }
+
+    super(value.stream);
+
+    this.value = value.clone().setStream(this);
+    this.store = store;
+    this.obj = obj;
+  }
+
+  _getNext() {
+    const n = this.store.next;
+    if (n) {
+      this.store = n.version;
+    }
+
+    const objn = this.obj.next;
+    if (objn) {
+      // object definition has changed
+      const updated = run(this.store, objn.version);
+      const change = new Replace(this.value.clone(), updated.clone());
+      return { change, version: updated.stream };
+    }
+
+    const valuen = this.parent && this.parent.next;
+    if (valuen) {
+      // evaluated value has changed
+      const value = this.value.apply(valuen.change).setStream(valuen.version);
+      const version = new RunStream(this.store, this.obj, value);
+      return { change: valuen.change, version };
+    }
+
+    return null;
+  }
+}
+
+function field(store, obj, key) {
+  return new FieldStream(store, run(store, obj), run(store, key), null).value;
+}
+
+class FieldStream extends DerivedStream {
+  constructor(store, obj, key, value) {
+    if (!value) {
+      if (!key.text) {
+        value = new Null();
+      } else if (obj.collection) {
+        value = obj.collection(key.text);
+      } else if (obj.get) {
+        value = obj.get(key.text);
+      } else {
+        value = new Null();
+      }
+    }
+
+    super(value.stream);
+    this.value = value.clone().setStream(this);
+    this.store = store;
+    this.obj = obj;
+    this.key = key;
+  }
+
+  _getNext() {
+    const n = this.store.next;
+    if (n) {
+      this.store = n.version;
+    }
+
+    const objn = this.obj.next;
+    const keyn = this.key.next;
+    if (objn || keyn) {
+      const obj = objn ? objn.version : this.obj;
+      const key = keyn ? keyn.version : this.key;
+      const updated = new FieldStream(this.store, obj, key, null).value;
+      const change = new Replace(this.value.clone(), updated.clone());
+      return { change, version: updated.stream };
+    }
+
+    const valuen = this.parent && this.parent.next;
+    if (valuen) {
+      // evaluated value has changed
+      const value = this.value.apply(valuen.change);
+      const version = new FieldStream(
+        this.store,
+        this.obj,
+        this.key,
+        value.setStream(valuen.version)
+      );
+      return { change: valuen.change, version };
+    }
+
+    return null;
+  }
+}
+
+/** Field is a calculation that when invoked returns obj.field */
+class Field extends Value {
+  clone() {
+    return new Field();
+  }
+
+  invoke(store, args) {
+    const obj = field(store, args, new Text("obj"));
+    const key = field(store, args, new Text("field"));
+    return field(store, obj, key);
+  }
+
+  toJSON() {
+    return null;
+  }
+
+  static typeName() {
+    return "dotdb.Field";
+  }
+
+  static fromJSON() {
+    return new Field();
+  }
+}
+
+Decoder.registerValueClass(Field);
+
+/** invoke invokes a function reactively */
+function invoke(store, fn, args) {
+  return new InvokeStream(store, run(store, fn), run(store, args), null).value;
+}
+
+class InvokeStream extends DerivedStream {
+  constructor(store, fn, args, value) {
+    if (!value) {
+      if (!fn.invoke) {
+        value = new Null();
+      } else {
+        value = fn.invoke(store, args);
+      }
+    }
+
+    super(value.stream);
+
+    this.value = value.clone().setStream(this);
+    this.store = store;
+    this.fn = fn;
+    this.args = args;
+  }
+
+  _getNext() {
+    const n = this.store.next;
+    if (n) {
+      this.store = n.version;
+    }
+
+    const fnNext = this.fn.next;
+    const argsNext = this.args.next;
+    if (fnNext || argsNext) {
+      const fn = fnNext ? fnNext.version : this.fn;
+      const args = argsNext ? argsNext.version : this.args;
+      const updated = new InvokeStream(this.store, fn, args, null).value;
+      const change = new Replace(this.value.clone(), updated.clone());
+      return { change, version: updated.stream };
+    }
+
+    const valuen = this.parent && this.parent.next;
+    if (valuen) {
+      // evaluated value has changed
+      const value = this.value.apply(valuen.change);
+      const version = new InvokeStream(
+        this.store,
+        this.fn,
+        this.args,
+        value.setStream(valuen.version)
+      );
+      return { change: valuen.change, version };
+    }
+
+    return null;
+  }
+}
+
+/** View stores a calculation that invokes a stored fn and args */
+class View extends Value {
+  constructor(info) {
+    super();
+    this.info = info || new Null();
+  }
+
+  /** clone returns a copy with the stream set to null */
+  clone() {
+    return new View(this.info);
+  }
+
+  run(store) {
+    return invoke(
+      store,
+      field(store, this.info, new Text("viewFn")),
+      this.info
+    );
+  }
+
+  apply(c) {
+    if (!(c instanceof PathChange)) return super.apply(c);
+
+    if (!c.path || c.path.length == 0) {
+      return this.apply(c.change);
+    }
+    if (c.path[0] != "info") {
+      throw new Error("unexpected field: " + c.path[0]);
+    }
+    const pc = new PathChange(c.path.slice(1), c.change);
+    return new View(this.info.apply(pc));
+  }
+
+  get(key) {
+    if (key != "info") {
+      throw new Error("unexpected key: " + key);
+    }
+    return this.info.clone().setStream(new Substream(this.stream, "info"));
+  }
+
+  toJSON() {
+    return Encoder.encode(this.info);
+  }
+
+  static typeName() {
+    return "dotdb.View";
+  }
+
+  static fromJSON(decoder, json) {
+    return new View(decoder.decode(json));
+  }
+}
+
+Decoder.registerValueClass(View);
+
+/** map calls the provided fn on all keys of the object */
+function map(store, obj, fn) {
+  const f = (key, val) =>
+    invoke(store, fn, toDict({ key: new Text(key), it: val }));
+  return new MapStream(obj, f, null).value;
+}
+
+/** toDict takes a map where the values are streams and converts it to
+ * a live dict */
+function toDict(m) {
+  return new MapStream(new Dict(m), null, m).value;
+}
+
+/** MapStream implement a mapped dictionary-like stream */
+class MapStream extends DerivedStream {
+  constructor(base, fn, value) {
+    super(base.stream);
+    this.base = base;
+    this.fn = fn || ((k, v) => v);
+    if (!value) {
+      if (typeof this.base[MapIterator] !== "function") {
+        value = null;
+      } else {
+        value = {};
+
+        for (let [key, val] of this.base[MapIterator]()) {
+          value[key] = this.fn(key, val);
+        }
+      }
+    }
+    this._value = value;
+  }
+
+  append(c) {
+    // proxy any changes to a field over to this._value
+    const updated = {};
+    if (!this._appendChanges(c, updated, false)) {
+      return this;
+    }
+
+    const value = Object.assign({}, this._value, updated);
+    return new MapStream(this.base, this.fn, value);
+  }
+
+  reverseAppend(c) {
+    // proxy any changes to a field over to this._value
+    const updated = {};
+    if (!this._appendChanges(c, updated, true)) {
+      return this;
+    }
+
+    const value = Object.assign({}, this._value, updated);
+    return new MapStream(this.base, this.fn, value);
+  }
+
+  get value() {
+    if (!this._value) {
+      return new Null().setStream(this);
+    }
+
+    const m = {};
+    for (let key in this._value) {
+      m[key] = this._value[key].clone();
+    }
+    return new Dict(m).setStream(this);
+  }
+
+  _getNext() {
+    const basen = this.base.next;
+
+    if (!this._value) {
+      if (!basen) {
+        return null;
+      }
+      const version = new MapStream(basen.version, this.fn, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
+
+    if (basen && typeof basen.version[MapIterator] !== "function") {
+      const version = new MapStream(basen.version, this.fn, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
+
+    const updated = Object.assign({}, this._value);
+    const changes = [];
+
+    if (basen) {
+      this._updateKeys(basen.version, basen.change, updated, changes);
+    }
+
+    for (let key in this._value) {
+      if (!updated.hasOwnProperty(key)) continue;
+      const val = this._value[key];
+      const n = val.next;
+      if (n) {
+        changes.push(new PathChange([key], n.change));
+        updated[key] = n.version;
+      }
+    }
+
+    if (changes.length === 0) {
+      return null;
+    }
+
+    const change = changes.length == 1 ? changes[0] : new Changes(changes);
+    const version = new MapStream(
+      basen ? basen.version : this.base,
+      this.fn,
+      updated
+    );
+    return { change, version };
+  }
+
+  _updateKeys(base, c, updated, changes) {
+    if (!c) {
+      return;
+    }
+
+    if (c instanceof Changes) {
+      for (let cx of c) {
+        this._updateNewKeys(base, cx, updated, changes);
+      }
+      return;
+    }
+
+    if (!(c instanceof PathChange)) {
+      return;
+    }
+
+    if ((c.path || []).length == 0) {
+      return this._updateNewKeys(base, c.change, updated, changes);
+    }
+
+    const key = c.path[0];
+    const existed = updated.hasOwnProperty(key);
+    const nowExists = !(base.get(key) instanceof Null);
+
+    if (!existed && nowExists) {
+      updated[key] = this.fn(key, base.get(key));
+      const replace = new Replace(new Null(), updated[key].clone());
+      changes.push(new PathChange([key], replace));
+    } else if (existed && !nowExists) {
+      const replace = new Replace(new Null(), updated[key].clone());
+      delete updated[key];
+      changes.push(new PathChange([key], replace.revert()));
+    }
+  }
+
+  _appendChanges(c, updated, reverse) {
+    if (c instanceof Changes) {
+      let result = false;
+      for (let cx of c) {
+        result = result || this._appendChanges(cx, updated, reverse);
+      }
+      return result;
+    }
+
+    if (!(c instanceof PathChange)) {
+      return false;
+    }
+
+    if (!c.path || c.path.length === 0) {
+      return this._appendChanges(c.change, reverse);
+    }
+
+    const key = c.path[0];
+    if (this._value.hasOwnProperty(key)) {
+      const cx = PathChange.create(c.path.slice(1), c.change);
+      const val = this._value[key];
+      updated[key] = val
+        .clone()
+        .apply(cx)
+        .setStream(
+          val.stream &&
+            (reverse ? val.stream.reverseAppend(cx) : val.stream.append(cx))
+        );
+      return true;
+    }
+
+    return false;
+  }
+}
+
+/** filter calls the provided fn on all keys of the object and only retains keys for which the fn evalutes to true  */
+function filter(store, obj, fn) {
+  return new FilterStream(obj, map(store, obj, fn), null).value;
+}
+
+/** FilterStream implement a filtered dictionary-like stream */
+class FilterStream extends DerivedStream {
+  constructor(base, filters, value) {
+    super(base.stream);
+    this.base = base;
+    this.filters = filters;
+    if (!value) {
+      if (typeof this.filters[MapIterator] !== "function") {
+        value = null;
+      } else {
+        value = {};
+
+        for (let [key, val] of this.filters[MapIterator]()) {
+          if (val instanceof Bool && val.b) {
+            value[key] = this.base.get(key).clone();
+          }
+        }
+      }
+    }
+    this._value = value;
+  }
+
+  get value() {
+    if (!this._value) {
+      return new Null().setStream(this);
+    }
+
+    return new Dict(this._value).setStream(this);
+  }
+
+  _getNext() {
+    let filtersn = this.filters.next;
+    if (!filtersn) {
+      if (!this._value) return null;
+      filtersn = { change: null, version: this.filters };
+    }
+
+    const basen = this.base.next;
+    const base = basen ? basen.version : this.base;
+
+    if (!this._value || typeof filtersn.version[MapIterator] !== "function") {
+      const version = new FilterStream(base, filtersn.version, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
+
+    const changes = [];
+    const addRemoveKeys = {};
+    const value = Object.assign({}, this._value);
+
+    for (let [key, val] of filtersn.version[MapIterator]()) {
+      if (val instanceof Bool && val.b) {
+        if (!value.hasOwnProperty(key)) {
+          value[key] = base.get(key).clone();
+          const r = new Replace(new Null(), value[key].clone());
+          changes.push(new PathChange([key], r));
+          addRemoveKeys[key] = true;
+        }
+      } else if (value.hasOwnProperty(key)) {
+        const r = new Replace(value[key].clone(), new Null());
+        delete value[key];
+        changes.push(new PathChange([key], r));
+        addRemoveKeys[key] = true;
+      }
+    }
+
+    this._filterChanges(
+      base,
+      basen && basen.change,
+      addRemoveKeys,
+      value,
+      changes
+    );
+    if (!changes.length) {
+      return null;
+    }
+    const change = new Changes(changes);
+    const version = new FilterStream(base, filtersn.version, value);
+    return { change, version };
+  }
+
+  _filterChanges(base, c, ignoreKeys, value, changes) {
+    if (!c) {
+      return;
+    }
+
+    if (c instanceof Changes) {
+      for (let cx of c) {
+        this._filterChanges(base, cx, ignoreKeys, value, changes);
+      }
+      return;
+    }
+
+    if (!(c instanceof PathChange)) {
+      throw new Error("unexpected change type");
+    }
+
+    if (!c.path || !c.path.length) {
+      return this._filterChanges(base, c.change, ignoreKeys, value, changes);
+    }
+
+    if (!ignoreKeys[c.path[0]]) {
+      changes.push(c);
+      value[c.path[0]] = base.get(c.path[0]).clone();
+    }
+  }
+}
 
 /** Transformer wraps a {@link Conn} object, transforming all incoming ops */
 class Transformer {
@@ -2855,116 +2743,340 @@ class Transformer {
   }
 }
 
-/** invoke invokes a function reactively */
-function invoke(store, fn, args) {
-  return new InvokeStream(store, run(store, fn), run(store, args), null).value;
-}
-
-class InvokeStream extends DerivedStream {
-  constructor(store, fn, args, value) {
-    if (!value) {
-      if (!fn.invoke) {
-        value = new Null();
-      } else {
-        value = fn.invoke(store, args);
-      }
+/** Store implements a collection of tables with ability to sync via a
+ * connection */
+class Store {
+  /**
+   * @param {Conn|Transformer|string} conn - can be url or Conn
+   * @param {Object} serialized? - output of prev serialze() call
+   */
+  constructor(conn, serialized) {
+    const data = serialized || { root: [], session: { version: -1 } };
+    if (typeof fetch == "function" && typeof conn == "string") {
+      conn = new Transformer(new Conn(conn, fetch)); //eslint-disable-line
     }
-
-    super(value.stream);
-
-    this.value = value.clone().setStream(this);
-    this.store = store;
-    this.fn = fn;
-    this.args = args;
-  }
-
-  _getNext() {
-    const n = this.store.next;
-    if (n) {
-      this.store = n.version;
-    }
-
-    const fnNext = this.fn.next;
-    const argsNext = this.args.next;
-    if (fnNext || argsNext) {
-      const fn = fnNext ? fnNext.version : this.fn;
-      const args = argsNext ? argsNext.version : this.args;
-      const updated = new InvokeStream(this.store, fn, args, null).value;
-      const change = new Replace(this.value.clone(), updated.clone());
-      return { change, version: updated.stream };
-    }
-
-    const valuen = this.parent && this.parent.next;
-    if (valuen) {
-      // evaluated value has changed
-      const value = this.value.apply(valuen.change);
-      const version = new InvokeStream(
-        this.store,
-        this.fn,
-        this.args,
-        value.setStream(valuen.version)
-      );
-      return { change: valuen.change, version };
-    }
-
-    return null;
-  }
-}
-
-/** View stores a calculation that invokes a stored fn and args */
-class View extends Value {
-  constructor(info) {
-    super();
-    this.info = info || new Null();
-  }
-
-  /** clone returns a copy with the stream set to null */
-  clone() {
-    return new View(this.info);
-  }
-
-  run(store) {
-    return invoke(
-      store,
-      field(store, this.info, new Text("viewFn")),
-      this.info
+    this._conn = conn;
+    this._root = Dict.fromJSON(new Decoder(), data.root).setStream(
+      new Stream()
     );
+
+    // All root collections are "implict" and get created on access
+    this._root.setDefaultFn(() => new Dict());
+    this._session = {
+      stream: this._root.stream,
+      version: data.session.version,
+      pending: (data.session.pending || []).slice(0),
+      merge: (data.session.merge || []).slice(0),
+      reading: null,
+      writing: null,
+
+      // not yet pushed to server
+      unsent: (data.session.pending || []).slice(0),
+      // have received from server but not applied to model yet
+      unmerged: []
+    };
+  }
+
+  /** collection returns a collection by name */
+  collection(name) {
+    return this._root.get(name);
+  }
+
+  /** @type {Object} null or {change, version} */
+  get next() {
+    const n = this._root.next;
+    if (!n) {
+      return null;
+    }
+
+    const store = new Store(this._conn, null);
+    store._root = n.version;
+    store._session = this._session;
+    return { change: n.change, version: store };
+  }
+
+  sync() {
+    return this.pull().then(() => this.push());
+  }
+
+  pull() {
+    const s = this._session;
+
+    // apply server operations
+    for (let op of s.unmerged) {
+      if (s.pending.length && s.pending[0].id == op.id) {
+        // ack
+        s.pending.shift();
+        s.merge.shift();
+      } else {
+        for (let kk = 0; kk < s.meerge.length; kk++) {
+          [s.merge[kk], op] = op.merge(s.merge[kk]);
+        }
+        s.stream = s.stream.reverseAppend(op.changes);
+      }
+      s.version = op.version;
+    }
+
+    // read more operations
+    if (!s.reading) {
+      s.reading = this._conn.read(s.version + 1, 1000).then(ops => {
+        s.unmerged = s.unmerged.concat(ops || []);
+        s.reading = null;
+      });
+    }
+    return s.reading;
+  }
+
+  push() {
+    const s = this._session;
+
+    // collect all pending activity on the root stream
+    const len = (s.pending || []).length;
+    let pid = len > 0 ? s.pending[len - 1].id : null;
+    for (let next = s.stream.next; next != null; next = next.version.next) {
+      const op = new Operation(null, pid, -1, this._version, next.change);
+      s.unsent.push(op);
+      s.pending.push(op);
+      s.stream = next.version;
+    }
+
+    // write to connection
+    if (!s.writing) {
+      const ops = s.unsent.slice(0);
+      if (len(ops) == 0) {
+        return Promise.resolve(null);
+      }
+
+      s.writing = this._conn.write(ops).then(() => {
+        for (let kk = 0; kk < ops.length; kk++) {
+          s.unsent.shift();
+        }
+        s.writing = null;
+      });
+    }
+    return s.writing;
+  }
+
+  serialize() {
+    const { version, pending, merge } = this._session;
+    const session = { version, pending, merge };
+    return { root: this._root.toJSON(), session };
+  }
+}
+
+/** Seq represents a sequence of values */
+class Seq extends Value {
+  constructor(entries) {
+    super();
+    this.entries = entries || [];
+  }
+
+  /**
+   * splice splices a replacement sequence
+   *
+   * @param {Number} offset - where the replacement starts
+   * @param {Number} count - number of items to remove
+   * @param {Text|String} replacement - what to replace with
+   *
+   * @return {Text}
+   */
+  splice(offset, count, replacement) {
+    const before = this.slice(offset, offset + count);
+    const change = new Splice(offset, before, replacement);
+    const version = this.stream && this.stream.append(change);
+    return this._nextf(change, version).version;
+  }
+
+  /**
+   * move shifts the sub-sequence by the specified distance.
+   * If distance is positive, the sub-sequence shifts over to the
+   * right by as many characters as specified in distance. Negative
+   * distance shifts left.
+   *
+   * @param {Number} offset - start of sub-sequence to shift
+   * @param {Number} count - size of sub-sequence to shift
+   * @param {Number} distance - distance to shift
+   *
+   * @return {Text}
+   */
+  move(offset, count, distance) {
+    const change = new Move(offset, count, distance);
+    const version = this.stream && this.stream.append(change);
+    return this._nextf(change, version).version;
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Seq(this.entries);
+  }
+
+  slice(start, end) {
+    return new Seq(this.entries.slice(start, end));
+  }
+
+  _concat(...args) {
+    const entries = [];
+    for (let arg of args) {
+      entries.push(arg.entries);
+    }
+    return new Seq(this.entries.concat(...entries));
+  }
+
+  get length() {
+    return this.entries.length;
+  }
+
+  get(idx) {
+    const v = this.entries[idx];
+    if (v) {
+      return v.setStream(new Substream(this.stream, idx));
+    }
+    // this is disconneected!
+    return new Null();
+  }
+
+  set(idx, val) {
+    const slice = this.entries.slice(0);
+    slice[idx] = val;
+    return new Seq(slice);
   }
 
   apply(c) {
-    if (!(c instanceof PathChange)) return super.apply(c);
-
-    if (!c.path || c.path.length == 0) {
-      return this.apply(c.change);
-    }
-    if (c.path[0] != "info") {
-      throw new Error("unexpected field: " + c.path[0]);
-    }
-    const pc = new PathChange(c.path.slice(1), c.change);
-    return new View(this.info.apply(pc));
+    return applySeq(this, c);
   }
 
-  get(key) {
-    if (key != "info") {
-      throw new Error("unexpected key: " + key);
+  *[SeqIterator]() {
+    for (let kk = 0; kk < this.entries.length; kk++) {
+      yield this.entries[kk];
     }
-    return this.info.clone().setStream(new Substream(this.stream, "info"));
   }
 
   toJSON() {
-    return Encoder.encode(this.info);
+    return Encoder.encodeArrayValue(this.entries);
   }
 
   static typeName() {
-    return "dotdb.View";
+    return "dotdb.Seq";
   }
 
   static fromJSON(decoder, json) {
-    return new View(decoder.decode(json));
+    return new Seq((json || []).map(x => decoder.decodeValue(x)));
   }
 }
 
-Decoder.registerValueClass(View);
+Decoder.registerValueClass(Seq);
+
+function applySeq(obj, c) {
+  if (c == null) {
+    return obj.clone();
+  }
+
+  if (c instanceof Replace) {
+    return c.after;
+  }
+
+  if (c instanceof PathChange) {
+    if (c.path === null || c.path.length === 0) {
+      return obj.apply(c.change);
+    }
+    const pc = new PathChange(c.path.slice(1), c.change);
+    return obj.set(c.path[0], obj.get(c.path[0]).apply(pc));
+  }
+
+  if (c instanceof Splice) {
+    const left = obj.slice(0, c.offset);
+    const right = obj.slice(c.offset + c.before.length);
+    return left._concat(c.after, right);
+  }
+
+  if (c instanceof Move) {
+    let { offset: off, count, distance: dist } = c;
+    if (dist < 0) {
+      [off, count, dist] = [off + dist, -dist, count];
+    }
+    const l1 = obj.slice(0, off);
+    const l2 = obj.slice(off, off + count);
+    const l3 = obj.slice(off + count, off + count + dist);
+    const l4 = obj.slice(off + count + dist);
+    return l1._concat(l3, l2, l4);
+  }
+
+  return c.applyTo(obj);
+}
+
+/** Num represents a generic numeric type */
+class Num extends Value {
+  constructor(num) {
+    super();
+    this.n = parseFloat(+num);
+    if (isNaN(this.n) || !isFinite(this.n)) {
+      throw new Error("not a number: " + num);
+    }
+  }
+
+  valueOf() {
+    return this.n;
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Num(this.n);
+  }
+
+  toJSON() {
+    return this.n;
+  }
+
+  static typeName() {
+    return "dotdb.Num";
+  }
+
+  static fromJSON(decoder, json) {
+    return new Num(json);
+  }
+}
+
+Decoder.registerValueClass(Num);
+
+/** Ref represents a reference to a path */
+class Ref extends Value {
+  constructor(path) {
+    super();
+    this._path = path;
+  }
+
+  /** clone makes a copy but with stream set to null */
+  clone() {
+    return new Ref(this._path);
+  }
+
+  /** run returns the underlying value at the path */
+  run(store) {
+    let result = store;
+    for (let elt of this._path) {
+      if (result === store) {
+        result = store.collection(elt);
+      } else {
+        result = field(store, result, new Text(elt));
+      }
+    }
+    return result;
+  }
+
+  toJSON() {
+    return JSON.stringify(this._path);
+  }
+
+  static typeName() {
+    return "dotdb.Ref";
+  }
+
+  static fromJSON(decoder, json) {
+    return new Ref(JSON.parse(json));
+  }
+}
+
+Decoder.registerValueClass(Ref);
 
 module.exports = {
   Store,
@@ -2984,5 +3096,6 @@ module.exports = {
   SeqIterator,
   run,
   field,
-  map
+  map,
+  filter
 };
