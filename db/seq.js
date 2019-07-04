@@ -78,15 +78,10 @@ export class Seq extends Value {
   }
 
   get(idx) {
-    const v = this.entries[idx];
-    if (v) {
-      return v.setStream(new Substream(this.stream, idx));
-    }
-    // this is disconneected!
-    return new Null();
+    return this.entries[idx].setStream(new Substream(this.stream, idx));
   }
 
-  set(idx, val) {
+  _set(idx, val) {
     const slice = this.entries.slice(0);
     slice[idx] = val;
     return new Seq(slice);
@@ -98,7 +93,7 @@ export class Seq extends Value {
 
   *[SeqIterator]() {
     for (let kk = 0; kk < this.entries.length; kk++) {
-      yield this.entries[kk];
+      yield this.get(kk);
     }
   }
 
@@ -133,7 +128,7 @@ export function applySeq(obj, c) {
       return obj.apply(c.change);
     }
     const pc = new PathChange(c.path.slice(1), c.change);
-    return obj.set(c.path[0], obj.get(c.path[0]).apply(pc));
+    return obj._set(c.path[0], obj.get(c.path[0]).apply(pc));
   }
 
   if (c instanceof Splice) {
