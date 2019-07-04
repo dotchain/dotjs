@@ -49,7 +49,7 @@ language.
 
 The basic primitive types in DotDB are:
 
-1, **Null** (no value).  This is gennerally not explicitly stored but
+1. **Null** (no value).  This is gennerally not explicitly stored but
 simply the resulting of fetching a key or a ref that does not exist.
 2. **Num** (any rational number): `new dotdb.Num(5.3)`
 3. **Bool** (a boolean): `new dotdb.Bool(true)`
@@ -327,7 +327,7 @@ yarn add https://github.com/dotchain/dotjs
 or
 
 ```
-npm install https://github.com/dotchain/doatjs
+npm install https://github.com/dotchain/dotjs
 ```
 
 ## Tests

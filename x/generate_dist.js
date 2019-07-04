@@ -24,16 +24,47 @@ const exported = [
   "SeqIterator",
   "run",
   "field",
-  "map"
+  "map",
+  "filter"
 ];
 
+function orderFiles() {
+  const names = fs.readdirSync(__dirname + "/../db");
+  const files = names.map(name => {
+    return fs.readFileSync(__dirname + "/../db/" + name).toString();
+  });
+  const deps = {};
+
+  for (let kk = 0; kk < names.length; kk++) {
+    deps[names[kk]] = files[kk].match(/from ".\/(?<module>.*)"/g);
+    if (deps[names[kk]]) {
+      deps[names[kk]] = deps[names[kk]].map(s =>
+        s.slice('from "./'.length, -1)
+      );
+    }
+  }
+
+  const ordered = [];
+  const order = function(map, seen, current) {
+    if (!current) {
+      for (let key in map) {
+        order(map, seen, key);
+      }
+      return ordered;
+    }
+    if (seen[current]) return;
+    for (let dep of map[current] || []) {
+      order(map, seen, dep);
+    }
+    ordered.push(current);
+    seen[current] = true;
+  };
+
+  return order(deps, {}, null);
+}
+
 function main() {
-  let names = fs
-    .readdirSync(__dirname + "/../db")
-    .filter(
-      name => name != "value.js" && name != "stream.js" && name != "index.js"
-    );
-  names.unshift("value.js", "stream.js");
+  let names = orderFiles().filter(n => n != "index.js");
 
   let text = names
     .map(name => fs.readFileSync(__dirname + "/../db/" + name).toString())
