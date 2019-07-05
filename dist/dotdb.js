@@ -2423,7 +2423,7 @@ class MapStream extends DerivedStream {
 
     if (c instanceof Changes) {
       for (let cx of c) {
-        this._updateNewKeys(base, cx, updated, changes);
+        this._updateKeys(base, cx, updated, changes);
       }
       return;
     }
@@ -2433,7 +2433,7 @@ class MapStream extends DerivedStream {
     }
 
     if ((c.path || []).length == 0) {
-      return this._updateNewKeys(base, c.change, updated, changes);
+      return this._updateKeys(base, c.change, updated, changes);
     }
 
     const key = c.path[0];
@@ -2511,11 +2511,28 @@ class GroupStream extends DerivedStream {
   }
 
   append(c) {
-    return this._proxyChange(c, false);
+    return this._append(c, false);
   }
 
   reverseAppend(c) {
-    return this._proxyChange(c, true);
+    return this._append(c, true);
+  }
+
+  _append(c, reverse) {
+    if (!c || !this.base.stream) {
+      return this;
+    }
+
+    const groupsMap = Object.assign({}, this.groupsMap);
+    c = this._proxyChange(c, groupsMap);
+    const stream = this.base.stream;
+    const updated =
+      stream && reverse ? stream.reverseAppend(c) : stream.append(c);
+    const base = this.base
+      .apply(c)
+      .clone()
+      .setStream(updated);
+    return new GroupStream(base, this.groups, groupsMap);
   }
 
   get value() {
@@ -2627,17 +2644,20 @@ class GroupStream extends DerivedStream {
     return true;
   }
 
-  _proxyChange(c, reverse) {
+  _proxyChange(c, groupsMap) {
     if (!c) {
       return null;
     }
 
     if (c instanceof Changes) {
-      let result = this;
+      const changes = [];
       for (let cx of c) {
-        result = result._proxyChange(cx, reverse);
+        cx = result._proxyChange(cx, groupsMap);
+        if (cx) {
+          changes.push(cx);
+        }
       }
-      return result;
+      return Changes.create(result);
     }
 
     if (!(c instanceof PathChange)) {
@@ -2645,42 +2665,37 @@ class GroupStream extends DerivedStream {
     }
 
     if (!c.path || c.path.length === 0) {
-      return this._proxyChange(c.change, reverse);
+      return this._proxyChange(c.change, groupsMap);
     }
 
     const group = c.path[0];
     const change = PathChange.create(c.path.slice(1), c.change);
-    return this._proxyGroupChange(group, change, reverse);
+    return this._proxyGroupChange(group, change, groupsMap);
   }
 
-  _proxyGroupChange(group, c, reverse) {
+  _proxyGroupChange(group, c, groupsMap) {
     if (!c) {
-      return this;
+      return null;
     }
 
-    // TODO: this breaks apart a change set
-    // An append call should cause exactly one append call.
-    // This can be done by simply returning the new changes + updated
-    // groups map.
     if (c instanceof Changes) {
-      let result = this;
+      const changes = [];
       for (let cx of c) {
-        result = result._proxyGroupChange(group, cx, reverse);
+        cx = this._proxyGroupChange(group, cx, groupsMap);
+        if (cx) {
+          changes.push(cx);
+        }
       }
-      return result;
+      return Changes.create(changes);
     }
 
     if (c instanceof PathChange) {
       if (!c.path || !c.path.length) {
-        return this._proxyGroupChange(group, c.change, reverse);
+        return this._proxyGroupChange(group, c.change, groupsMap);
       }
 
-      return this._proxyInnerChange(
-        group,
-        c.path[0],
-        PathChange.create(c.path.slice(1), c.change),
-        reverse
-      );
+      groupsMap[c.path[0]] = group;
+      return c;
     }
 
     if (!(c instanceof Replace)) {
@@ -2702,22 +2717,7 @@ class GroupStream extends DerivedStream {
         changes.push(new PathChange([key], r));
       }
     }
-    return this._proxyGroupChange(group, new Changes(changes), reverse);
-  }
-
-  _proxyInnerChange(group, key, c, reverse) {
-    const change = PathChange.create([key], c);
-    const stream = this.base.stream;
-    const updated =
-      stream &&
-      (reverse ? stream.reverseAppend(change) : stream.append(change));
-    const base = this.base
-      .clone()
-      .apply(c)
-      .setStream(updated);
-    const groupsMap = Object.assign({}, this.groupsMap);
-    groupsMap[key] = group;
-    return new GroupStream(base, this.groups, groupsMap);
+    return this._proxyGroupChange(group, new Changes(changes), groupsMap);
   }
 
   static _groupOf(key, groups) {
@@ -3079,7 +3079,7 @@ class Seq extends Value {
   }
 
   get(idx) {
-    return this.entries[idx].setStream(new Substream(this.stream, idx));
+    return this.entries[idx].clone().setStream(new Substream(this.stream, idx));
   }
 
   _set(idx, val) {
