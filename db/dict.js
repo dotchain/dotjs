@@ -28,12 +28,17 @@ export class Dict extends Value {
   /** get looks up a key and returns the value (or a default value) */
   get(key) {
     const s = new Substream(this.stream, key);
-    return (this.map[key] || this._defaultFn()).setStream(s);
+    return (this.map[key] || this._defaultFn()).clone().setStream(s);
+  }
+
+  /** check if key exists */
+  keyExists(key) {
+    return !!this.map[key];
   }
 
   /** clone makes a copy but with stream set to null */
   clone() {
-    return new Dict(this.map);
+    return new Dict(this.map, this._defaultFn);
   }
 
   apply(c) {
@@ -67,7 +72,7 @@ export class Dict extends Value {
     } else {
       clone[path[0]] = val;
     }
-    return new Dict(clone);
+    return new Dict(clone, this._defaultFn);
   }
 
   *[MapIterator]() {

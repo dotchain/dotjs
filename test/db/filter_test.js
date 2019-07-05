@@ -9,7 +9,6 @@ import { expect } from "chai";
 import { Value } from "../../db/value.js";
 
 import {
-  map,
   filter,
   field,
   Null,
@@ -94,7 +93,7 @@ describe("Filter dict", () => {
     }).setStream(new Stream());
     const fn = new LessThanTwo({ n: 0 });
     const filtered = filter(new Store(), initial, fn);
-    const future = filtered.get("boo");
+    const future = field(new Store(), filtered, new Text("boo"));
 
     initial.get("boo").replace(new Dict({ one: new Num(-1) }));
 
@@ -117,7 +116,7 @@ describe("Filter dict", () => {
     }).setStream(new Stream());
     const fn = new LessThanTwo({ n: 0 });
     const filtered = filter(new Store(), initial, fn);
-    const hello = filtered.get("hello");
+    const hello = field(new Store(), filtered, new Text("hello"));
 
     initial.get("hello").replace(new Null());
 

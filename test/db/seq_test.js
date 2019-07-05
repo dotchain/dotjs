@@ -61,15 +61,6 @@ describe("Seq value", () => {
     expect(n.apply()).to.deep.equal(n);
   });
 
-  it("should immutably set items", () => {
-    const n = new Seq([new Text("a"), new Text("b")]);
-    const njson = JSON.stringify(n);
-    const n2 = n.set(1, new Text("A"));
-    expect(njson).to.equal(JSON.stringify(n));
-    expect(n2.get(1).clone()).to.deep.equal(new Text("A"));
-    expect(n2.get(0).clone()).to.deep.equal(new Text("a"));
-  });
-
   it("should apply Replace", () => {
     const before = new Seq();
     const repl = new Replace(before, new Text("a"));

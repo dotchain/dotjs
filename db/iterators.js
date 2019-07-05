@@ -9,3 +9,8 @@ export const MapIterator = Symbol("MapIterator");
 
 /** SeqIterator is implemented by seq-like values and yield just values */
 export const SeqIterator = Symbol("SeqIterator");
+
+/** isMapLike returns if object implements the MapIterator **/
+export function isMapLike(obj) {
+  return Boolean(obj && obj[MapIterator]);
+}
