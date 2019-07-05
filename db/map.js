@@ -136,7 +136,7 @@ class MapStream extends DerivedStream {
 
     if (c instanceof Changes) {
       for (let cx of c) {
-        this._updateNewKeys(base, cx, updated, changes);
+        this._updateKeys(base, cx, updated, changes);
       }
       return;
     }
@@ -146,7 +146,7 @@ class MapStream extends DerivedStream {
     }
 
     if ((c.path || []).length == 0) {
-      return this._updateNewKeys(base, c.change, updated, changes);
+      return this._updateKeys(base, c.change, updated, changes);
     }
 
     const key = c.path[0];
