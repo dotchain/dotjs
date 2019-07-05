@@ -1853,6 +1853,11 @@ const MapIterator = Symbol("MapIterator");
 /** SeqIterator is implemented by seq-like values and yield just values */
 const SeqIterator = Symbol("SeqIterator");
 
+/** isMapLike returns if object implements the MapIterator **/
+function isMapLike(obj) {
+  return Boolean(obj && obj[MapIterator]);
+}
+
 /** Dict represents a map/hash/dictionary/collection with string keys */
 class Dict extends Value {
   constructor(initial, defaultFn) {
@@ -1868,12 +1873,17 @@ class Dict extends Value {
   /** get looks up a key and returns the value (or a default value) */
   get(key) {
     const s = new Substream(this.stream, key);
-    return (this.map[key] || this._defaultFn()).setStream(s);
+    return (this.map[key] || this._defaultFn()).clone().setStream(s);
+  }
+
+  /** check if key exists */
+  keyExists(key) {
+    return !!this.map[key];
   }
 
   /** clone makes a copy but with stream set to null */
   clone() {
-    return new Dict(this.map);
+    return new Dict(this.map, this._defaultFn);
   }
 
   apply(c) {
@@ -1907,7 +1917,7 @@ class Dict extends Value {
     } else {
       clone[path[0]] = val;
     }
-    return new Dict(clone);
+    return new Dict(clone, this._defaultFn);
   }
 
   *[MapIterator]() {
@@ -2476,123 +2486,259 @@ class MapStream extends DerivedStream {
   }
 }
 
-/** filter calls the provided fn on all keys of the object and only retains keys for which the fn evalutes to true  */
-function filter(store, obj, fn) {
-  return new FilterStream(obj, map(store, obj, fn), null).value;
+/** group calls the provided fn on all keys of the object and
+ * aggregates all items with same value of fn. It returns a
+ * dictionary where the keys are groups and the values are
+ * dictionaries with that group value */
+
+function group(store, obj, fn) {
+  return new GroupStream(obj, map(store, obj, fn), null).value;
 }
 
-/** FilterStream implement a filtered dictionary-like stream */
-class FilterStream extends DerivedStream {
-  constructor(base, filters, value) {
+/** GroupStream implements a groupd dict-of-dict-like stream */
+class GroupStream extends DerivedStream {
+  constructor(base, groups, groupsMap) {
     super(base.stream);
     this.base = base;
-    this.filters = filters;
-    if (!value) {
-      if (typeof this.filters[MapIterator] !== "function") {
-        value = null;
-      } else {
-        value = {};
-
-        for (let [key, val] of this.filters[MapIterator]()) {
-          if (val instanceof Bool && val.b) {
-            value[key] = this.base.get(key).clone();
-          }
-        }
+    this.groups = groups;
+    if (!groupsMap && isMapLike(base)) {
+      groupsMap = {};
+      for (let [key] of base[MapIterator]()) {
+        groupsMap[key] = GroupStream._groupOf(key, groups);
       }
     }
-    this._value = value;
+    this.groupsMap = groupsMap;
+  }
+
+  append(c) {
+    return this._proxyChange(c, false);
+  }
+
+  reverseAppend(c) {
+    return this._proxyChange(c, true);
   }
 
   get value() {
-    if (!this._value) {
+    if (!isMapLike(this.base)) {
       return new Null().setStream(this);
     }
 
-    return new Dict(this._value).setStream(this);
+    const value = {};
+    for (let [key] of this.base[MapIterator]()) {
+      const group = GroupStream._groupOf(key, this.groups);
+      value[group] = value[group] || {};
+      value[group][key] = this.base.get(key).clone();
+    }
+    for (let group in value) {
+      value[group] = new Dict(value[group]);
+    }
+
+    return GroupStream._collection(value).setStream(this);
   }
 
   _getNext() {
-    let filtersn = this.filters.next;
+    let groupsn = this.groups.next;
     let basen = this.base.next;
 
-    if (!filtersn && !basen) {
-      return null;
-    }
-
-    const filters = filtersn ? filtersn.version : this.filters;
+    const groups = groupsn ? groupsn.version : this.groups;
     const base = basen ? basen.version : this.base;
 
-    if (!this._value || typeof filters[MapIterator] !== "function") {
-      const version = new FilterStream(base, filters, null);
-      const change = new Replace(this.value.clone(), version.value.clone());
+    if (!isMapLike(this.base) || !isMapLike(base)) {
+      if (!groupsn && !basen) {
+        return null;
+      }
+
+      const version = new GroupStream(base, groups, null);
+      const change = new Replace(new Null(), version.value.clone());
       return { change, version };
     }
 
     const changes = [];
-    const addRemoveKeys = {};
-    const value = {};
+    const oldGroups = {};
 
-    for (let [key, val] of filters[MapIterator]()) {
-      if (val instanceof Bool && val.b) {
-        if (!this._value.hasOwnProperty(key)) {
-          value[key] = base.get(key).clone();
-          const r = new Replace(new Null(), value[key].clone());
-          changes.push(new PathChange([key], r));
-          addRemoveKeys[key] = true;
+    for (let [key, val] of this.base[MapIterator]()) {
+      const before = this.groupsMap[key];
+      oldGroups[before] = 0;
+
+      const after = GroupStream._groupOf(key, groups);
+      if (before !== after) {
+        const r1 = new Replace(val.clone(), new Null());
+        changes.push(new PathChange([before, key], r1));
+        if (base.keyExists(key)) {
+          const r2 = new Replace(new Null(), val.clone());
+          changes.push(new PathChange([after, key], r2));
         }
-      } else if (this._value.hasOwnProperty(key)) {
-        const r = new Replace(this._value[key].clone(), new Null());
-        changes.push(new PathChange([key], r));
-        addRemoveKeys[key] = true;
       }
     }
 
-    this._filterChanges(
-      base,
-      basen && basen.change,
-      addRemoveKeys,
-      value,
-      changes
-    );
+    // delete empty groups
+    for (let [key] of base[MapIterator]()) {
+      oldGroups[GroupStream._groupOf(key, groups)] = 1;
+    }
+    for (let group in oldGroups) {
+      if (!oldGroups[group]) {
+        const r = new Replace(GroupStream._collection(null), new Null());
+        changes.push(new PathChange([group], r));
+      }
+    }
+
+    if (!this._groupChanges(base, basen && basen.change, groups, changes)) {
+      // an unsupport change type.  replace whole object
+      const version = new GroupStream(base, groups, null);
+      const change = new Replace(this.value.clone(), version.value.clone());
+      return { change, version };
+    }
 
     if (!changes.length) {
       return null;
     }
 
     const change = new Changes(changes);
-    const version = new FilterStream(
-      base,
-      filters,
-      Object.assign({}, this._value, value)
-    );
+    const version = new GroupStream(base, groups, null);
     return { change, version };
   }
 
-  _filterChanges(base, c, ignoreKeys, value, changes) {
+  _groupChanges(base, c, groups, changes) {
     if (!c) {
-      return;
+      return true;
     }
 
     if (c instanceof Changes) {
       for (let cx of c) {
-        this._filterChanges(base, cx, ignoreKeys, value, changes);
+        if (!this._groupChanges(base, cx, groups, changes)) {
+          return false;
+        }
       }
-      return;
+      return true;
     }
 
     if (!(c instanceof PathChange)) {
-      throw new Error("unexpected change type");
+      return false;
     }
 
     if (!c.path || !c.path.length) {
-      return this._filterChanges(base, c.change, ignoreKeys, value, changes);
+      return this._groupChanges(base, c.change, groups, changes);
     }
 
-    if (!ignoreKeys[c.path[0]]) {
-      changes.push(c);
-      value[c.path[0]] = base.get(c.path[0]).clone();
+    if (base.keyExists(c.path[0])) {
+      const group = GroupStream._groupOf(c.path[0], groups);
+      changes.push(PathChange.create([group].concat(c.path), c.change));
     }
+    return true;
   }
+
+  _proxyChange(c, reverse) {
+    if (!c) {
+      return null;
+    }
+
+    if (c instanceof Changes) {
+      let result = this;
+      for (let cx of c) {
+        result = result._proxyChange(cx, reverse);
+      }
+      return result;
+    }
+
+    if (!(c instanceof PathChange)) {
+      throw new Error("cannot proxy change");
+    }
+
+    if (!c.path || c.path.length === 0) {
+      return this._proxyChange(c.change, reverse);
+    }
+
+    const group = c.path[0];
+    const change = PathChange.create(c.path.slice(1), c.change);
+    return this._proxyGroupChange(group, change, reverse);
+  }
+
+  _proxyGroupChange(group, c, reverse) {
+    if (!c) {
+      return this;
+    }
+
+    // TODO: this breaks apart a change set
+    // An append call should cause exactly one append call.
+    // This can be done by simply returning the new changes + updated
+    // groups map.
+    if (c instanceof Changes) {
+      let result = this;
+      for (let cx of c) {
+        result = result._proxyGroupChange(group, cx, reverse);
+      }
+      return result;
+    }
+
+    if (c instanceof PathChange) {
+      if (!c.path || !c.path.length) {
+        return this._proxyGroupChange(group, c.change, reverse);
+      }
+
+      return this._proxyInnerChange(
+        group,
+        c.path[0],
+        PathChange.create(c.path.slice(1), c.change),
+        reverse
+      );
+    }
+
+    if (!(c instanceof Replace)) {
+      throw new Error("unexpected change");
+    }
+
+    const changes = [];
+    if (isMapLike(c.before)) {
+      // delete old items
+      for (let [key, before] of c.before[MapIterator]()) {
+        const r = new Replace(before, new Null());
+        changes.push(new PathChange([key], r));
+      }
+    }
+    if (isMapLike(c.after)) {
+      // insert new items
+      for (let [key, after] of c.after[MapIterator]()) {
+        const r = new Replace(new Null(), after);
+        changes.push(new PathChange([key], r));
+      }
+    }
+    return this._proxyGroupChange(group, new Changes(changes), reverse);
+  }
+
+  _proxyInnerChange(group, key, c, reverse) {
+    const change = PathChange.create([key], c);
+    const stream = this.base.stream;
+    const updated =
+      stream &&
+      (reverse ? stream.reverseAppend(change) : stream.append(change));
+    const base = this.base
+      .clone()
+      .apply(c)
+      .setStream(updated);
+    const groupsMap = Object.assign({}, this.groupsMap);
+    groupsMap[key] = group;
+    return new GroupStream(base, this.groups, groupsMap);
+  }
+
+  static _groupOf(key, groups) {
+    if (!isMapLike(groups)) {
+      return "";
+    }
+    return GroupStream.KeyString(groups.get(key));
+  }
+
+  static KeyString(val) {
+    return JSON.stringify(Encoder.encode(val));
+  }
+
+  static _collection(m) {
+    return new Dict(m, () => new Dict());
+  }
+}
+
+/** filter calls the provided fn on all keys of the object and only retains keys for which the fn evalutes to true  */
+function filter(store, obj, fn) {
+  return field(store, group(store, obj, fn), new Text('{"dotdb.Bool":true}'));
 }
 
 /** Transformer wraps a {@link Conn} object, transforming all incoming ops */
@@ -2933,15 +3079,10 @@ class Seq extends Value {
   }
 
   get(idx) {
-    const v = this.entries[idx];
-    if (v) {
-      return v.setStream(new Substream(this.stream, idx));
-    }
-    // this is disconneected!
-    return new Null();
+    return this.entries[idx].setStream(new Substream(this.stream, idx));
   }
 
-  set(idx, val) {
+  _set(idx, val) {
     const slice = this.entries.slice(0);
     slice[idx] = val;
     return new Seq(slice);
@@ -2953,7 +3094,7 @@ class Seq extends Value {
 
   *[SeqIterator]() {
     for (let kk = 0; kk < this.entries.length; kk++) {
-      yield this.entries[kk];
+      yield this.get(kk);
     }
   }
 
@@ -2986,7 +3127,7 @@ function applySeq(obj, c) {
       return obj.apply(c.change);
     }
     const pc = new PathChange(c.path.slice(1), c.change);
-    return obj.set(c.path[0], obj.get(c.path[0]).apply(pc));
+    return obj._set(c.path[0], obj.get(c.path[0]).apply(pc));
   }
 
   if (c instanceof Splice) {
@@ -3103,5 +3244,6 @@ module.exports = {
   run,
   field,
   map,
-  filter
+  filter,
+  group
 };

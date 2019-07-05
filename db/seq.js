@@ -12,7 +12,6 @@ import { Move } from "./move.js";
 import { Value } from "./value.js";
 import { Substream } from "./substream.js";
 import { Decoder } from "./decode.js";
-import { Null } from "./null.js";
 import { SeqIterator } from "./iterators.js";
 
 /** Seq represents a sequence of values */
@@ -78,7 +77,7 @@ export class Seq extends Value {
   }
 
   get(idx) {
-    return this.entries[idx].setStream(new Substream(this.stream, idx));
+    return this.entries[idx].clone().setStream(new Substream(this.stream, idx));
   }
 
   _set(idx, val) {

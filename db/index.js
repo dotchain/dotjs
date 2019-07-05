@@ -21,3 +21,4 @@ export { Stream, DerivedStream } from "./stream.js";
 export { MapIterator, SeqIterator } from "./iterators.js";
 export { map } from "./map.js";
 export { filter } from "./filter.js";
+export { group } from "./group.js";
