@@ -26,7 +26,8 @@ const exported = [
   "field",
   "map",
   "filter",
-  "group"
+  "group",
+  "extend"
 ];
 
 function orderFiles() {
