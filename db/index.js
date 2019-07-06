@@ -22,3 +22,4 @@ export { MapIterator, SeqIterator } from "./iterators.js";
 export { map } from "./map.js";
 export { filter } from "./filter.js";
 export { group } from "./group.js";
+export { extend } from "./extend.js";
