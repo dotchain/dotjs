@@ -5,8 +5,14 @@
 
 "use strict";
 
+
+
+
+
+
 const valueTypes = {};
 const changeTypes = {};
+
 
 class Decoder {
   decode(value) {
@@ -75,6 +81,12 @@ class Decoder {
     changeTypes[changeConstructor.typeName()] = changeConstructor;
   }
 }
+
+
+
+
+
+
 
 class Encoder {
   static encode(value) {
@@ -147,6 +159,14 @@ class Encoder {
 
 const encode = Encoder.encode;
 
+
+
+
+
+
+
+
+
 /** Replace represents a change one value to another **/
 class Replace {
   /**
@@ -212,6 +232,11 @@ class Replace {
 }
 
 Decoder.registerChangeClass(Replace);
+
+
+
+
+
 
 /**
  * Stream tracks all future changes to a particular value.
@@ -356,6 +381,13 @@ class DerivedStream {
   }
 }
 
+
+
+
+
+
+
+
 /**
  * branch creates a branched stream.  Updates to the returned branched
  * stream or the parent stream are not automatically carried over to
@@ -423,6 +455,14 @@ class Branch {
     return this;
   }
 }
+
+
+
+
+
+
+
+
 
 /** Value is the base class for values.
  *
@@ -540,6 +580,14 @@ class Value {
   }
 }
 
+
+
+
+
+
+
+
+
 /** Bool represents true/false */
 class Bool extends Value {
   constructor(b) {
@@ -570,6 +618,14 @@ class Bool extends Value {
 }
 
 Decoder.registerValueClass(Bool);
+
+
+
+
+
+
+
+
 
 /** Implements a collection of change values */
 class Changes {
@@ -679,6 +735,13 @@ class Changes {
 
 Decoder.registerChangeClass(Changes);
 
+
+
+
+
+
+
+
 let getRandomValues = null;
 
 /*eslint-disable */
@@ -755,6 +818,14 @@ class Operation {
   }
 }
 
+
+
+
+
+
+
+
+
 class Request {
   constructor(name, ops, version, limit, duration) {
     this.name = name;
@@ -798,6 +869,14 @@ class GetSinceRequest extends Request {
   }
 }
 
+
+
+
+
+
+
+
+
 class Response {
   constructor(ops, err) {
     this.ops = ops || [];
@@ -824,6 +903,17 @@ class Response {
     return new Response((json[0] || []).map(decode), err);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * Conn creates a network connection or use with Session. See {@link Transformer}.
@@ -883,6 +973,14 @@ class Conn {
     return (r.ops && r.ops.length && r.ops) || null;
   }
 }
+
+
+
+
+
+
+
+
 
 /** PathChange represents an embedded value changing at the specified path. */
 class PathChange {
@@ -1039,6 +1137,16 @@ class PathChange {
     return new PathChange(path, change);
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 /**
  * Splice represents the change to replace a sub-sequence with another.
@@ -1239,6 +1347,17 @@ class Splice {
 }
 
 Decoder.registerChangeClass(Splice);
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * Move represents shifting a sub-sequence over to a different spot.
@@ -1745,6 +1864,18 @@ class Move {
 
 Decoder.registerChangeClass(Move);
 
+
+
+
+
+
+
+
+
+
+
+
+
 /* Substream refers to a field embedded within a container stream */
 class Substream extends DerivedStream {
   constructor(parent, key) {
@@ -1825,6 +1956,14 @@ function transform(c, key) {
   throw new Error("unknown change type: " + c.constructor.name);
 }
 
+
+
+
+
+
+
+
+
 /** Null represents an empty value */
 class Null extends Value {
   /** clone makes a copy but with stream set to null */
@@ -1847,6 +1986,11 @@ class Null extends Value {
 
 Decoder.registerValueClass(Null);
 
+
+
+
+
+
 /** MapIterator is implemented by map-like values and yield key-value pairs */
 const MapIterator = Symbol("MapIterator");
 
@@ -1857,6 +2001,20 @@ const SeqIterator = Symbol("SeqIterator");
 function isMapLike(obj) {
   return Boolean(obj && obj[MapIterator]);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** Dict represents a map/hash/dictionary/collection with string keys */
 class Dict extends Value {
@@ -1949,6 +2107,19 @@ class Dict extends Value {
 }
 
 Decoder.registerValueClass(Dict);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** extend creates an object which has all the keys of both args */
 
@@ -2217,6 +2388,17 @@ class ExtendStream extends DerivedStream {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
 /** Text represents a string value */
 class Text extends Value {
   constructor(text) {
@@ -2326,6 +2508,14 @@ class Text extends Value {
 
 Decoder.registerValueClass(Text);
 
+
+
+
+
+
+
+
+
 function run(store, obj) {
   return new RunStream(store, obj, null).value;
 }
@@ -2371,6 +2561,19 @@ class RunStream extends DerivedStream {
     return null;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function field(store, obj, key) {
   return new FieldStream(store, run(store, obj), run(store, key), null).value;
@@ -2456,6 +2659,23 @@ class Field extends Value {
 }
 
 Decoder.registerValueClass(Field);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** invoke invokes a function reactively */
 function invoke(store, fn, args) {
@@ -2567,6 +2787,21 @@ class View extends Value {
 }
 
 Decoder.registerValueClass(View);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** map calls the provided fn on all keys of the object */
 function map(store, obj, fn) {
@@ -2752,6 +2987,21 @@ class MapStream extends DerivedStream {
     return false;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** group calls the provided fn on all keys of the object and
  * aggregates all items with same value of fn. It returns a
@@ -3003,10 +3253,30 @@ class GroupStream extends DerivedStream {
   }
 }
 
+
+
+
+
+
+
+
+
+
 /** filter calls the provided fn on all keys of the object and only retains keys for which the fn evalutes to true  */
 function filter(store, obj, fn) {
   return field(store, group(store, obj, fn), new Text('{"dotdb.Bool":true}'));
 }
+
+
+
+
+
+
+
+
+
+
+
 
 /** Transformer wraps a {@link Conn} object, transforming all incoming ops */
 class Transformer {
@@ -3162,6 +3432,18 @@ class Transformer {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 /** Store implements a collection of tables with ability to sync via a
  * connection */
 class Store {
@@ -3283,6 +3565,21 @@ class Store {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** Seq represents a sequence of values */
 class Seq extends Value {
   constructor(entries) {
@@ -3380,6 +3677,8 @@ class Seq extends Value {
 
 Decoder.registerValueClass(Seq);
 
+
+
 function applySeq(obj, c) {
   if (c == null) {
     return obj.clone();
@@ -3418,6 +3717,14 @@ function applySeq(obj, c) {
   return c.applyTo(obj);
 }
 
+
+
+
+
+
+
+
+
 /** Num represents a generic numeric type */
 class Num extends Value {
   constructor(num) {
@@ -3451,6 +3758,17 @@ class Num extends Value {
 }
 
 Decoder.registerValueClass(Num);
+
+
+
+
+
+
+
+
+
+
+
 
 /** Ref represents a reference to a path */
 class Ref extends Value {
@@ -3492,26 +3810,4 @@ class Ref extends Value {
 
 Decoder.registerValueClass(Ref);
 
-module.exports = {
-  Store,
-  Dict,
-  Seq,
-  Text,
-  Num,
-  Bool,
-  Null,
-  Ref,
-  Field,
-  Conn,
-  Transformer,
-  Stream,
-  DerivedStream,
-  MapIterator,
-  SeqIterator,
-  run,
-  field,
-  map,
-  filter,
-  group,
-  extend
-};
+module.exports = {Store, Dict, Seq, Text, Num, Bool, Null, Ref, Field, Conn, Transformer, Stream, DerivedStream, MapIterator, SeqIterator, run, field, map, filter, group, extend}

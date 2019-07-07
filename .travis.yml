@@ -3,4 +3,21 @@ node_js:
    - "node"
 addons:
    chrome: stable
-after_success: npm run coverage
+before_install:
+   - cd lib;
+   - yarn install;
+   - cd ../db;
+   - yarn install;
+   - cd ..
+script:
+   - cd lib;
+   - yarn test;
+   - cd ../db;
+   - yarn test;
+   - cd ..
+after_success:
+  - cd lib;
+  - yarn coverage;
+  - cd test;
+  - yarn coverage;
+  - cd ..
