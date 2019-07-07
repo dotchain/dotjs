@@ -8,11 +8,15 @@ before_install:
    - yarn install;
    - cd ../db;
    - yarn install;
+   - cd ../examples;
+   - yarn install;
    - cd ..
 script:
    - cd lib;
    - yarn test;
    - cd ../db;
+   - yarn test;
+   - cd ../examples;
    - yarn test;
    - cd ..
 after_success:
