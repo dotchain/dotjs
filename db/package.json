@@ -1,0 +1,106 @@
+{
+  "name": "dotjs",
+  "version": "0.0.1",
+  "description": "Distributed convergent database",
+  "main": "esmloader.js",
+  "module": "index.js",
+  "directories": {},
+  "scripts": {
+    "build": "jsdoc2md *.js > docs/jsdoc.md && node ../x/generate_dist.js",
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
+    "lint": "eslint --env mocha --env es6 ./ test/",
+    "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
+    "test": "nyc mocha --require esm test/**/*_test.js && karma start --e2e",
+    "mocha": "mocha --require esm test/**/*_test.js",
+    "karma": "karma start",
+    "e2e": "karma start --e2e"
+  },
+  "nyc": {
+    "include": [
+      "num.js",
+      "extend.js",
+      "bool.js",
+      "null.js",
+      "stream.js",
+      "branch.js",
+      "response.js",
+      "request.js",
+      "changes.js",
+      "run.js",
+      "field.js",
+      "store.js",
+      "encode.js",
+      "substream.js",
+      "decode.js",
+      "value.js",
+      "conn.js",
+      "dict.js",
+      "seq.js",
+      "replace.js",
+      "path_change.js",
+      "splice.js",
+      "view.js",
+      "map.js",
+      "op.js",
+      "filter.js",
+      "move.js",
+      "group.js",
+      "text.js",
+      "transform.js",
+      "iterators.js",
+      "ref.js"
+    ],
+    "exclude": [
+      "**/test/**",
+      "esmloader.js",
+      "karma.conf.js"
+    ],
+    "sourceMap": false,
+    "instrument": true
+  },
+  "eslintIgnore": [
+    "./conn.js",
+    "./transform.js",
+    "test/golden.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotchain/dotjs.git"
+  },
+  "keywords": [
+    "dot",
+    "operational-transformation",
+    "convergent",
+    "database",
+    "ot",
+    "js",
+    "es6"
+  ],
+  "author": "VK",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dotchain/dotjs/issues"
+  },
+  "homepage": "https://github.com/dotchain/dotjs#readme",
+  "devDependencies": {
+    "benchmark": "^2.1.4",
+    "body-parser": "^1.19.0",
+    "chai": "^4.2.0",
+    "codecov": "^3.3.0",
+    "cors": "^2.8.5",
+    "eslint": "^5.16.0",
+    "esm": "^3.2.22",
+    "express": "^4.16.4",
+    "jsdoc-to-markdown": "^4.0.1",
+    "karma": "^4.1.0",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "mocha": "^6.1.4",
+    "node-fetch": "^2.3.0",
+    "nyc": "^14.1.1",
+    "prettier": "1.17.0"
+  },
+  "dependencies": {}
+}
