@@ -1,0 +1,72 @@
+{
+  "name": "dotdb",
+  "version": "0.0.1",
+  "description": "Distributed synchronized convergent data using operational transforms",
+  "main": "esmloader.js`,
+  "module": "index.js",
+  "directories": {},
+  "scripts": {
+    "build": "jsdoc2md core/*.js > docs/core.md && jsdoc2md streams/*.js  > docs/streams.md && jsdoc2md session/*.js > docs/session.md && jsdoc2md types/*.js > docs/types.md",
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
+    "lint": "eslint --env mocha --env es6 core/ session/ streams/ test/",
+    "pretty": "find . -name '*.js' | grep -v node_modules | xargs yarn prettier --write",
+    "test": "nyc mocha --require esm test/**/*_test.js && karma start --e2e",
+    "mocha": "mocha --require esm test/**/*_test.js",
+    "karma": "karma start",
+    "e2e": "karma start --e2e"
+  },
+  "nyc": {
+    "include": [
+      "core/*.js",
+      "streams/*.js",
+      "session/*.js",
+      "types/*.js"
+    ],
+    "sourceMap": false,
+    "instrument": true
+  },
+  "eslintIgnore": [
+    "session/conn.js",
+    "session/server.js",
+    "session/transform.js",
+    "test/session/golden.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotchain/dotjs.git"
+  },
+  "keywords": [
+    "dot",
+    "operational-transformation",
+    "ot",
+    "js",
+    "es6"
+  ],
+  "author": "VK",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dotchain/dotjs/issues"
+  },
+  "homepage": "https://github.com/dotchain/dotjs#readme",
+  "devDependencies": {
+    "benchmark": "^2.1.4",
+    "body-parser": "^1.19.0",
+    "chai": "^4.2.0",
+    "codecov": "^3.3.0",
+    "cors": "^2.8.5",
+    "eslint": "^5.16.0",
+    "esm": "^3.2.22",
+    "express": "^4.16.4",
+    "jsdoc-to-markdown": "^4.0.1",
+    "karma": "^4.1.0",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "mocha": "^6.1.4",
+    "node-fetch": "^2.3.0",
+    "nyc": "^14.0.0",
+    "prettier": "1.17.0"
+  },
+  "dependencies": {}
+}
