@@ -2,7 +2,7 @@
   "name": "dotdb",
   "version": "0.0.1",
   "description": "Distributed synchronized convergent data using operational transforms",
-  "main": "esmloader.js`,
+  "main": "esmloader.js",
   "module": "index.js",
   "directories": {},
   "scripts": {

@@ -31,7 +31,8 @@ const exported = [
 ];
 
 function orderFiles() {
-  const names = fs.readdirSync(__dirname + "/../db");
+  const names = fs.readdirSync(__dirname + "/../db")
+        .filter(n => n != "karma.conf.js" && n != "esmloader.js" && n.slice(-3) == ".js");
   const files = names.map(name => {
     return fs.readFileSync(__dirname + "/../db/" + name).toString();
   });
@@ -66,7 +67,7 @@ function orderFiles() {
 }
 
 function main() {
-  let names = orderFiles().filter(n => n != "index.js");
+  let names = orderFiles().filter(n => n != "index.js")
 
   let text = names
     .map(name => fs.readFileSync(__dirname + "/../db/" + name).toString())
