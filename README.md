@@ -13,7 +13,8 @@ This includes two packages: a low level [lib](lib/README.md) package and a much 
 3. [DotDB](#dotdb)
     1. [Functional](#functional)
     2. [Convergent](#convergent)
-4. [Tests](#tests)
+4. [Reactive](#reactive)
+5. [Tests](#tests)
 
 ## Status
 
@@ -36,7 +37,7 @@ DotDB is a functional, convergent, reactive, synchronized store.
 
 ### Functional
 
-The value types in DotDB are effectively immutable:
+Values in DotDB are effectively immutable:
 
 ```js
 import {expect} from "chai";
@@ -51,7 +52,7 @@ it("should not mutate underlying value", ()=> {
 ```
 ### Convergent
 
-The value types in DotDB *converge* when mutated by multiple writers. The convergence honors the *immutable* feel by simply leaving the original value intact but instead making the convergence available via the *latest()* method.
+Values in DotDB *converge* when mutated by multiple writers. The convergence honors the *immutable* feel by simply leaving the original value intact but instead making the convergence available via the *latest()* method.
 
 ```js
 import {expect} from "chai";
@@ -73,7 +74,61 @@ describe("Convergence", () => {
 });
 ```
 
-  Note: Convergence requires a *stream* associated with the value. In the example, the initial value is setup with a new stream. In practice, this is rarely needed as all derived values simply inherent the *stream* from their parents and the root object is created at app initialization.  But the examples here are all standalone and so will include that as part of the constructor.
+    Note: Convergence requires a *stream* associated with the value. In the example, the initial value is setup with a new stream. In practice, this is rarely needed as all derived values simply inherent the *stream* from their parents and the root object is created at app initialization.  But the examples here are all standalone and so will include that as part of the constructor.
+
+## Reactive
+
+Values in DotDB are reactive.  The example below illustrates fetching a key from a dictionary.  This value keeps up with any changes to the dictionary:
+
+```js
+import {expect} from "chai";
+import {Dict, Stream, Text} from "dotjs/db";
+describe("Reactive", () => {
+  it("fields update with underlying changes", ()=> {
+    const initial = new Dict({
+      hello: new Text("world")
+    }).setStream(new Stream());
+
+    const hello = initial.get("hello");
+    initial.get("hello").replace(new Text("goodbye!"));
+
+    expect(hello.latest().text).to.equal("goodbye!");
+    expect(initial.latest().get("hello").text).to.equal("goodbye!");
+  });
+});
+```
+
+A slightly more involved example uses the `field()` function which works on any value. For actual `Dict` or a similar, it returns the `get()` value and for the rest it returns Null.  The reactive part is the fact that it keeps up with the underlying object:
+
+```js
+it("fields update even if the underlying object changes", ()=> {
+  const initial = new Text("hello").setStream(new Stream());
+
+  const hello = field(new Store(), initial, new Text("hello"));
+  expect(hello).to.be.instanceOf(Null);
+
+  initial.replace(new Dict({hello: new Text("world")}));
+  expect(hello.latest().text).to.equal("world")
+});
+```
+
+A slightly different reactive behavior is when the field key changes:
+
+```js
+it("fields update when the key changes", ()=> {
+  const initial = new Dict({
+    hello: new Text("world"),
+    boo: new Text("hoo")
+  }).setStream(new Stream());
+  const key = new Text("hello").setStream(new Stream());
+  const hello = field(new Store(), initial, key);
+
+  expect(hello.text).to.equal("world");
+
+  key.replace(new Text("boo"));
+  expect(hello.latest().text).to.equal("hoo");
+});
+```
 
 ## Tests
 
