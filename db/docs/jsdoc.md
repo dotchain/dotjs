@@ -546,6 +546,7 @@ connection
     * [new exports.Store(conn, serialized?)](#new_Store_new)
     * [.next](#Store+next) : <code>Object</code>
     * [.collection()](#Store+collection)
+    * [.get()](#Store+get)
 
 <a name="new_Store_new"></a>
 
@@ -566,6 +567,12 @@ null or {change, version}
 
 ### store.collection()
 collection returns a collection by name
+
+**Kind**: instance method of [<code>Store</code>](#Store)  
+<a name="Store+get"></a>
+
+### store.get()
+get is same as collection
 
 **Kind**: instance method of [<code>Store</code>](#Store)  
 <a name="Stream"></a>

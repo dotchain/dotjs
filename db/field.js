@@ -21,8 +21,6 @@ class FieldStream extends DerivedStream {
     if (!value) {
       if (!key.text) {
         value = new Null();
-      } else if (obj.collection) {
-        value = obj.collection(key.text);
       } else if (obj.get) {
         value = obj.get(key.text);
       } else {
@@ -30,6 +28,9 @@ class FieldStream extends DerivedStream {
       }
     }
 
+    if (!value.clone) {
+      console.log("got", value);
+    }
     super(value.stream);
     this.value = value.clone().setStream(this);
     this.store = store;
