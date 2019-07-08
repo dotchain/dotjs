@@ -1872,7 +1872,8 @@ class Substream extends DerivedStream {
   }
 
   reverseAppend(c) {
-    const p = this.parent && this.parent.reverseAppend(new PathChange([this.key], c));
+    const p =
+      this.parent && this.parent.reverseAppend(new PathChange([this.key], c));
     // TODO: the key may have changed!
     return new Substream(p, this.key);
   }
@@ -2502,28 +2503,6 @@ Decoder.registerValueClass(Text);
 
 
 
-/** Store is a dictionary where the
-  * default value type is also a dictionary */
-class Store extends Dict {
-  constructor(map, defaultFn) {
-    super(map, defaultFn || (() => new Dict()));
-  }
-  static typeName() {
-    return "dotdb.Store";
-  }
-}
-
-Decoder.registerValueClass(Store);
-
-
-
-
-
-
-
-
-
-
 function run(store, obj) {
   return new RunStream(store, obj, null).value;
 }
@@ -2599,9 +2578,6 @@ class FieldStream extends DerivedStream {
       }
     }
 
-    if (!value.clone) {
-      console.log("got", value);
-    }
     super(value.stream);
     this.value = value.clone().setStream(this);
     this.store = store;
@@ -3275,6 +3251,27 @@ class GroupStream extends DerivedStream {
 function filter(store, obj, fn) {
   return field(store, group(store, obj, fn), new Text('{"dotdb.Bool":true}'));
 }
+
+
+
+
+
+
+
+
+
+/** Store is a dictionary where the
+ * default value type is also a dictionary */
+class Store extends Dict {
+  constructor(map, defaultFn) {
+    super(map, defaultFn || (() => new Dict()));
+  }
+  static typeName() {
+    return "dotdb.Store";
+  }
+}
+
+Decoder.registerValueClass(Store);
 
 
 
