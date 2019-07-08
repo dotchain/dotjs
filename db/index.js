@@ -16,6 +16,7 @@ export { Field, field } from "./field.js";
 export { View, invoke } from "./view.js";
 export { run } from "./run.js";
 export { Conn } from "./conn.js";
+export { Session } from "./session.js";
 export { Transformer } from "./transform.js";
 export { Stream, DerivedStream } from "./stream.js";
 export { MapIterator, SeqIterator } from "./iterators.js";

@@ -33,12 +33,12 @@ export class Stream {
 
   /* push commits any changes upstream */
   push() {
-    return this;
+    return null;
   }
 
   /* pull fetches any upstream changes which will be avilable via next */
   pull() {
-    return this;
+    return null;
   }
 
   /* undo reverts the last change on the underlying stream which could
@@ -50,12 +50,12 @@ export class Stream {
    * undo.
    */
   undo() {
-    return this;
+    return null;
   }
 
   /* redo reapplies the last change that got reverted by undo */
   redo() {
-    return this;
+    return null;
   }
 
   /* append adds a local change */
@@ -115,23 +115,19 @@ export class DerivedStream {
   }
 
   push() {
-    this.parent.push();
-    return this;
+    return this.parent.push();
   }
 
   pull() {
-    this.parent.pull();
-    return this;
+    return this.parent.pull();
   }
 
   undo() {
-    this.parent.undo();
-    return this;
+    return this.parent.undo();
   }
 
   redo() {
-    this.parent.redo();
-    return this;
+    return this.parent.redo();
   }
 
   get next() {

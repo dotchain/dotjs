@@ -92,33 +92,21 @@ export class Value {
 
   /** push pushes the changes up to the parent */
   push() {
-    if (this.stream) {
-      this.stream.push();
-    }
-    return this;
+    return this.stream && this.stream.push();
   }
 
   /** pull pulls changes from the parent */
   pull() {
-    if (this.stream) {
-      this.stream.pull();
-    }
-    return this;
+    return this.stream && this.stream.pull();
   }
 
   /** undoes the last change on this branch */
   undo() {
-    if (this.stream) {
-      this.stream.undo();
-    }
-    return this;
+    return this.stream && this.stream.undo();
   }
 
   /** redoes the last undo on this branch */
   redo() {
-    if (this.stream) {
-      this.stream.redo();
-    }
-    return this;
+    return this.stream && this.stream.redo();
   }
 }
