@@ -38,7 +38,7 @@ export class Dict extends Value {
 
   /** clone makes a copy but with stream set to null */
   clone() {
-    return new Dict(this.map, this._defaultFn);
+    return new this.constructor(this.map, this._defaultFn);
   }
 
   apply(c) {
@@ -72,7 +72,7 @@ export class Dict extends Value {
     } else {
       clone[path[0]] = val;
     }
-    return new Dict(clone, this._defaultFn);
+    return new this.constructor(clone, this._defaultFn);
   }
 
   *[MapIterator]() {
@@ -99,7 +99,7 @@ export class Dict extends Value {
     for (let kk = 0; kk < json.length; kk += 2) {
       map[json[kk]] = decoder.decodeValue(json[kk + 1]);
     }
-    return new Dict(map);
+    return new this(map);
   }
 }
 

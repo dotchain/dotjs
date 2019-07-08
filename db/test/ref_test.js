@@ -6,12 +6,12 @@
 
 import { expect } from "chai";
 
-import { Dict, Ref, Store, Text, run } from "../index.js";
+import { Dict, Ref, Store, Stream, Text, run } from "../index.js";
 
 describe("Ref", () => {
   it("should run", () => {
-    let s = new Store(null, null);
-    const table1 = s.collection("table1");
+    let s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({ col1: new Text("hello") });
@@ -25,7 +25,7 @@ describe("Ref", () => {
     let deref = run(
       s,
       s
-        .collection("table1")
+        .get("table1")
         .get("row2")
         .get("col1")
     );
@@ -33,8 +33,8 @@ describe("Ref", () => {
   });
 
   it("should track changes in underlying object", () => {
-    let s = new Store(null, null);
-    const table1 = s.collection("table1");
+    let s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({ col1: new Text("hello") });
@@ -47,13 +47,13 @@ describe("Ref", () => {
     let deref = run(
       s,
       s
-        .collection("table1")
+        .get("table1")
         .get("row2")
         .get("col1")
     );
 
     // now updated hello => hello world and see the ref update
-    s.collection("table1")
+    s.get("table1")
       .get("row1")
       .get("col1")
       .splice(5, 0, " world");
@@ -62,8 +62,8 @@ describe("Ref", () => {
   });
 
   it("should update if the ref itself changes", () => {
-    let s = new Store(null, null);
-    const table1 = s.collection("table1");
+    let s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({
@@ -77,13 +77,13 @@ describe("Ref", () => {
 
     // evaluate table1.row2.col1
     const ref = s
-      .collection("table1")
+      .get("table1")
       .get("row2")
       .get("col1");
     let deref = run(s, ref);
 
     // now update col1 => col2 and see hello => world
-    s.collection("table1")
+    s.get("table1")
       .get("row2")
       .get("col1")
       .replace(new Ref(["table1", "row1", "col2"]));
@@ -93,8 +93,8 @@ describe("Ref", () => {
   });
 
   it("should proxy changes", () => {
-    let s = new Store(null, null);
-    const table1 = s.collection("table1");
+    let s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({
@@ -108,7 +108,7 @@ describe("Ref", () => {
 
     // evaluate table1.row2.col1
     const ref = s
-      .collection("table1")
+      .get("table1")
       .get("row2")
       .get("col1");
     const deref = run(s, ref);
@@ -119,15 +119,15 @@ describe("Ref", () => {
     s = s.next.version;
     expect(
       s
-        .collection("table1")
+        .get("table1")
         .get("row1")
         .get("col1").text
     ).to.equal("hello world");
   });
 
   it("should allow replacing a ref with a non-ref", () => {
-    let s = new Store(null, null);
-    const table1 = s.collection("table1");
+    let s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({ col1: new Text("hello") });
@@ -138,7 +138,7 @@ describe("Ref", () => {
 
     // evaluate table1.row2.col1
     const ref = s
-      .collection("table1")
+      .get("table1")
       .get("row2")
       .get("col1");
     const deref = run(s, ref);
@@ -149,7 +149,7 @@ describe("Ref", () => {
     s = s.next.version;
     expect(
       s
-        .collection("table1")
+        .get("table1")
         .get("row2")
         .get("col1").text
     ).to.equal("world");
