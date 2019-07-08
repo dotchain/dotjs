@@ -50,6 +50,10 @@ export class Store {
     return this._root.get(name);
   }
 
+  /** get is same as collection **/
+  get(key) {
+    return this._root.get(key);
+  }
   /** @type {Object} null or {change, version} */
   get next() {
     const n = this._root.next;

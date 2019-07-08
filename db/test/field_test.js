@@ -23,7 +23,6 @@ describe("Field", () => {
     table1.get("row1").replace(row1);
     table1.get("row2").replace(row2);
     table1.get("args").replace(args);
-
     return s.next.version.next.version.next.version;
   }
 

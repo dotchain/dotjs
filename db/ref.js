@@ -26,11 +26,7 @@ export class Ref extends Value {
   run(store) {
     let result = store;
     for (let elt of this._path) {
-      if (result === store) {
-        result = store.collection(elt);
-      } else {
-        result = field(store, result, new Text(elt));
-      }
+      result = field(store, result, new Text(elt));
     }
     return result;
   }
