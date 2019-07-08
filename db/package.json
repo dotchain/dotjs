@@ -62,9 +62,12 @@
     "instrument": true
   },
   "eslintIgnore": [
-    "./conn.js",
-    "./transform.js",
-    "test/golden.js"
+    "conn.js",
+    "esmloader.js",
+    "karma.conf.js",
+    "transform.js",
+    "test/golden.js",
+    "test/server.js"
   ],
   "repository": {
     "type": "git",

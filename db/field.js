@@ -28,9 +28,6 @@ class FieldStream extends DerivedStream {
       }
     }
 
-    if (!value.clone) {
-      console.log("got", value);
-    }
     super(value.stream);
     this.value = value.clone().setStream(this);
     this.store = store;

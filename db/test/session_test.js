@@ -12,7 +12,7 @@ import { Replace } from "../replace.js";
 import { Splice } from "../splice.js";
 
 if (typeof crypto === "undefined") {
-  Operation.useCrypto(require("crypto"));
+  Operation.useCrypto(require("crypto")); //eslint-disable-line
 }
 
 describe("Session", () => {
@@ -92,7 +92,6 @@ describe("Session", () => {
 
   it("removes acked ops from pending", () => {
     let written = null;
-    let resolve = null;
     let ver = 0;
     const conn = {
       read() {
