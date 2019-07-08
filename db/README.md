@@ -1,341 +1,324 @@
-# dotjs
+# DotDB
 
-[![Build Status](https://travis-ci.com/dotchain/dotjs.svg?branch=master)](https://travis-ci.com/dotchain/dotjs)
-[![codecov](https://codecov.io/gh/dotchain/dotjs/branch/master/graph/badge.svg)](https://codecov.io/gh/dotchain/dotjs)
-
-The dotjs project provides high-level APIs for distributed synchronization of rich data.
+DotDB is a functional convergent bi-directional streamable distributed database.
 
 ## Contents
 1. [Status](#status)
-2. [DotDB](#dotdb)
-    1. [Types](#types)
-    2. [Store](#store)
-    3. [Convergent streams](#convergent-streams)
-    4. [Collections, derived values](#collections-derived-values)
-    5. [Branching](#branching)
-    6. [Undo support](#undo-support)
-    7. [Refs](#refs)
-    8. [Functions/Calculations](#functions-calculations)
-        1. [Calculations are reactive](#calculations-are-reactive)
-    9. [Views](#views)
-3. [Installation](#installation)
+2. [Installation](#installation)
+3. [DotDB](#dotdb)
+    1. [Functional](#functional)
+    2. [Convergent](#convergent)
+    3. [Reactive](#reactive)
+    4. [Bi-directional](#bi-directional)
+    5. [Demand-driven computation](#demand-driven-computation)
+    6. [Network synchronization](#network-synchronization)
+    7. [Persistence](#persistence)
+    8. [Git-like ability to branch and push/pull](#git-like-ability-to-branch-and-push-pull)
+    9. [Automatic Undo/Redo](#automatic-undo-redo)
+    10. [Streaming](#streaming)
+    11. [References](#references)
 4. [Tests](#tests)
 
 ## Status
 
-This ES6 port of the [Go implementation](https://github.com/dotchain/dot) is ready with full interoperability.  See [library documentation](library.md) for documentation on how to use the library.
-
-The recommended approach is to use DotDB which provides an easier
-interface to work with.
-
-## DotDB
-
-DotDB is a distributed, convergent, reactive database-like store built
-on top of the DOT's operational-transformation approach. 
-
-DotDB is designed to work on browsers with collaborative edits
-automatically converging.  It is reactive in that **views** can be
-created which are automatically maintained when the underlying
-references change (either locally or remotely). 
-
-This is a standalone ES6 package with no external dependencies, available at **dist/dotdb.js**
-
-### Types
-
-DotDB allows rich types and hierarchies -- including the obligatory
-collaborative text -- with a database like flavor but it doesn't
-implement SQL semantics (transactions) or use SQL as the query
-language.
-
-The basic primitive types in DotDB are:
-
-1. **Null** (no value).  This is gennerally not explicitly stored but
-simply the resulting of fetching a key or a ref that does not exist: `new dotdb.Null()`
-2. **Num** (any rational number): `new dotdb.Num(5.3)`
-3. **Bool** (a boolean): `new dotdb.Bool(true)`
-4. **Text** (unicode editable string): `new dotdb.Text("hello")`
-
-In addition, DotDB supports composite types:
-
-1. **Dict** is a map-like collection of any DotDB values (primitive or
-composite).  The key must be a string: `new dotdb.Dict({hello: new dotb.Text("world")})`
-2. **Seq** is an array-like collection of any DotDB values: `new dotdb.Seq([new Text("hello")])`
-
-Note: **Dict** is generally preferred over **Seq** for most actual
-storage needs as this is both simpler and more efficient.  When
-ordering is required, a field can specify the order and the whole
-collection sorted to yield the **Seq**.
-
-All derived objects are expected to be of the same shape as the
-above.
-
-There are two other special types of values:
-
-1. **Runnable** values are value that need to be evaluated.  An
-example is **Ref** which holds the path (reference) to another object
-in the current store.  The value of **Ref** should be treated as the value
-it points to.  All runnable values implement a method: `run(store)` to
-yield the actual result of evaluating them.
-2. **Functions** are values that need to be invoked with
-arguments. An example is `Field`. Functions implement a `invoke(store,
-args)` method where the `args` field is a `Dict` with keys being the
-named parameters required by the function.
-
-### Store
-
-The store is the root versioned object in DotDB.  A store can be
-created like so: 
-
-```js
-
-import dotdb from "dotjs/dist/dotdb.js";
-let store = new dotdb.Store(url, null);
-
-```
-
-Stores can be serialized and restored.  This is convenient for browser
-sessions as they can cache the whole data if needed.
-
-```js
-const serialized = store.serialize();
-let newStore = new dotdb.Store(url, serialized);
-```
-
-The url provided is the network URL to make XHR calls to.  The default
-connection management can be overridden by passing a custom `Conn`
-object which implements `read(version, limit)` and `write(ops)`
-methods (both of which are async/promise-based).
-
-The store does not make any network calls until `store.sync()` is
-called, at which point the provided `url` is used for a push/pull
-request.  The return value is a promise that carries the error. In any
-case, once the promise returns, there is no further calls made and it
-is up to the caller to call sync again.  Calling sync when a promise
-is in progress simply returns that promise and should be relatively ok
-to call multiple times, such as during every [Animation
-Refresh](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
-
-### Convergent streams
-
-The `sync()` call on the store does not actually make any changes to the
-store directly.  The store is effectively an immutable object with the
-next version available via the `next` property:
-
-```js
-let next = store.next;
-if (next) {
-  store = next.version;
-}
-```
-
-All values in DotDB act this way: they are immutable for all practical
-purposes with changes available via the `next` properties.  Mutating a
-value results in the old value being unchanged with the updated value
-returned (as well as added via `next` onto the old value).  When
-multiple mutations are done on the same base value, the mutations
-converge:
-
-```js
-
-const initial = new dotdb.Text("hello");
-initial.stream = new dotdb.Stream(); // this is required for convergence
-
-let first = initial.splice(5, 0, " world"); // hello => hello world
-let second = initial.splice(0, 1, "H"); // hello => Hello
-
-// now both values "converge" to "Hello world"
-first = first.next.version;
-second = second.next.version;
-if  (first.text != second.text || first.text != "Hello world") {
-   throw new Error("unexpected")
-}
-```
-
-In the example above, the initial value requires a "stream".  This is
-where much of the logic of merging values is done.  This is not needed
-for values derived from `Store` instances as that comes with a stream
-initialized.
-
-### Collections, derived values
-
-Store exposes a **collection** method to access top level
-collections. Collections do not need to be created:
-
-```js
-let table1 = store.collection("table1");
-let row = table1.get("rowId");
-if (row instanceof dotdb.Null) {
-  // row does not exist
-  row = row.replace(new dotdb.Dict({colId1: new Text("some value")}))
-}
-```
-
-The store and top level collections both use `dotdb.Dict` which allows
-accessing items by ID and automatically creating them if they don't
-exist.
-
-The example also shows how to create a new row by using  the `replace`
-method. This method is available on *all* values including `Null` and
-is the primary way to replace an item.
-
-The example above also illustrates derived items: All values derived
-from another track their changes:
-
-```js
-const initial = store.collection("table1").get("row1").get("col1");
-const first = initial.replace(new dotdb.Text("column1"));
-const second = initial.replace(new dotdb.Text("column2"));
-
-if (first.next.version.text != second.next.version.text) {
-  throw new Error("unexpected");
-}
-```
-
-### Branching
-
-All dotdb values support git-like branching with push/pull support:
-
-```js
-  const parent = new dotdb.Text("hello");
-  parent.stream = new dotdb.Stream(); // needed for branching
-
-  let child = parent.branch();
-
-  // the following will not modify parent
-  let child =  child.splice(5, 0, "  world");
-
-  // now push all local changes up to parent
-  child.push();
-
-  // now child and parent will be in sync
-```
-
-### Undo support
-
-There is some plumbing for supporting undos but there is still some
-work to expose it, particularly if one wants to limit undos within a
-branch.
-
-### Refs
-
-References allow objects to hold a value that points elsewhere in the
-store (including within other references):
-
-```js
-
-let store = new dotdb.Store(url, null);
-
-// table1.row1.col2 = reference to table1.row1.col1
-store.get("table1").get("row1").replace(new dotdb.Dict{
-  col1: new dotdb.Text("hello"),
-  col2: new dotdb.Ref(["table1", "row1", "col1"]),
-});
-
-store = store.next.version;
-
-// evaluate table1.row1.col2
-const col2 = store.get("table1").get("row1").get("col2").run(store);
-if (col2.text != "hello") {
-  throw new Error("Unexpected col2");
-}
-
-// references can be evaluated without them being stored in the db:
-const v = dotdb.run(store, new dotdb.Ref(["table1", "row1", "col2"]));
-if (v.text != col2.text) {
-  throw new Error("Unexpected col2");
-}
-
-```
-
-The example above also illustrates the `dotdb.run` function which
-evaluates any `runnable` value. The other runnable value would be
-`call expressions` (NYI) or any user defined runnable.
-
-### Functions/Calculations
-
-DotDB supports values which are "functions" -- they can be "invoked"
-with arguments to yield results (which are expected to be DotDB
-values).
-
-**Field** is one such function value:
-
-```js
-const fieldFn = new dotdb.Field();
-const evaluated = fieldFn.invoke(store, new dotdb.Dict({
-  "obj": new dotdb.Ref(["table1", "row1"]),
-  "field": new dotdb.Text("col1"),
-}))
-
-// evaluated is now same as table1.row1.col1
-```
-
-As shown in the example, the arguments to Field are of the form of a
-hash with `obj` and `field` (which are themselves evaluated).
-
-#### Calculations are reactive
-
-The interesting thing about calculations is that if the underlying
-args passed to it is modified, the evaluated value changes
-correspondingly -- using the `next.version` pattern.
-
-### Views
-
-Views are **runnable** values that esseentially invoke a function with
-argumeents:
-
-```js
-const viewDef = new dotdb.View(
-  new Dict({
-    viewFn: new dotdb.Field(), // function to execute is field
-    obj: new dotdb.Ref(["table1", "row1"]),
-    field: new dotdb.Text("col1"),
-  })
-const view = dotdb.Run(store, viewDef);
-);
-
-```
-the example above creates a **view** for `table1.row1.col1`.  As the
-store changes, the view tracks the computed value at all times.  For
-example, if `table1.row1` is itself a `Ref` or a `View`, it is
-evaluated  and then the `col1` value is extracted from it.
-
-The difference between simply calling
-`store.collection('table1').get('row1').get('col1')` vs constructing
-the view is that **views are formulas that can be stored within the
-database**. 
-
-The `map` function, for example, provides a way to construct a view
-that modifies an existing table or row.  It is useful to store this
-incantation within DotDB itself (and posisbly even refer to this
-view to construct more complicated views).
-
-Note that DotDB does not automatically evaluate all views.  The caller
-still has to call `dotdb.Run(store, viewDef)` to create a stream for
-the evaluation but once created, the stream will keep updating with
-calls to `next()` like all regular values.
+This is not quite stable yet.
 
 ## Installation
 
-There is no plan to make this code available via NPM.  The suggested
-way to use this library is by adding the following to your
-package.json and using it. 
+There is no npm support.  Please use the repo link directly:
 
-```
+```sh
+yarn add esm
 yarn add https://github.com/dotchain/dotjs
 ```
 
-or
+A single-file output is available via [dist/dotdb.js](https://github.com/dotchain/dotjs/blob/master/dist/dotdb.js).
 
+## DotDB
+
+DotDB is a functional, convergent, reactive, synchronized store.
+
+### Functional
+
+Values in DotDB are effectively immutable:
+
+```js
+import {expect} from "chai";
+import {Text} from "dotjs/db";
+
+it("should not mutate underlying value", ()=> {
+  const initial = new Text("hello");
+  const updated = initial.splice(5, 0, " world");
+  expect(initial.text).to.equal("hello");
+  expect(updated.text).to.equal("hello world");
+});
 ```
-npm install https://github.com/dotchain/dotjs
+### Convergent
+
+Values in DotDB *converge* when mutated by multiple writers. The convergence honors the *immutable* feel by simply leaving the original value intact but instead making the convergence available via the *latest()* method.
+
+```js
+import {expect} from "chai";
+import {Stream, Text} from "dotjs/db";
+describe("Convergence", () => {
+  it("should converge", ()=> {
+    const initial = new Text("hello").setStream(new Stream());
+    const updated1 = initial.splice(5, 0, " world");
+    const updated2 = initial.splice(5, 0, ", goodbye!")
+
+    expect(initial.text).to.equal("hello");
+    expect(updated1.text).to.equal("hello world");
+    expect(updated2.text).to.equal("hello, goodbye!");
+
+    expect(initial.latest().text).equal("hello world, goodbye!")
+    expect(updated1.latest().text).equal("hello world, goodbye!")
+    expect(updated2.latest().text).equal("hello world, goodbye!")
+  });
+});
 ```
+
+    Note: Convergence requires a *stream* associated with the value. In the example, the initial value is setup with a new stream. In practice, this is rarely needed as all derived values simply inherent the *stream* from their parents and the root object is created at app initialization.  But the examples here are all standalone and so will include that as part of the constructor.
+
+### Reactive
+
+Values in DotDB are reactive.  The example below illustrates fetching a key from a dictionary.  This value keeps up with any changes to the dictionary:
+
+```js
+import {expect} from "chai";
+import {Dict, Stream, Text} from "dotjs/db";
+describe("Reactive", () => {
+  it("fields update with underlying changes", ()=> {
+    const initial = new Dict({
+      hello: new Text("world")
+    }).setStream(new Stream());
+
+    const hello = initial.get("hello");
+    initial.get("hello").replace(new Text("goodbye!"));
+
+    expect(hello.latest().text).to.equal("goodbye!");
+    expect(initial.latest().get("hello").text).to.equal("goodbye!");
+  });
+});
+```
+
+A slightly more involved example uses the `field()` function which works on any value. For actual `Dict` or a similar, it returns the `get()` value and for the rest it returns Null.  The reactive part is the fact that it keeps up with the underlying object:
+
+```js
+it("fields update even if the underlying object changes", ()=> {
+  const initial = new Text("hello").setStream(new Stream());
+
+  const hello = field(new Store(), initial, new Text("hello"));
+  expect(hello).to.be.instanceOf(Null);
+
+  initial.replace(new Dict({hello: new Text("world")}));
+  expect(hello.latest().text).to.equal("world")
+});
+```
+
+A slightly different reactive behavior is when the field key changes:
+
+```js
+it("fields update when the key changes", ()=> {
+  const initial = new Dict({
+    hello: new Text("world"),
+    boo: new Text("hoo")
+  }).setStream(new Stream());
+  const key = new Text("hello").setStream(new Stream());
+  const hello = field(new Store(), initial, key);
+
+  expect(hello.text).to.equal("world");
+
+  key.replace(new Text("boo"));
+  expect(hello.latest().text).to.equal("hoo");
+});
+```
+
+### Bi-directional
+
+Standard "Functional Reactive" formulations (such as with [ReactiveX/rxjs](https://github.com/ReactiveX/rxjs), [Sodium](https://github.com/SodiumFRP/sodium)) tend to be about data flow in one direction.  DotDB takes a fairly different route attempting to make data flow bi-directionally: most derivations are meant to be meaningfully modified with the mutations being proxied to the underlying values quite transparently:
+
+```js
+import {expect} from "chai";
+import {field, Dict, Null, Store, Stream, Text} from "dotjs/db";
+describe("Bi-directional", () => {
+  it("proxies edits on fields", () => {
+    const initial = new Dict({
+      hello: new Text("world")
+    }).setStream(new Stream());
+
+    const hello = field(new Store(), initial, new Text("hello"));
+    hello.replace(new Text("goodbye!"));
+
+    expect(initial.latest().get("hello").text).to.equal("goodbye!");
+  });
+});
+```
+
+The example above is for the relatively simple case of accessing a field dynamically.  A more difficult use case would be working with output of filtering a dictionary:
+
+```js
+it("proxies edits on filtered dictionaries", () => {
+  const initial = new Dict({
+    hello: new Text("world"),
+    boo: new Text("goop")
+  }).setStream(new Stream());
+  // see examples/bidirectional_test.js for fn definition
+  const fn = new PrefixMatcher("w");
+  const filtered = filter(new Store(), initial, fn);
+
+  expect(filtered.get("boo")).to.be.instanceOf(Null);
+  expect(filtered.get("hello").text).to.equal("world");
+});
+```
+
+The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  For a given definition of the reactive forward data flow, multiple reverse flows can be defined and all the `bi-directional` primitives in `DotDB` pin both behaviors.  Custom behaviors are possible (though intricate to get right at this point) but the inherent strength of two-way bindings is that the usual complexity of event-handling can be avoided with a fairly declarative setup.
+
+     One of the goals here is to build a UI apps where
+     the complexities event-handling are not used.  Instead, much
+     of that behavior is obtained via simple composition-friendly
+     two-way bindings instead. For example, one can pass a field
+     of a dictionary to a text input and simply have the text input
+     write directly (i.e. changes are applied onto the field of the
+     dictionary).  This approach allows a more declarative approach
+     to not just rendering but also actual edits/mutations.
+
+### Demand-driven computation
+
+All of DotDB uses a demand-driven computation model (Pull FRP).  This avoids a lot of the pit-falls of a pure Pull-based system (such as the need for schedulers, ensuring subscriptions are not leaked  -- and the cost of computation being based on all defined derivations even if those derivations are not required at the moment).  
+
+One of the interesting consequences of this approach is that defining a large number of views incurs almost no cost if they are never "used".  Another consequence is the ability to schedule work better since all updates only happen when the `latest()` call is initiated.  There are other subtle and graceful ways to introduce scheduling priorities without affecting ability to reason about the correctness.
+
+    One of the goals of DotDB is to support building a full UI,
+    using the computation scheme here with support for hidden views
+    (such as mobile or desktop etc) with no cost for those views
+    unless they are rendered.
+
+### Network synchronization
+
+Network synchronization is via a `Session` singleton and a `root` object (which is typically a `Store` instance):
+
+```js
+// savedSession is initialized via the root object
+const savedSession = Session.serialize(new Store());
+const root = Session.connect(url, Session.serialize(new Store()));
+
+// now root is an instance of Store and can be used
+```
+
+The store maintains a top-level collection of `Dict` objects, meant for `users`, `messages` or other typical top-level collections.  Once a store is created, the rest of the objects simple have their streams inherited from it and the rest of the code can quite transparently work without consideration of any remote activity.
+
+Synchronization is explicit (in keeping with the immutable feel as well as the explicit control over computation) via `push()`:
+
+```js
+...
+store.push().then(err => {
+  // do err handling include binary exponential fallback etc.
+});
+store.pull().then(err => {
+  // do err handling
+})
+```
+
+Push and pull only make a single attempt even in case of success -- the caller is expected to keep things alive by repeated invocations (with appropriate backoff).  This approach allows graceful ways for callers to suspend the synchronization as needed.
+
+### Persistence
+
+The whole `Store` instance can be persisted (say using LocalStorage) via a call to `Session.serialize(store)` and then restored via a call to `Session.connect(url, serialized)`.  
+
+This effectively creates a snapshot of the session state and restores things to the earlier state (respectively).
+
+Individual values can also be serialized using this approach and these serializations include includes functions and computations -- which perform the role of stored procedures and views in database terminology except that these also show up as strongly typed objects (and so allow programmatic access to fields and can also  be transformed as if it were data).
+
+
+### Git-like ability to branch and push/pull
+
+All DotDB values also support git-like branch, push/pull semantics:
+
+```js
+import {expect} from "chai";
+import {Stream, Text} from "dotjs/db";
+describe("Branch", () => {
+  it("should branch and merge", ()=> {
+    const parent = new Text("hello").setStream(new Stream());
+    const child = parent.branch();
+
+    const child1 = child.splice(5, 0, ", bye!");
+    const parent1 = parent.splice(5, 0, " world");
+
+    expect(parent.latest().text).to.equal("hello world");
+    expect(child.latest().text).to.equal("hello, bye!");
+
+    child1.push()
+
+    expect(parent.latest().text).to.equal("hello world, bye!");
+    expect(child.latest().text).to.equal("hello, bye!");
+
+    child1.pull();
+
+    expect(parent.latest().text).to.equal("hello world, bye!");
+    expect(child.latest().text).to.equal("hello world, bye!");
+  });
+});
+```
+### Automatic Undo/Redo
+
+All values also support automatic undo/redo with the undo/redo being limited to the current branch.
+
+```js
+examples tbd
+```
+
+###  Streaming
+
+All values can be `streamed` to get the changes made to it, not just the latest value:
+
+```js
+const initial = new Text("hello").setStream(new Stream());
+
+initial.splice(0, 1, "H"); // hello => Hello
+initial.splice(5, 0, " world.") // Hello => Hello world.
+
+// get next versions
+const {change, version} = initial.next;
+const {change: c2, version: final} = version.next;
+
+expect(final.text).to.equal("Hello world.");
+```
+
+These changes can also be applied to the initial object to compute the final result.  This allows a mechanism for thin clients (such as on mobile devices) to offload expensive views to the cloud but *collect* those changes and apply them locally.
+
+Some of this remote proxying is relatively easy to implement at this point though the exact API for this is not clear yet.
+
+### References
+
+DotDB has a built-in value `Ref(path)` which evaluates to the value at the `path` specified.  For instance:
+
+```js
+import {expect} from "chai";
+import {field, Dict, Ref, Store, Text} from "dotjs/db";
+describe("Ref", () => {
+  it("should evaluate references", ()=> {
+    const store = new Store();
+    const table1 = store.collection("table1");
+    const row1 = table1.get("row1").replace(new Dict({
+      "hello": new Text("world")
+    }))
+    const ref = new Ref(["table1", "row1"])
+
+    const hello = field(store, ref, new Text("hello"));
+    expect(hello.latest().text).to.equal("world");
+  });
+});
+```
+
+This allows the ability to represent rich data-structures and single-instancing of values.  In addition, any computation based on a ref will automatically update if the ref is changed.
 
 ## Tests
 
-* Node-based tests: `yarn mocha` or `npm run mocha`.
-* Node-based tests with code coverage: `yarn test` or `npm test`.
-* Browser tests using Karma: `yarn karma` or `npm run karma`
+* Node-based tests: `cd db; yarn mocha` or `cd db; npm run mocha`.
+* Node-based tests with code coverage: `cd db; yarn test` or `cd db; npm test`.
+* Browser tests using Karma: `cd db; yarn karma` or `cd db; npm run karma`
     * This uses karma and headless chrome
 * Browser-based end-to-end tests:
-    * Run `yarn e2e` or `npm run e2e`
-    * This runs a js server (via test/e2e/server.js)
+    * Run `cd db; yarn e2e` or `cd db; npm run e2e`
+    * ~This runs a js server (via test/e2e/server.js)~

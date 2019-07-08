@@ -18,7 +18,7 @@ This includes two packages: a low level [lib](lib/README.md) package and a much 
     5. [Demand-driven computation](#demand-driven-computation)
     6. [Network synchronization](#network-synchronization)
     7. [Persistence](#persistence)
-    8. [Git-like functionality](#git-like-functionality)
+    8. [Git-like ability to branch and push/pull](#git-like-ability-to-branch-and-push-pull)
     9. [Automatic Undo/Redo](#automatic-undo-redo)
     10. [Streaming](#streaming)
     11. [References](#references)
@@ -178,48 +178,64 @@ it("proxies edits on filtered dictionaries", () => {
 
 The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  For a given definition of the reactive forward data flow, multiple reverse flows can be defined and all the `bi-directional` primitives in `DotDB` pin both behaviors.  Custom behaviors are possible (though intricate to get right at this point) but the inherent strength of two-way bindings is that the usual complexity of event-handling can be avoided with a fairly declarative setup.
 
+     One of the goals here is to build a UI apps where
+     the complexities event-handling are not used.  Instead, much
+     of that behavior is obtained via simple composition-friendly
+     two-way bindings instead. For example, one can pass a field
+     of a dictionary to a text input and simply have the text input
+     write directly (i.e. changes are applied onto the field of the
+     dictionary).  This approach allows a more declarative approach
+     to not just rendering but also actual edits/mutations.
+
 ### Demand-driven computation
 
-All of DotDB uses a demand-driven computation model (Pull FRP).  This avoids a lot of the pit-falls of a pure Pull-based system (such as the need for schedulers and the cost of computation being based on all defined computation rather those computations required).  
+All of DotDB uses a demand-driven computation model (Pull FRP).  This avoids a lot of the pit-falls of a pure Pull-based system (such as the need for schedulers, ensuring subscriptions are not leaked  -- and the cost of computation being based on all defined derivations even if those derivations are not required at the moment).  
 
-One of the interesting consequences of this approach is that defining a large number of views incurs almost no cost if they are never updated.  Another consequence is the ability to schedule work better since all updates only happen when the `latest()` call is initiated.  There are other subtle ways to introduce scheduling priorities without affecting  the reasoning ability more gracefully though this isn't incorporated yet.
+One of the interesting consequences of this approach is that defining a large number of views incurs almost no cost if they are never "used".  Another consequence is the ability to schedule work better since all updates only happen when the `latest()` call is initiated.  There are other subtle and graceful ways to introduce scheduling priorities without affecting ability to reason about the correctness.
 
-    One of the goals of DotDB is to support building a full UI using the computation scheme here with support for hidden views (such as mobile or desktop etc) with no cost for those views unless they are rendered.
+    One of the goals of DotDB is to support building a full UI,
+    using the computation scheme here with support for hidden views
+    (such as mobile or desktop etc) with no cost for those views
+    unless they are rendered.
 
 ### Network synchronization
 
-Network synchronization is via a root `Store` object:
+Network synchronization is via a `Session` singleton and a `root` object (which is typically a `Store` instance):
 
 ```js
-const store = new Store(url);
+// savedSession is initialized via the root object
+const savedSession = Session.serialize(new Store());
+const root = Session.connect(url, Session.serialize(new Store()));
+
+// now root is an instance of Store and can be used
 ```
 
 The store maintains a top-level collection of `Dict` objects, meant for `users`, `messages` or other typical top-level collections.  Once a store is created, the rest of the objects simple have their streams inherited from it and the rest of the code can quite transparently work without consideration of any remote activity.
 
-Store synchronization is explicit (in keeping with the immutable feel as well as the explicit control over computation) via `sync()`:
+Synchronization is explicit (in keeping with the immutable feel as well as the explicit control over computation) via `push()`:
 
 ```js
 ...
-store.sync().then(err => {
+store.push().then(err => {
   // do err handling include binary exponential fallback etc.
+});
+store.pull().then(err => {
+  // do err handling
 })
 ```
 
-Sync only makes a single sync attempt even in case of success -- the caller is expected to keep things alive by repeated invocations (with appropriate backoff).  This approach allows graceful ways for callers to suspend the synchronization as needed.
+Push and pull only make a single attempt even in case of success -- the caller is expected to keep things alive by repeated invocations (with appropriate backoff).  This approach allows graceful ways for callers to suspend the synchronization as needed.
 
 ### Persistence
 
-The whole `Store` instance can be persisted (say using LocalStorage) via a call to `store.serialize()` and then restored via a call to `new Store(url, serialized)`.  
+The whole `Store` instance can be persisted (say using LocalStorage) via a call to `Session.serialize(store)` and then restored via a call to `Session.connect(url, serialized)`.  
 
-This effectively creates a snapshot of the session state.
+This effectively creates a snapshot of the session state and restores things to the earlier state (respectively).
 
-Individual values can also be serialized.  This includes functions and computations -- which function a bit like stored procedures and views in database terminology except that these also show up as strongly typed objects (and so allow programmatic access to fields and can also  be transformed as if it were data).
+Individual values can also be serialized using this approach and these serializations include includes functions and computations -- which perform the role of stored procedures and views in database terminology except that these also show up as strongly typed objects (and so allow programmatic access to fields and can also  be transformed as if it were data).
 
-```js
-Details to be added
-```
 
-### Git-like functionality
+### Git-like ability to branch and push/pull 
 
 All DotDB values also support git-like branch, push/pull semantics:
 
