@@ -34,7 +34,7 @@ class Branch {
       info.child = version;
     }
 
-    return this;
+    return null;
   }
 
   pull() {
@@ -45,7 +45,7 @@ class Branch {
       info.parent = version;
     }
 
-    return this;
+    return null;
   }
 
   get next() {
@@ -64,12 +64,10 @@ class Branch {
   }
 
   undo() {
-    this._underlying.undo();
-    return this;
+    return this._underlying.undo();
   }
 
   redo() {
-    this._underlying.redo();
-    return this;
+    return this._underlying.redo();
   }
 }

@@ -47,6 +47,9 @@ It can be used with strings or array-like values.</p>
 <dt><a href="#Seq">Seq</a></dt>
 <dd><p>Seq represents a sequence of values</p>
 </dd>
+<dt><a href="#Session">Session</a></dt>
+<dd><p>Session implements helpers for creating a session</p>
+</dd>
 <dt><a href="#Splice">Splice</a></dt>
 <dd><p>Splice represents the change to replace a sub-sequence with another.
 It can be used with strings or array-like values.</p>
@@ -517,6 +520,32 @@ distance shifts left.
 clone makes a copy but with stream set to null
 
 **Kind**: instance method of [<code>Seq</code>](#Seq)  
+<a name="Session"></a>
+
+## Session
+Session implements helpers for creating a session
+
+**Kind**: global class  
+
+* [Session](#Session)
+    * [.serialize()](#Session.serialize)
+    * [.connect()](#Session.connect)
+
+<a name="Session.serialize"></a>
+
+### Session.serialize()
+Serialize serializes a connected value for later
+use with connect
+
+**Kind**: static method of [<code>Session</code>](#Session)  
+<a name="Session.connect"></a>
+
+### Session.connect()
+connect creates a root object that can sync against
+the provided URL. If serialized is not provided, a Null
+initial object is created.
+
+**Kind**: static method of [<code>Session</code>](#Session)  
 <a name="Splice"></a>
 
 ## Splice

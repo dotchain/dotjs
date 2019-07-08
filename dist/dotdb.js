@@ -267,12 +267,12 @@ class Stream {
 
   /* push commits any changes upstream */
   push() {
-    return this;
+    return null;
   }
 
   /* pull fetches any upstream changes which will be avilable via next */
   pull() {
-    return this;
+    return null;
   }
 
   /* undo reverts the last change on the underlying stream which could
@@ -284,12 +284,12 @@ class Stream {
    * undo.
    */
   undo() {
-    return this;
+    return null;
   }
 
   /* redo reapplies the last change that got reverted by undo */
   redo() {
-    return this;
+    return null;
   }
 
   /* append adds a local change */
@@ -349,23 +349,19 @@ class DerivedStream {
   }
 
   push() {
-    this.parent.push();
-    return this;
+    return this.parent.push();
   }
 
   pull() {
-    this.parent.pull();
-    return this;
+    return this.parent.pull();
   }
 
   undo() {
-    this.parent.undo();
-    return this;
+    return this.parent.undo();
   }
 
   redo() {
-    this.parent.redo();
-    return this;
+    return this.parent.redo();
   }
 
   get next() {
@@ -416,7 +412,7 @@ class Branch {
       info.child = version;
     }
 
-    return this;
+    return null;
   }
 
   pull() {
@@ -427,7 +423,7 @@ class Branch {
       info.parent = version;
     }
 
-    return this;
+    return null;
   }
 
   get next() {
@@ -446,13 +442,11 @@ class Branch {
   }
 
   undo() {
-    this._underlying.undo();
-    return this;
+    return this._underlying.undo();
   }
 
   redo() {
-    this._underlying.redo();
-    return this;
+    return this._underlying.redo();
   }
 }
 
@@ -549,34 +543,22 @@ class Value {
 
   /** push pushes the changes up to the parent */
   push() {
-    if (this.stream) {
-      this.stream.push();
-    }
-    return this;
+    return this.stream && this.stream.push();
   }
 
   /** pull pulls changes from the parent */
   pull() {
-    if (this.stream) {
-      this.stream.pull();
-    }
-    return this;
+    return this.stream && this.stream.pull();
   }
 
   /** undoes the last change on this branch */
   undo() {
-    if (this.stream) {
-      this.stream.undo();
-    }
-    return this;
+    return this.stream && this.stream.undo();
   }
 
   /** redoes the last undo on this branch */
   redo() {
-    if (this.stream) {
-      this.stream.redo();
-    }
-    return this;
+    return this.stream && this.stream.redo();
   }
 }
 
@@ -1884,11 +1866,15 @@ class Substream extends DerivedStream {
   }
 
   append(c) {
-    return this.parent.append(new PathChange([this.key], c));
+    const p = this.parent.append(new PathChange([this.key], c));
+    // TODO: the key have changed!
+    return new Substream(p, this.key);
   }
 
   reverseAppend(c) {
-    return this.parent.reverseAppend(new PathChange([this.key], c));
+    const p = this.parent.reverseAppend(new PathChange([this.key], c));
+    // TODO: the key may have changed!
+    return new Substream(p, this.key);
   }
 
   _getNext() {
@@ -2898,7 +2884,7 @@ class FieldStream extends DerivedStream {
     }
 
     if (!value.clone) {
-      console.log("got", value)
+      console.log("got", value);
     }
     super(value.stream);
     this.value = value.clone().setStream(this);
@@ -3814,5 +3800,197 @@ class Ref extends Value {
 }
 
 Decoder.registerValueClass(Ref);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** Session implements helpers for creating a session */
+class Session {
+  /** Serialize serializes a connected value for later
+   * use with connect */
+  static serialize(obj) {
+    const root = Encoder.encode(obj.latest());
+    const stream = obj.stream;
+    if (!stream || !(stream instanceof SessionStream)) {
+      return { root, version: -1, merge: [], pending: [] };
+    }
+
+    stream._push();
+    stream._pull();
+    const result = {
+      root: root,
+      version: stream._info.version,
+      merge: stream._info.merge,
+      pending: stream._info.pending
+    };
+    return JSON.parse(JSON.stringify(result));
+  }
+
+  /** connect creates a root object that can sync against
+   * the provided URL. If serialized is not provided, a Null
+   * initial object is created. */
+  static connect(url, serialized) {
+    const conn = this._conn(url);
+    const { root, version, merge, pending } = this._root(serialized);
+    const parent = new Stream();
+    const info = {
+      conn: conn,
+      stream: parent,
+      version: version,
+      pending: (pending || []).slice(0),
+      merge: (merge || []).slice(0),
+      pulling: null,
+      pushing: null,
+      unsent: (pending || []).slice(0),
+      unmerged: []
+    };
+    return root.setStream(new SessionStream(parent, info));
+  }
+
+  static _root(serialized) {
+    if (!serialized) {
+      return { root: new Null(), version: -1 };
+    }
+
+    const d = new Decoder();
+    const root = d.decodeValue(serialized.root);
+    const { version } = serialized;
+    const merge = serialized.merge.map(x => Operation.fromJSON(d, x));
+    const pending = serialized.pending.map(x => Operation.fromJSON(d, x));
+
+    return { root, version, merge, pending };
+  }
+
+  static _conn(url) {
+    if (typeof url !== "string") {
+      return url;
+    }
+    // eslint-disable-next-line
+    const f = typeof fetch == "function" ? fetch : null;
+    return new Transformer(new Conn(url, f));
+  }
+}
+
+
+
+class SessionStream {
+  constructor(parent, info) {
+    this._parent = parent;
+    this._info = info;
+  }
+
+  append(c) {
+    return { change: c, version: this._setParent(this._parent.append(c)) };
+  }
+
+  reverseAppend(c) {
+    return {
+      change: c,
+      version: this._setParent(this._parent.reeverseAppend(c))
+    };
+  }
+
+  undo() {
+    this._parent.undo();
+    return this;
+  }
+
+  redo() {
+    this._parent.redo();
+    return this;
+  }
+
+  get next() {
+    const n = this._parent.next;
+    if (!n) {
+      return null;
+    }
+
+    return { change: n.change, version: this._setParent(n.version) };
+  }
+
+  _setParent(parent) {
+    return new SessionStream(parent, this._info);
+  }
+
+  push() {
+    this._push();
+    const info = this._info;
+    if (!info.pushing) {
+      const ops = info.unsent.slice(0);
+      if (ops.length === 0) {
+        return Promise.resolve(null);
+      }
+      info.pushing = info.conn
+        .write(ops)
+        .then(() => {
+          info.unsent = info.unsent.slice(ops.length);
+        })
+        .finally(() => {
+          info.pushing = null;
+        });
+    }
+    return info.pushing;
+  }
+
+  _push() {
+    const s = this._info;
+    const len = (s.pending || []).length;
+    let pid = len > 0 ? s.pending[len - 1].id : null;
+    for (let next = s.stream.next; next; next = next.version.next) {
+      const op = new Operation(null, pid, -1, s.version, next.change);
+      s.unsent.push(op);
+      s.pending.push(op);
+      s.stream = next.version;
+      pid = op.id;
+    }
+  }
+
+  pull() {
+    this._pull();
+    const info = this._info;
+    if (!info.pulling) {
+      const ver = info.version + 1;
+      info.pulling = info.conn
+        .read(ver, 1000)
+        .then(ops => {
+          info.unmerged = info.unmerged.concat(ops || []);
+        })
+        .finally(() => {
+          info.pulling = null;
+        });
+    }
+    return info.pulling;
+  }
+
+  _pull() {
+    const s = this._info;
+
+    // apply server operations
+    for (let op of s.unmerged) {
+      if (s.pending.length && s.pending[0].id == op.id) {
+        // ack
+        s.pending = s.pending.slice(1);
+        s.merge = s.merge.slice(1);
+      } else {
+        for (let kk = 0; kk < s.merge.length; kk++) {
+          [s.merge[kk], op] = op.merge(s.merge[kk]);
+        }
+        s.stream = s.stream.reverseAppend(op.changes);
+      }
+      s.version = op.version;
+    }
+  }
+}
 
 module.exports = {Store, Dict, Seq, Text, Num, Bool, Null, Ref, Field, Conn, Transformer, Stream, DerivedStream, MapIterator, SeqIterator, run, field, map, filter, group, extend}

@@ -16,7 +16,7 @@ describe("branch", () => {
 
     expect(parent.next).to.equal(null);
 
-    expect(c1.push()).to.equal(c1);
+    expect(c1.push()).to.equal(null);
     expect(parent.next.version.text).to.deep.equal(c1.text);
   });
 
@@ -26,7 +26,7 @@ describe("branch", () => {
 
     const p1 = parent.replace(new Text("after"));
     expect(p1.next).to.equal(null);
-    expect(child.pull()).to.equal(child);
+    expect(child.pull()).to.equal(null);
 
     expect(child.next.version.text).to.equal(p1.text);
   });
@@ -39,17 +39,17 @@ describe("branch", () => {
     const p1 = parent.replace(new Text("after2"));
 
     expect(p1.next).to.equal(null);
-    expect(c1.push()).to.equal(c1);
+    expect(c1.push()).to.equal(null);
     expect(c1.next).to.equal(null);
 
-    expect(c1.pull()).to.equal(c1);
+    expect(c1.pull()).to.equal(null);
     expect(p1.latest().text).to.equal(c1.latest().text);
   });
 
   it("should undo/redo", () => {
     const parent = new Text("before").setStream(new Stream());
     const child = parent.branch();
-    expect(child.undo()).to.equal(child);
-    expect(child.redo()).to.equal(child);
+    expect(child.undo()).to.equal(null);
+    expect(child.redo()).to.equal(null);
   });
 });
