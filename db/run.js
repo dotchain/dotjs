@@ -9,9 +9,6 @@ import { DerivedStream } from "./stream.js";
 import { Store } from "./store.js";
 
 export function run(store, obj) {
-  if (obj instanceof Store) {
-    return store;
-  }
   return new RunStream(store, obj, null).value;
 }
 

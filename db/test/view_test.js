@@ -6,12 +6,22 @@
 
 import { expect } from "chai";
 
-import { View, Field, Dict, Ref, Store, Text, Null, run } from "../index.js";
+import {
+  View,
+  Field,
+  Dict,
+  Ref,
+  Store,
+  Stream,
+  Text,
+  Null,
+  run
+} from "../index.js";
 
 describe("View", () => {
   function newStore() {
-    const s = new Store(null, null);
-    const table1 = s.collection("table1");
+    const s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({ col1: new Text("hello") });
@@ -32,14 +42,14 @@ describe("View", () => {
 
   it("should evaluate", () => {
     const s = newStore();
-    const v = run(s, s.collection("table1").get("view"));
+    const v = run(s, s.get("table1").get("view"));
     expect(v.text).to.equal("hello");
   });
 
   it("should track object", () => {
     const s = newStore();
-    const v = run(s, s.collection("table1").get("view"));
-    s.collection("table1")
+    const v = run(s, s.get("table1").get("view"));
+    s.get("table1")
       .get("row1")
       .get("col1")
       .replace(new Text("world"));
@@ -49,8 +59,8 @@ describe("View", () => {
 
   it("should track field", () => {
     const s = newStore();
-    const v = run(s, s.collection("table1").get("view"));
-    s.collection("table1")
+    const v = run(s, s.get("table1").get("view"));
+    s.get("table1")
       .get("view")
       .get("info")
       .get("field")

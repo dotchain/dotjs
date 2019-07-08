@@ -55,8 +55,8 @@ It can be used with strings or array-like values.</p>
 It can be used with strings or array-like values.</p>
 </dd>
 <dt><a href="#Store">Store</a></dt>
-<dd><p>Store implements a collection of tables with ability to sync via a
-connection</p>
+<dd><p>Store is a dictionary where the
+default value type is also a dictionary</p>
 </dd>
 <dt><a href="#Stream">Stream</a></dt>
 <dd><p>Stream tracks all future changes to a particular value.</p>
@@ -566,44 +566,10 @@ It can be used with strings or array-like values.
 <a name="Store"></a>
 
 ## Store
-Store implements a collection of tables with ability to sync via a
-connection
+Store is a dictionary where the
+default value type is also a dictionary
 
 **Kind**: global class  
-
-* [Store](#Store)
-    * [new exports.Store(conn, serialized?)](#new_Store_new)
-    * [.next](#Store+next) : <code>Object</code>
-    * [.collection()](#Store+collection)
-    * [.get()](#Store+get)
-
-<a name="new_Store_new"></a>
-
-### new exports.Store(conn, serialized?)
-
-| Param | Type | Description |
-| --- | --- | --- |
-| conn | [<code>Conn</code>](#Conn) \| [<code>Transformer</code>](#Transformer) \| <code>string</code> | can be url or Conn |
-| serialized? | <code>Object</code> | output of prev serialze() call |
-
-<a name="Store+next"></a>
-
-### store.next : <code>Object</code>
-null or {change, version}
-
-**Kind**: instance property of [<code>Store</code>](#Store)  
-<a name="Store+collection"></a>
-
-### store.collection()
-collection returns a collection by name
-
-**Kind**: instance method of [<code>Store</code>](#Store)  
-<a name="Store+get"></a>
-
-### store.get()
-get is same as collection
-
-**Kind**: instance method of [<code>Store</code>](#Store)  
 <a name="Stream"></a>
 
 ## Stream

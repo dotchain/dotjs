@@ -19,19 +19,20 @@ export class Substream extends DerivedStream {
   }
 
   append(c) {
-    const p = this.parent.append(new PathChange([this.key], c));
+    const p = this.parent && this.parent.append(new PathChange([this.key], c));
     // TODO: the key have changed!
     return new Substream(p, this.key);
   }
 
   reverseAppend(c) {
-    const p = this.parent.reverseAppend(new PathChange([this.key], c));
+    const p =
+      this.parent && this.parent.reverseAppend(new PathChange([this.key], c));
     // TODO: the key may have changed!
     return new Substream(p, this.key);
   }
 
   _getNext() {
-    const next = this.parent.next;
+    const next = this.parent && this.parent.next;
     if (!next) {
       return null;
     }

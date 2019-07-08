@@ -6,12 +6,12 @@
 
 import { expect } from "chai";
 
-import { Dict, Ref, Store, Text, Field, Null } from "../index.js";
+import { Dict, Ref, Store, Stream, Text, Field, Null } from "../index.js";
 
 describe("Field", () => {
   function newStore() {
-    const s = new Store(null, null);
-    const table1 = s.collection("table1");
+    const s = new Store().setStream(new Stream());
+    const table1 = s.get("table1");
 
     // add a row + a ref to a column in that row
     const row1 = new Dict({ col1: new Text("hello") });
@@ -29,15 +29,15 @@ describe("Field", () => {
   it("should invoke", () => {
     const s = newStore();
     const fn = new Field();
-    const f = fn.invoke(s, s.collection("table1").get("args"));
+    const f = fn.invoke(s, s.get("table1").get("args"));
     expect(f.text).to.equal("hello");
   });
 
   it("should track object", () => {
     const s = newStore();
     const fn = new Field();
-    const f = fn.invoke(s, s.collection("table1").get("args"));
-    s.collection("table1")
+    const f = fn.invoke(s, s.get("table1").get("args"));
+    s.get("table1")
       .get("row1")
       .get("col1")
       .replace(new Text("world"));
@@ -48,8 +48,8 @@ describe("Field", () => {
   it("should track field", () => {
     const s = newStore();
     const fn = new Field();
-    const f = fn.invoke(s, s.collection("table1").get("args"));
-    s.collection("table1")
+    const f = fn.invoke(s, s.get("table1").get("args"));
+    s.get("table1")
       .get("args")
       .get("field")
       .replace(new Text("col2"));
@@ -60,12 +60,12 @@ describe("Field", () => {
   it("should proxy changes", () => {
     const s = newStore();
     const fn = new Field();
-    const f = fn.invoke(s, s.collection("table1").get("args"));
+    const f = fn.invoke(s, s.get("table1").get("args"));
     f.replace(new Text("world"));
 
     expect(
       s
-        .collection("table1")
+        .get("table1")
         .get("row1")
         .get("col1")
         .latest().text
