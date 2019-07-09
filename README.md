@@ -22,8 +22,9 @@ This includes two packages: a low level [lib](lib/README.md) package and a much 
     9. [Automatic Undo/Redo](#automatic-undo-redo)
     10. [Streaming](#streaming)
     11. [References](#references)
-    12. [Additional functionality](#additional-functionality)
-    13. [Long term plans](#long-term-plans)
+    12. [View persistence using Reflect](#view-persistence-using-reflect)
+    13. [Additional functionality](#additional-functionality)
+    14. [Long term plans](#long-term-plans)
 4. [Tests](#tests)
 
 ## Status
@@ -243,7 +244,7 @@ The whole `Store` instance can be persisted (say using LocalStorage) via a call 
 
 This effectively creates a snapshot of the session state and restores things to the earlier state (respectively).
 
-Individual values can also be serialized using this approach and these serializations include functions and computations -- which perform the role of stored procedures and views in database terminology.  All functions and views are first class values in DotDB and as such can also be mutated (such as changing an argument to the view calculation).  Arguments typically appear as dictionaries and mutating them dynamically updates the asssociated views.
+Individual values can also be serialized using this approach.  A calculation (such as `field(s, o, k)`) can also be represented as a value.  See [View persistence](#view-persistence-using-reflect) for how functions and such calculations can be extracted for calculating on demand.
 
 ### Git-like ability to branch and push/pull
 
@@ -351,6 +352,50 @@ describe("Ref", () => {
 
 This allows the ability to represent rich data-structures and single-instancing of values.  In addition, any computation based on a ref will automatically update if the ref is changed.
 
+### View persistence using Reflect
+
+Calculations can also be persisted using `Reflect.definition()`. This returns the underlying definition (i.e. the derivation) as a value itself which can be stored within the db.  These views are not automatically evaluated until a call to `run(store, view)` at which point the resulting value is equivalent to the original value.
+
+This is quite useful to persist rarely used calculations for use across sessions.
+
+```js
+import {expect} from "chai";
+import {field, run, Dict, Ref, Store, Stream, Text} from "dotjs/db";
+import {Reflect} from "dotjs/db/reflect.js";
+
+describe("Reflect", () => {
+  it("should persist calculations", ()=> {
+    const store = new Store({
+      hello: new Dict({
+        world: new Text("boo"),
+        boo: new Text("hoo")
+      }),
+      calcs: new Dict()
+    }).setStream(new Stream);
+
+    // calc1 = store[hello][store.hello.world]
+    // which is store[hello][boo] = hoo
+    const calc1 = field(
+      store,
+      new Ref(["hello"]),
+      new Ref(["hello", "world"])
+    );
+    expect(calc1.text).to.equal("hoo")
+
+    // now persist this calculation
+    const def = Reflect.definition(calc1);
+    store.get("calcs").get("calc1").replace(def);
+
+    // now updatee store.hello.boo to newhoo
+    store.get("hello").get("boo").replace(new Text("newhoo"));
+
+    // validate that the new calc updates
+    const s = store.latest();
+    const val = run(s, s.get("calcs").get("calc1"));
+    expect(val.text).to.equal("newhoo");
+  });
+});
+```
 ### Additional functionality
 
 DotDB has support for `sequences`, `GROUP BY` and `views` in general.  These are not quite stable at this point and will get documented once they are sufficiently stable.
