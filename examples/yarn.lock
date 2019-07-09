@@ -165,7 +165,7 @@ diff@3.5.0:
 
 "dotjs@https://github.com/dotchain/dotjs":
   version "0.0.0"
-  resolved "https://github.com/dotchain/dotjs#bd743bfe7ea2f8a8f4b2b8d5c199162d9277dbd1"
+  resolved "https://github.com/dotchain/dotjs#2f5040aae2c9b13d8f2deea0067d4efdb918e900"
 
 emoji-regex@^7.0.1:
   version "7.0.3"
