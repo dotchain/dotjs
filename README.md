@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/dotchain/dotjs.svg?branch=master)](https://travis-ci.com/dotchain/dotjs)
 [![codecov](https://codecov.io/gh/dotchain/dotjs/branch/master/graph/badge.svg)](https://codecov.io/gh/dotchain/dotjs)
 
-The dotjs project provides ES6 support for distributed sychronized reactive functional datastructures.
+The dotjs project provides ES6 support for distributed synchronized reactive functional data-structures.
 
 This includes two packages: a low level [lib](lib/README.md) package and a much higher level [dotdb](db/README.md) package.  Both packages effectively interoperate with each other and the [Go](https://github.com/dotchain/dot) implementation but the [dotdb](db/README.md) approach is easier to use.
 
@@ -37,7 +37,7 @@ yarn add esm
 yarn add https://github.com/dotchain/dotjs
 ```
 
-A single-file output is available via [dist/dotdb.js](https://github.com/dotchain/dotjs/blob/master/dist/dotdb.js).
+A single-file es6 distribution is available via [dist/dotdb.js](https://github.com/dotchain/dotjs/blob/master/dist/dotdb.js).
 
 ## DotDB
 
@@ -60,7 +60,7 @@ it("should not mutate underlying value", ()=> {
 ```
 ### Convergent
 
-Values in DotDB *converge* when mutated by multiple writers. The convergence honors the *immutable* feel by simply leaving the original value intact but instead making the convergence available via the *latest()* method.
+Values in DotDB *converge* when mutated by multiple writers. The convergence honors the *immutable* feel by providing the converged value through `latest()`.  The original value is left intact:
 
 ```js
 import {expect} from "chai";
@@ -82,7 +82,13 @@ describe("Convergence", () => {
 });
 ```
 
-    Note: Convergence requires a *stream* associated with the value. In the example, the initial value is setup with a new stream. In practice, this is rarely needed as all derived values simply inherent the *stream* from their parents and the root object is created at app initialization.  But the examples here are all standalone and so will include that as part of the constructor.
+    Note: Convergence requires a *stream* associated with the value.
+    In the example, the initial value is setup with a new stream.
+    In practice, this is rarely needed as all derived values simply
+    inherent the *stream* of their parents.  The root object in an
+    app is typically created with a stream (say, via `Session.connect`)
+    but these examples are all standalone and so the stream is explicitly
+    initialized.
 
 ### Reactive
 
@@ -120,7 +126,7 @@ it("fields update even if the underlying object changes", ()=> {
 });
 ```
 
-A slightly different reactive behavior is when the field key changes:
+A slightly different example of reactive behavior is when the field key changes:
 
 ```js
 it("fields update when the key changes", ()=> {
@@ -140,7 +146,7 @@ it("fields update when the key changes", ()=> {
 
 ### Bi-directional
 
-Standard "Functional Reactive" formulations (such as with [ReactiveX/rxjs](https://github.com/ReactiveX/rxjs), [Sodium](https://github.com/SodiumFRP/sodium)) tend to be about data flow in one direction.  DotDB takes a fairly different route attempting to make data flow bi-directionally: most derivations are meant to be meaningfully modified with the mutations being proxied to the underlying values quite transparently:
+Standard "Functional Reactive" formulations (such as with [ReactiveX/rxjs](https://github.com/ReactiveX/rxjs), [Sodium](https://github.com/SodiumFRP/sodium)) tend to be about data flow in one direction.  DotDB takes a fairly different route attempting to make data flow bi-directional: most derivations are meant to be meaningfully modified with the mutations being proxied to the underlying values quite transparently:
 
 ```js
 import {expect} from "chai";
@@ -176,22 +182,25 @@ it("proxies edits on filtered dictionaries", () => {
 });
 ```
 
-The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  For a given definition of the reactive forward data flow, multiple reverse flows can be defined and all the `bi-directional` primitives in `DotDB` pin both behaviors.  Custom behaviors are possible (though intricate to get right at this point) but the inherent strength of two-way bindings is that the usual complexity of event-handling can be avoided with a fairly declarative setup.
+The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  For a given definition of the reactive forward data flow, multiple reverse flows can be defined and all the `bi-directional` primitives in `DotDB` pin these behaviors.  Custom behaviors are possible (though intricate to get right at this point) but the inherent strength of two-way bindings is that the usual complexity of event-handling can be avoided with a fairly declarative setup.
 
-     One of the goals here is to build a UI apps where
-     the complexities event-handling are not used.  Instead, much
+     One of the goals here is to use DotDB to build UI apps where
+     the complexities of event-handling are not used.  Instead, much
      of that behavior is obtained via simple composition-friendly
-     two-way bindings instead. For example, one can pass a field
+     two-way bindings. For example, one can pass a field
      of a dictionary to a text input and simply have the text input
-     write directly (i.e. changes are applied onto the field of the
-     dictionary).  This approach allows a more declarative approach
-     to not just rendering but also actual edits/mutations.
+     write directly (i.e. changes are applied onto the field and so
+     the dictionary itself is updated).  This approach allows a
+     more declarative approach to not just rendering but also
+     actual edits/mutations.
 
 ### Demand-driven computation
 
-All of DotDB uses a demand-driven computation model (Pull FRP).  This avoids a lot of the pit-falls of a pure Pull-based system (such as the need for schedulers, ensuring subscriptions are not leaked  -- and the cost of computation being based on all defined derivations even if those derivations are not required at the moment).  
+All of DotDB uses a demand-driven computation model (Pull FRP).  This avoids a lot of the pit-falls of a pure Pull-based system (such as the need for schedulers, book-keeping of subscriptions -- and the cost of computation being based on all defined derivations even if those derivations are not currently needed).  
 
-One of the interesting consequences of this approach is that defining a large number of views incurs almost no cost if they are never "used".  Another consequence is the ability to schedule work better since all updates only happen when the `latest()` call is initiated.  There are other subtle and graceful ways to introduce scheduling priorities without affecting ability to reason about the correctness.
+One of the interesting consequences of this approach is that defining a large number of `views` incurs almost no cost if they are never "used".  Another consequence is the ability to schedule work better since all updates only happen when the `latest()` call is initiated, so different parts of the app can be updated at different frequencies.
+
+The biggest benefit of the formulation here is the ability to build composition friendly declarative structures.
 
     One of the goals of DotDB is to support building a full UI,
     using the computation scheme here with support for hidden views
@@ -216,10 +225,10 @@ Synchronization is explicit (in keeping with the immutable feel as well as the e
 
 ```js
 ...
-store.push().then(err => {
+store.push().then(() => {
   // do err handling include binary exponential fallback etc.
 });
-store.pull().then(err => {
+store.pull().then(() => {
   // do err handling
 })
 ```
@@ -232,8 +241,7 @@ The whole `Store` instance can be persisted (say using LocalStorage) via a call 
 
 This effectively creates a snapshot of the session state and restores things to the earlier state (respectively).
 
-Individual values can also be serialized using this approach and these serializations include includes functions and computations -- which perform the role of stored procedures and views in database terminology except that these also show up as strongly typed objects (and so allow programmatic access to fields and can also  be transformed as if it were data).
-
+Individual values can also be serialized using this approach and these serializations include functions and computations -- which perform the role of stored procedures and views in database terminology.  All functions and views are first class values in DotDB and as such can also be mutated (such as changing an argument to the view calculation).  Arguments typically appear as dictionaries and mutating them dynamically updates the asssociated views.
 
 ### Git-like ability to branch and push/pull
 
@@ -315,7 +323,7 @@ expect(final.text).to.equal("Hello world.");
 
 These changes can also be applied to the initial object to compute the final result.  This allows a mechanism for thin clients (such as on mobile devices) to offload expensive views to the cloud but *collect* those changes and apply them locally.
 
-Some of this remote proxying is relatively easy to implement at this point though the exact API for this is not clear yet.
+Some of this remote proxying is relatively easy to implement at this point though the exact API for this is not designed yet.
 
 ### References
 
@@ -340,6 +348,14 @@ describe("Ref", () => {
 ```
 
 This allows the ability to represent rich data-structures and single-instancing of values.  In addition, any computation based on a ref will automatically update if the ref is changed.
+
+### Additional functionality
+
+DotDB has support for `sequences`, `GROUP BY` and `views` in general.  These are not quite stable at this point and will get documented once they are sufficiently stable.
+
+### Long term plans
+
+The long term plan is to build UI primitives (such as TextInput) which take streamed DotDB values with the whole app being just a view in the database.  This will allow dynamically updating running apps gracefully.
 
 ## Tests
 
