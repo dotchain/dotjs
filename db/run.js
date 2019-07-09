@@ -7,11 +7,12 @@
 import { Replace } from "./replace.js";
 import { DerivedStream } from "./stream.js";
 
+/** run evaluates a runnable object, such as Ref */
 export function run(store, obj) {
   return new RunStream(store, obj, null).value;
 }
 
-class RunStream extends DerivedStream {
+export class RunStream extends DerivedStream {
   constructor(store, obj, value) {
     if (!value) {
       value = obj;

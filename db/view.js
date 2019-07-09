@@ -21,7 +21,7 @@ export function invoke(store, fn, args) {
   return new InvokeStream(store, run(store, fn), run(store, args), null).value;
 }
 
-class InvokeStream extends DerivedStream {
+export class InvokeStream extends DerivedStream {
   constructor(store, fn, args, value) {
     if (!value) {
       if (!fn.invoke) {
