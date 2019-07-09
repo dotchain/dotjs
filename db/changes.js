@@ -102,13 +102,16 @@ export class Changes {
   }
 
   static fromJSON(decoder, json) {
-    if (json) {
-      json = json.map(elt => decoder.decodeChange(elt));
+    if (!json || !json.length) {
+      return null;
     }
-    return Changes.create(json);
+    return new Changes(json.map(elt => decoder.decodeChange(elt)));
   }
 
   static create(elts) {
+    if (elts && elts.length === 1) {
+      return elts[0];
+    }
     return (elts && elts.length && new Changes(elts)) || null;
   }
 }

@@ -11,9 +11,15 @@ import { Null } from "./null.js";
 import { Conn } from "./conn.js";
 import { Transformer } from "./transform.js";
 import { Stream } from "./stream.js";
+import { undoable } from "./undo.js";
 
 /** Session implements helpers for creating a session */
 export class Session {
+  /** undoable wraps the object with a undo stack **/
+  static undoable(obj) {
+    return obj.clone().setStream(undoable(obj.stream));
+  }
+
   /** Serialize serializes a connected value for later
    * use with connect */
   static serialize(obj) {

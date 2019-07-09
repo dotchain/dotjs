@@ -137,6 +137,17 @@ dictionaries with that group value</p>
 <dd><p>toDict takes a map where the values are streams and converts it to
 a live dict</p>
 </dd>
+<dt><a href="#undoable">undoable(s)</a> ⇒ <code><a href="#Stream">Stream</a></code></dt>
+<dd><p>undoable creates an undo stream.</p>
+<p>All changes to the parent stream are tracked and calls to
+undo() and redo() on the returned stream correspondingly
+behaving like global undo/redo: i.e. they revert or reapply
+the corresponding changes and behave like an undo stack in
+an editor.</p>
+<p>This is resilient to interleaving upstream changes, appropriately
+transforming the local change to preserve the intent of the
+change.</p>
+</dd>
 <dt><a href="#invoke">invoke()</a></dt>
 <dd><p>invoke invokes a function reactively</p>
 </dd>
@@ -528,9 +539,16 @@ Session implements helpers for creating a session
 **Kind**: global class  
 
 * [Session](#Session)
+    * [.undoable()](#Session.undoable)
     * [.serialize()](#Session.serialize)
     * [.connect()](#Session.connect)
 
+<a name="Session.undoable"></a>
+
+### Session.undoable()
+undoable wraps the object with a undo stack
+
+**Kind**: static method of [<code>Session</code>](#Session)  
 <a name="Session.serialize"></a>
 
 ### Session.serialize()
@@ -857,6 +875,27 @@ toDict takes a map where the values are streams and converts it to
 a live dict
 
 **Kind**: global function  
+<a name="undoable"></a>
+
+## undoable(s) ⇒ [<code>Stream</code>](#Stream)
+undoable creates an undo stream.
+
+All changes to the parent stream are tracked and calls to
+undo() and redo() on the returned stream correspondingly
+behaving like global undo/redo: i.e. they revert or reapply
+the corresponding changes and behave like an undo stack in
+an editor.
+
+This is resilient to interleaving upstream changes, appropriately
+transforming the local change to preserve the intent of the
+change.
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| s | [<code>Stream</code>](#Stream) | parent stream |
+
 <a name="invoke"></a>
 
 ## invoke()
