@@ -16,7 +16,7 @@ export function field(store, obj, key) {
   return new FieldStream(store, run(store, obj), run(store, key), null).value;
 }
 
-class FieldStream extends DerivedStream {
+export class FieldStream extends DerivedStream {
   constructor(store, obj, key, value) {
     if (!value) {
       if (!key.text) {

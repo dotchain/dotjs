@@ -41,6 +41,9 @@ It can be used with strings or array-like values.</p>
 <dt><a href="#Ref">Ref</a></dt>
 <dd><p>Ref represents a reference to a path</p>
 </dd>
+<dt><a href="#Reflect">Reflect</a></dt>
+<dd><p>Reflect introspects values and returns meta properties</p>
+</dd>
 <dt><a href="#Replace">Replace</a></dt>
 <dd><p>Replace represents a change one value to another</p>
 </dd>
@@ -136,6 +139,9 @@ dictionaries with that group value</p>
 <dt><a href="#toDict">toDict()</a></dt>
 <dd><p>toDict takes a map where the values are streams and converts it to
 a live dict</p>
+</dd>
+<dt><a href="#run">run()</a></dt>
+<dd><p>run evaluates a runnable object, such as Ref</p>
 </dd>
 <dt><a href="#undoable">undoable(s)</a> ⇒ <code><a href="#Stream">Stream</a></code></dt>
 <dd><p>undoable creates an undo stream.</p>
@@ -446,6 +452,20 @@ clone makes a copy but with stream set to null
 run returns the underlying value at the path
 
 **Kind**: instance method of [<code>Ref</code>](#Ref)  
+<a name="Reflect"></a>
+
+## Reflect
+Reflect introspects values and returns meta properties
+
+**Kind**: global class  
+<a name="Reflect.definition"></a>
+
+### Reflect.definition()
+Definition returns the definition of the value
+Calling run(store, def(val)) will produce the value itself.
+Definitions can be stored.
+
+**Kind**: static method of [<code>Reflect</code>](#Reflect)  
 <a name="Replace"></a>
 
 ## Replace
@@ -873,6 +893,12 @@ map calls the provided fn on all keys of the object
 ## toDict()
 toDict takes a map where the values are streams and converts it to
 a live dict
+
+**Kind**: global function  
+<a name="run"></a>
+
+## run()
+run evaluates a runnable object, such as Ref
 
 **Kind**: global function  
 <a name="undoable"></a>
