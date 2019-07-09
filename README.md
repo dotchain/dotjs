@@ -22,6 +22,8 @@ This includes two packages: a low level [lib](lib/README.md) package and a much 
     9. [Automatic Undo/Redo](#automatic-undo-redo)
     10. [Streaming](#streaming)
     11. [References](#references)
+    12. [Additional functionality](#additional-functionality)
+    13. [Long term plans](#long-term-plans)
 4. [Tests](#tests)
 
 ## Status
