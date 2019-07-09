@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "scripts": { "test": "mocha *_test.js"},
+  "scripts": {
+    "test": "mocha *_test.js"
+  },
   "mocha": {
-    "require": ["esm"]
+    "require": [
+      "esm"
+    ]
   },
   "dependencies": {
     "dotjs": "https://github.com/dotchain/dotjs",

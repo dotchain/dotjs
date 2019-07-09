@@ -1,9 +1,9 @@
 import {expect} from "chai";
-import {field, Dict, Ref, Store, Text} from "dotjs/db";
+import {field, Dict, Ref, Store, Stream, Text} from "dotjs/db";
 describe("Ref", () => {
   it("should evaluate references", ()=> {
-    const store = new Store();
-    const table1 = store.collection("table1");
+    const store = new Store().setStream(new Stream);
+    const table1 = store.get("table1");
     const row1 = table1.get("row1").replace(new Dict({
       "hello": new Text("world")
     }))

@@ -235,7 +235,7 @@ This effectively creates a snapshot of the session state and restores things to 
 Individual values can also be serialized using this approach and these serializations include includes functions and computations -- which perform the role of stored procedures and views in database terminology except that these also show up as strongly typed objects (and so allow programmatic access to fields and can also  be transformed as if it were data).
 
 
-### Git-like ability to branch and push/pull 
+### Git-like ability to branch and push/pull
 
 All DotDB values also support git-like branch, push/pull semantics:
 
@@ -267,11 +267,34 @@ describe("Branch", () => {
 ```
 ### Automatic Undo/Redo
 
-All values also support automatic undo/redo with the undo/redo being limited to the current branch.
+All values also support automatic undo/redo via `Session.undoable`:
 
 ```js
-examples tbd
+import {expect} from "chai";
+import {Session, Stream, Text} from "dotjs/db";
+describe("Undo`", () => {
+  it("should undo redo", ()=> {
+    const parent = new Text("hello").setStream(new Stream);
+    const child = Session.undoable(parent);
+
+    child.splice(5, 0, new Text(" world"));
+    parent.splice(0, 1, new Text("H"))
+
+    expect(parent.latest().text).to.equal("Hello world");
+    expect(child.latest().text).to.equal("Hello world");
+
+    child.undo();
+    expect(parent.latest().text).to.equal("Hello");
+    expect(child.latest().text).to.equal("Hello");
+
+    child.redo();
+    expect(parent.latest().text).to.equal("Hello world");
+    expect(child.latest().text).to.equal("Hello world");
+  });
+});
 ```
+
+Note that the undo/redo functions have side-effects and their scope (i.e what they undo/redo) is limited to the `Session.undoable()`.
 
 ###  Streaming
 
@@ -300,11 +323,11 @@ DotDB has a built-in value `Ref(path)` which evaluates to the value at the `path
 
 ```js
 import {expect} from "chai";
-import {field, Dict, Ref, Store, Text} from "dotjs/db";
+import {field, Dict, Ref, Store, Stream, Text} from "dotjs/db";
 describe("Ref", () => {
   it("should evaluate references", ()=> {
-    const store = new Store();
-    const table1 = store.collection("table1");
+    const store = new Store().setStream(new Stream);
+    const table1 = store.get("table1");
     const row1 = table1.get("row1").replace(new Dict({
       "hello": new Text("world")
     }))
