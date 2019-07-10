@@ -294,13 +294,13 @@ class Stream {
 
   /* append adds a local change */
   append(c) {
-    return this._appendChange(c, false);
+    return {change: c, version: this._appendChange(c, false)};
   }
 
   /* reverseAppend adds an *upstream* change; meant to be used by nw
    * synchronizers */
   reverseAppend(c) {
-    return this._appendChange(c, true);
+    return {change: c, version: this._appendChange(c, true)};
   }
 
   _appendChange(c, reverse) {
@@ -340,28 +340,28 @@ class DerivedStream {
     this._next = null;
   }
 
-  append(c) {
-    return this.parent.append(c);
+  append() {
+    return null;
   }
 
-  reverseAppend(c) {
-    return this.parent.reverseAppend(c);
+  reverseAppend() {
+    return null;
   }
 
   push() {
-    return this.parent.push();
+    return this.parent && this.parent.push();
   }
 
   pull() {
-    return this.parent.pull();
+    return this.parent && this.parent.pull();
   }
 
   undo() {
-    return this.parent.undo();
+    return this.parent && this.parent.undo();
   }
 
   redo() {
-    return this.parent.redo();
+    return this.parent && this.parent.redo();
   }
 
   get next() {
@@ -395,20 +395,20 @@ class DerivedStream {
  */
 function branch(s) {
   const child = new Stream();
-  return new Branch({ parent: s, child }, child);
+  return new BranchStream(child, { parent: s, child });
 }
 
-class Branch {
-  constructor(info, underlying) {
-    this._info = info;
-    this._underlying = underlying;
+class BranchStream {
+  constructor(parent, info) {
+    this.parent = parent;
+    this.info = info;
   }
 
   push() {
-    const info = this._info;
-    for (let next = info.child.next; next != null; next = info.child.next) {
+    const info = this.info;
+    for (let next = info.child.next; next ; next = info.child.next) {
       const { change, version } = next;
-      info.parent = info.parent.append(change);
+      info.parent = info.parent.append(change).version;
       info.child = version;
     }
 
@@ -416,10 +416,10 @@ class Branch {
   }
 
   pull() {
-    const info = this._info;
+    const info = this.info;
     for (let next = info.parent.next; next != null; next = info.parent.next) {
       const { change, version } = next;
-      info.child = info.child.reverseAppend(change);
+      info.child = info.child.reverseAppend(change).version;
       info.parent = version;
     }
 
@@ -427,26 +427,31 @@ class Branch {
   }
 
   get next() {
-    const n = this._underlying.next;
-    return n === null
-      ? null
-      : { change: n.change, version: new Branch(this._info, n.version) };
+    return this._nextf(this.parent.next);
   }
 
   append(c) {
-    return new Branch(this._info, this._underlying.append(c));
+    return this._nextf(this.parent && this.parent.append(c));
   }
 
   reverseAppend(c) {
-    return new Branch(this._info, this._underlying.reverseAppend(c));
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const version = new BranchStream(n.version, this.info);
+    return {change: n.change, version};
   }
 
   undo() {
-    return this._underlying.undo();
+    return this.parent.undo();
   }
 
   redo() {
-    return this._underlying.redo();
+    return this.parent.redo();
   }
 }
 
@@ -481,9 +486,22 @@ class Value {
    * @returns {Value} r - r has same stream as this
    **/
   replace(replacement) {
-    const change = new Replace(this.clone(), replacement.clone());
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Replace(this.clone(), replacement.clone())).version;
+  }
+
+  /**
+   * appendChange applies a change to the value and the underlying stream
+   * It returns a {change, version} tuple much like next does.
+   */
+  appendChange(c) {
+    if (!this.stream) {
+      return this.apply(c).clone();
+    }
+    const n = this.stream.append(c);
+    if (!n) {
+      return this;
+    }
+    return this._nextf(n.change, n.version);
   }
 
   /** @type {Object} null or {change, version} */
@@ -1869,30 +1887,31 @@ class Substream extends DerivedStream {
   }
 
   append(c) {
-    const p = this.parent && this.parent.append(new PathChange([this.key], c));
-    // TODO: the key have changed!
-    return new Substream(p, this.key);
+    const cx = new PathChange([this.key], c);
+    return this._nextf(this.parent && this.parent.append(cx));
   }
 
   reverseAppend(c) {
-    const p =
-      this.parent && this.parent.reverseAppend(new PathChange([this.key], c));
-    // TODO: the key may have changed!
-    return new Substream(p, this.key);
+    const cx = new PathChange([this.key], c);
+    return this._nextf(this.parent && this.parent.reverseAppend(cx));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+
+    const { xform, key, ok } = transform(n.change, this.key);
+    if (!ok) {
+      // TODO: this should not be null for append case?
+      return null;
+    }
+
+    return { change: xform, version: new Substream(n.version, key) };
   }
 
   _getNext() {
-    const next = this.parent && this.parent.next;
-    if (!next) {
-      return null;
-    }
-
-    const { xform, key, ok } = transform(next.change, this.key);
-    if (!ok) {
-      return null;
-    }
-
-    return { change: xform, version: new Substream(next.version, key) };
+    return this._nextf(this.parent && this.parent.next);
   }
 }
 
@@ -2152,7 +2171,7 @@ class ExtendStream extends DerivedStream {
       .apply(Changes.create(c2))
       .clone()
       .setStream(s2);
-    return new ExtendStream(obj1, obj2);
+    return {change: c, version: new ExtendStream(obj1, obj2)};
   }
 
   get value() {
@@ -2419,9 +2438,7 @@ class Text extends Value {
     }
 
     const before = this.slice(offset, offset + count);
-    const change = new Splice(offset, before, replacement);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Splice(offset, before, replacement)).version;
   }
 
   /**
@@ -2437,9 +2454,7 @@ class Text extends Value {
    * @return {Text}
    */
   move(offset, count, distance) {
-    const change = new Move(offset, count, distance);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Move(offset, count, distance)).version;
   }
 
   /** clone makes a copy but with stream set to null */
@@ -2527,6 +2542,23 @@ class RunStream extends DerivedStream {
     this.obj = obj;
   }
 
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const val = this.value.apply(n.change).setStream(n.version);
+    const version = new RunStream(this.store, this.obj, val);
+    return {change: n.change, version};
+  }
+
   _getNext() {
     const n = this.store.next;
     if (n) {
@@ -2589,6 +2621,23 @@ class FieldStream extends DerivedStream {
     this.key = key;
   }
 
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const v = this.value.apply(n.change).clone().setStream(n.version);
+    const version = new FieldStream(this.store, this.obj, this.key, v);
+    return {change: n.change, version};
+  }
+
   _getNext() {
     const n = this.store.next;
     if (n) {
@@ -2605,49 +2654,9 @@ class FieldStream extends DerivedStream {
       return { change, version: updated.stream };
     }
 
-    const valuen = this.parent && this.parent.next;
-    if (valuen) {
-      // evaluated value has changed
-      const value = this.value.apply(valuen.change);
-      const version = new FieldStream(
-        this.store,
-        this.obj,
-        this.key,
-        value.setStream(valuen.version)
-      );
-      return { change: valuen.change, version };
-    }
-
-    return null;
+    return this._nextf(this.parent && this.parent.next);
   }
 }
-
-/** Field is a calculation that when invoked returns obj.field */
-class Field extends Value {
-  clone() {
-    return new Field();
-  }
-
-  invoke(store, args) {
-    const obj = field(store, args, new Text("obj"));
-    const key = field(store, args, new Text("field"));
-    return field(store, obj, key);
-  }
-
-  toJSON() {
-    return null;
-  }
-
-  static typeName() {
-    return "dotdb.Field";
-  }
-
-  static fromJSON() {
-    return new Field();
-  }
-}
-
-Decoder.registerValueClass(Field);
 
 
 
@@ -2687,6 +2696,23 @@ class InvokeStream extends DerivedStream {
     this.store = store;
     this.fn = fn;
     this.args = args;
+  }
+
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const val = this.value.apply(n.change).clone().setStream(n.version);
+    const version = new InvokeStream(this.store, this.fn, this.args, val);
+    return {change: n.change, version};
   }
 
   _getNext() {
@@ -2826,25 +2852,25 @@ class MapStream extends DerivedStream {
   }
 
   append(c) {
-    // proxy any changes to a field over to this._value
-    const updated = {};
-    if (!this._appendChanges(c, updated, false)) {
-      return this;
-    }
-
-    const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
+    return this._append(c, false);
   }
 
   reverseAppend(c) {
+    return this._append(c, true);
+  }
+
+  _append(c, reverse) {
     // proxy any changes to a field over to this._value
     const updated = {};
-    if (!this._appendChanges(c, updated, true)) {
-      return this;
+    if (!this._appendChanges(c, updated, reverse)) {
+      // TODO: this is not atomic!! updated could have
+      // partially changed at this point. REDO this
+      return null;
     }
 
     const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
+    const version = new MapStream(this.base, this.fn, value);
+    return {change: c, version};
   }
 
   get value() {
@@ -2963,13 +2989,9 @@ class MapStream extends DerivedStream {
     if (this._value.hasOwnProperty(key)) {
       const cx = PathChange.create(c.path.slice(1), c.change);
       const val = this._value[key];
-      updated[key] = val
-        .clone()
-        .apply(cx)
-        .setStream(
-          val.stream &&
-            (reverse ? val.stream.reverseAppend(cx) : val.stream.append(cx))
-        );
+      // TODO: ignores reverse flag!!! Fix
+      updated[key] = val.appendChange(cx);
+      console.log("updated", val, "to", updated[key])
       return true;
     }
 
@@ -3031,14 +3053,21 @@ class GroupStream extends DerivedStream {
 
     const groupsMap = Object.assign({}, this.groupsMap);
     c = this._proxyChange(c, groupsMap);
-    const stream = this.base.stream;
-    const updated =
-      stream && reverse ? stream.reverseAppend(c) : stream.append(c);
+    const s = this.base.stream;
+    return this._nextf(reverse ? s.reverseAppend(c) : s.append(c), groupsMap);
+  }
+
+  _nextf(n, groupsMap) {
+    if(!n) {
+      return null;
+    }
+
     const base = this.base
-      .apply(c)
+      .apply(n.change)
       .clone()
-      .setStream(updated);
-    return new GroupStream(base, this.groups, groupsMap);
+      .setStream(n.version);
+    const version = new GroupStream(base, this.groups, groupsMap);
+    return {change: n.change, version};
   }
 
   get value() {
@@ -3310,9 +3339,7 @@ class Seq extends Value {
    */
   splice(offset, count, replacement) {
     const before = this.slice(offset, offset + count);
-    const change = new Splice(offset, before, replacement);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Splice(offset, before, replacement)).version;
   }
 
   /**
@@ -3328,9 +3355,7 @@ class Seq extends Value {
    * @return {Text}
    */
   move(offset, count, distance) {
-    const change = new Move(offset, count, distance);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Move(offset, count, distance)).version;
   }
 
   /** clone makes a copy but with stream set to null */
@@ -3725,16 +3750,21 @@ class UndoStream {
 
   append(c) {
     this.stack.flush();
-    const parent = this.parent.append(c);
-    this.stack.pickupLocalChanges();
-    return new UndoStream(parent, this.stack);
+    return this._append(this.parent && this.parent.append(c));
   }
 
   reverseAppend(c) {
     this.stack.flush();
-    const parent = this.parent.reverseAppend(c);
+    return this._append(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _append(n) {
+    if (!n) {
+      return null;
+    }
     this.stack.pickupLocalChanges();
-    return new UndoStream(parent, this.stack);
+    const version = new UndoStream(n.version, this.stack);
+    return {change: n.change, version};
   }
 
   push() {
@@ -3789,7 +3819,7 @@ class UndoStack {
     }
     const c = this.undos.shift();
     this.redos.unshift(c.revert());
-    this.stream = this.stream.append(c);
+    this.stream = this.stream.append(c).version;
     return c;
   }
 
@@ -3800,7 +3830,7 @@ class UndoStack {
     }
     const c = this.redos.shift();
     this.undos.unshift(c.revert());
-    this.stream = this.stream.append(c);
+    this.stream = this.stream.append(c).version;
     return c;
   }
 
@@ -3916,37 +3946,31 @@ class SessionStream {
   }
 
   append(c) {
-    return { change: c, version: this._setParent(this._parent.append(c)) };
+    return this._nextf(this._parent && this._parent.append(c))
   }
 
   reverseAppend(c) {
-    return {
-      change: c,
-      version: this._setParent(this._parent.reeverseAppend(c))
-    };
+    return this._nextf(this._parent && this._parent.reverseAppend(c))
   }
 
-  undo() {
-    this._parent.undo();
-    return this;
-  }
-
-  redo() {
-    this._parent.redo();
-    return this;
-  }
-
-  get next() {
-    const n = this._parent.next;
+  _nextf(n) {
     if (!n) {
       return null;
     }
-
-    return { change: n.change, version: this._setParent(n.version) };
+    const version = new SessionStream(n.version, this._info)
+    return { change: n.change, version};
   }
 
-  _setParent(parent) {
-    return new SessionStream(parent, this._info);
+  undo() {
+    return this._parent.undo();
+  }
+
+  redo() {
+    return this._parent.redo();
+  }
+
+  get next() {
+    return this._nextf(this._parent.next);
   }
 
   push() {
@@ -4012,7 +4036,7 @@ class SessionStream {
         for (let kk = 0; kk < s.merge.length; kk++) {
           [s.merge[kk], op] = op.merge(s.merge[kk]);
         }
-        s.stream = s.stream.reverseAppend(op.changes);
+        s.stream = s.stream.reverseAppend(op.changes).version;
       }
       s.version = op.version;
     }
@@ -4035,32 +4059,37 @@ class SessionStream {
 /** Reflect introspects values and returns meta properties */
 class Reflect {
   /** Definition returns the definition of the value
-    * Calling run(store, def(val)) will produce the value itself.
-    * Definitions can be stored.
-    */
+   * Calling run(store, def(val)) will produce the value itself.
+   * Definitions can be stored.
+   */
   static definition(val) {
     const s = val.stream;
     if (s instanceof RunStream) {
       return Reflect.definition(s.obj);
     }
     if (s instanceof FieldStream) {
-      return new View(new Dict({
-        viewFn: new FieldFn(),
-        obj: Reflect.definition(s.obj),
-        key: Reflect.definition(s.key)
-      }));
+      return new View(
+        new Dict({
+          viewFn: new FieldFn(),
+          obj: Reflect.definition(s.obj),
+          key: Reflect.definition(s.key)
+        })
+      );
     }
     if (s instanceof InvokeStream) {
       // field(store, this.info, new Text("viewFn"))
       if (s.fn.stream instanceof FieldStream) {
-        if (s.fn.stream.key instanceof Text && s.fn.stream.key.text == "viewFn") {
+        if (
+          s.fn.stream.key instanceof Text &&
+          s.fn.stream.key.text == "viewFn"
+        ) {
           // this is actually an invoke stream of a View
           return new View(s.fn.stream.obj.clone());
         }
       }
       const fn = Reflect.definition(s.fn);
       const args = Reflect.definition(s.args);
-      return new View(extend(args, new Dict({viewFn: fn()})).clone());
+      return new View(extend(args, new Dict({ viewFn: fn() })).clone());
     }
 
     return val.clone();
@@ -4081,7 +4110,7 @@ class FieldFn extends Value {
   }
 
   static typeName() {
-    return "dotdb.FieldFn"
+    return "dotdb.FieldFn";
   }
 }
 Decoder.registerValueClass(FieldFn);

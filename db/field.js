@@ -35,6 +35,26 @@ export class FieldStream extends DerivedStream {
     this.key = key;
   }
 
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const v = this.value
+      .apply(n.change)
+      .clone()
+      .setStream(n.version);
+    const version = new FieldStream(this.store, this.obj, this.key, v);
+    return { change: n.change, version };
+  }
+
   _getNext() {
     const n = this.store.next;
     if (n) {
@@ -51,46 +71,6 @@ export class FieldStream extends DerivedStream {
       return { change, version: updated.stream };
     }
 
-    const valuen = this.parent && this.parent.next;
-    if (valuen) {
-      // evaluated value has changed
-      const value = this.value.apply(valuen.change);
-      const version = new FieldStream(
-        this.store,
-        this.obj,
-        this.key,
-        value.setStream(valuen.version)
-      );
-      return { change: valuen.change, version };
-    }
-
-    return null;
+    return this._nextf(this.parent && this.parent.next);
   }
 }
-
-/** Field is a calculation that when invoked returns obj.field */
-export class Field extends Value {
-  clone() {
-    return new Field();
-  }
-
-  invoke(store, args) {
-    const obj = field(store, args, new Text("obj"));
-    const key = field(store, args, new Text("field"));
-    return field(store, obj, key);
-  }
-
-  toJSON() {
-    return null;
-  }
-
-  static typeName() {
-    return "dotdb.Field";
-  }
-
-  static fromJSON() {
-    return new Field();
-  }
-}
-
-Decoder.registerValueClass(Field);

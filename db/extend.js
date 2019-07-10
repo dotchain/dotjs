@@ -53,7 +53,7 @@ class ExtendStream extends DerivedStream {
       .apply(Changes.create(c2))
       .clone()
       .setStream(s2);
-    return new ExtendStream(obj1, obj2);
+    return { change: c, version: new ExtendStream(obj1, obj2) };
   }
 
   get value() {

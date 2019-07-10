@@ -44,7 +44,7 @@ describe("Bi-directional", () => {
     }
   }
 
-  it("proxies edits on filtered dictionaries", () => {
+  it("proxies edits on filtered dictionaraies", () => {
     const initial = new Dict({
       hello: new Text("world"),
       boo: new Text("goop")
@@ -55,6 +55,11 @@ describe("Bi-directional", () => {
 
     expect(filtered.get("boo")).to.be.instanceOf(Null);
     expect(filtered.get("hello").text).to.equal("world");
+
+    filtered.get("seven").replace(new Text("wonders"));
+
+    // see update reflected on the underlying dictionary
+    expect(initial.latest().get("seven").text).to.equal("wonders");
   });
 
 });

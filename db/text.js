@@ -40,9 +40,7 @@ export class Text extends Value {
     }
 
     const before = this.slice(offset, offset + count);
-    const change = new Splice(offset, before, replacement);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Splice(offset, before, replacement)).version;
   }
 
   /**
@@ -58,9 +56,7 @@ export class Text extends Value {
    * @return {Text}
    */
   move(offset, count, distance) {
-    const change = new Move(offset, count, distance);
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Move(offset, count, distance)).version;
   }
 
   /** clone makes a copy but with stream set to null */

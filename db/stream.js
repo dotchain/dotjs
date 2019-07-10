@@ -60,13 +60,13 @@ export class Stream {
 
   /* append adds a local change */
   append(c) {
-    return this._appendChange(c, false);
+    return { change: c, version: this._appendChange(c, false) };
   }
 
   /* reverseAppend adds an *upstream* change; meant to be used by nw
    * synchronizers */
   reverseAppend(c) {
-    return this._appendChange(c, true);
+    return { change: c, version: this._appendChange(c, true) };
   }
 
   _appendChange(c, reverse) {
@@ -106,28 +106,28 @@ export class DerivedStream {
     this._next = null;
   }
 
-  append(c) {
-    return this.parent.append(c);
+  append() {
+    return null;
   }
 
-  reverseAppend(c) {
-    return this.parent.reverseAppend(c);
+  reverseAppend() {
+    return null;
   }
 
   push() {
-    return this.parent.push();
+    return this.parent && this.parent.push();
   }
 
   pull() {
-    return this.parent.pull();
+    return this.parent && this.parent.pull();
   }
 
   undo() {
-    return this.parent.undo();
+    return this.parent && this.parent.undo();
   }
 
   redo() {
-    return this.parent.redo();
+    return this.parent && this.parent.redo();
   }
 
   get next() {

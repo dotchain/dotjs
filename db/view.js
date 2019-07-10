@@ -39,6 +39,26 @@ export class InvokeStream extends DerivedStream {
     this.args = args;
   }
 
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const val = this.value
+      .apply(n.change)
+      .clone()
+      .setStream(n.version);
+    const version = new InvokeStream(this.store, this.fn, this.args, val);
+    return { change: n.change, version };
+  }
+
   _getNext() {
     const n = this.store.next;
     if (n) {

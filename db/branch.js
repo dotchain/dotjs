@@ -17,20 +17,20 @@ import { Stream } from "./stream.js";
  */
 export function branch(s) {
   const child = new Stream();
-  return new Branch({ parent: s, child }, child);
+  return new BranchStream(child, { parent: s, child });
 }
 
-class Branch {
-  constructor(info, underlying) {
-    this._info = info;
-    this._underlying = underlying;
+class BranchStream {
+  constructor(parent, info) {
+    this.parent = parent;
+    this.info = info;
   }
 
   push() {
-    const info = this._info;
-    for (let next = info.child.next; next != null; next = info.child.next) {
+    const info = this.info;
+    for (let next = info.child.next; next; next = info.child.next) {
       const { change, version } = next;
-      info.parent = info.parent.append(change);
+      info.parent = info.parent.append(change).version;
       info.child = version;
     }
 
@@ -38,10 +38,10 @@ class Branch {
   }
 
   pull() {
-    const info = this._info;
+    const info = this.info;
     for (let next = info.parent.next; next != null; next = info.parent.next) {
       const { change, version } = next;
-      info.child = info.child.reverseAppend(change);
+      info.child = info.child.reverseAppend(change).version;
       info.parent = version;
     }
 
@@ -49,25 +49,30 @@ class Branch {
   }
 
   get next() {
-    const n = this._underlying.next;
-    return n === null
-      ? null
-      : { change: n.change, version: new Branch(this._info, n.version) };
+    return this._nextf(this.parent.next);
   }
 
   append(c) {
-    return new Branch(this._info, this._underlying.append(c));
+    return this._nextf(this.parent && this.parent.append(c));
   }
 
   reverseAppend(c) {
-    return new Branch(this._info, this._underlying.reverseAppend(c));
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const version = new BranchStream(n.version, this.info);
+    return { change: n.change, version };
   }
 
   undo() {
-    return this._underlying.undo();
+    return this.parent.undo();
   }
 
   redo() {
-    return this._underlying.redo();
+    return this.parent.redo();
   }
 }

@@ -30,9 +30,23 @@ export class Value {
    * @returns {Value} r - r has same stream as this
    **/
   replace(replacement) {
-    const change = new Replace(this.clone(), replacement.clone());
-    const version = this.stream && this.stream.append(change);
-    return this._nextf(change, version).version;
+    return this.appendChange(new Replace(this.clone(), replacement.clone()))
+      .version;
+  }
+
+  /**
+   * appendChange applies a change to the value and the underlying stream
+   * It returns a {change, version} tuple much like next does.
+   */
+  appendChange(c) {
+    if (!this.stream) {
+      return this.apply(c).clone();
+    }
+    const n = this.stream.append(c);
+    if (!n) {
+      return this;
+    }
+    return this._nextf(n.change, n.version);
   }
 
   /** @type {Object} null or {change, version} */
