@@ -53,14 +53,21 @@ class GroupStream extends DerivedStream {
 
     const groupsMap = Object.assign({}, this.groupsMap);
     c = this._proxyChange(c, groupsMap);
-    const stream = this.base.stream;
-    const updated =
-      stream && reverse ? stream.reverseAppend(c) : stream.append(c);
+    const s = this.base.stream;
+    return this._nextf(reverse ? s.reverseAppend(c) : s.append(c), groupsMap);
+  }
+
+  _nextf(n, groupsMap) {
+    if (!n) {
+      return null;
+    }
+
     const base = this.base
-      .apply(c)
+      .apply(n.change)
       .clone()
-      .setStream(updated);
-    return new GroupStream(base, this.groups, groupsMap);
+      .setStream(n.version);
+    const version = new GroupStream(base, this.groups, groupsMap);
+    return { change: n.change, version };
   }
 
   get value() {

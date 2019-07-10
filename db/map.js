@@ -48,25 +48,25 @@ class MapStream extends DerivedStream {
   }
 
   append(c) {
-    // proxy any changes to a field over to this._value
-    const updated = {};
-    if (!this._appendChanges(c, updated, false)) {
-      return this;
-    }
-
-    const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
+    return this._append(c, false);
   }
 
   reverseAppend(c) {
+    return this._append(c, true);
+  }
+
+  _append(c, reverse) {
     // proxy any changes to a field over to this._value
     const updated = {};
-    if (!this._appendChanges(c, updated, true)) {
-      return this;
+    if (!this._appendChanges(c, updated, reverse)) {
+      // TODO: this is not atomic!! updated could have
+      // partially changed at this point. REDO this
+      return null;
     }
 
     const value = Object.assign({}, this._value, updated);
-    return new MapStream(this.base, this.fn, value);
+    const version = new MapStream(this.base, this.fn, value);
+    return { change: c, version };
   }
 
   get value() {
@@ -185,13 +185,9 @@ class MapStream extends DerivedStream {
     if (this._value.hasOwnProperty(key)) {
       const cx = PathChange.create(c.path.slice(1), c.change);
       const val = this._value[key];
-      updated[key] = val
-        .clone()
-        .apply(cx)
-        .setStream(
-          val.stream &&
-            (reverse ? val.stream.reverseAppend(cx) : val.stream.append(cx))
-        );
+      // TODO: ignores reverse flag!!! Fix
+      updated[key] = val.appendChange(cx);
+      console.log("updated", val, "to", updated[key]);
       return true;
     }
 

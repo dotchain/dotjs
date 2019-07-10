@@ -13,9 +13,6 @@
 <dt><a href="#Dict">Dict</a></dt>
 <dd><p>Dict represents a map/hash/dictionary/collection with string keys</p>
 </dd>
-<dt><a href="#Field">Field</a></dt>
-<dd><p>Field is a calculation that when invoked returns obj.field</p>
-</dd>
 <dt><a href="#GroupStream">GroupStream</a></dt>
 <dd><p>GroupStream implements a groupd dict-of-dict-like stream</p>
 </dd>
@@ -288,12 +285,6 @@ check if key exists
 clone makes a copy but with stream set to null
 
 **Kind**: instance method of [<code>Dict</code>](#Dict)  
-<a name="Field"></a>
-
-## Field
-Field is a calculation that when invoked returns obj.field
-
-**Kind**: global class  
 <a name="GroupStream"></a>
 
 ## GroupStream
@@ -748,6 +739,7 @@ well as static fromJSON and optionally override apply().
     * [.next](#Value+next) : <code>Object</code>
     * [.setStream()](#Value+setStream)
     * [.replace()](#Value+replace) ⇒ [<code>Value</code>](#Value)
+    * [.appendChange()](#Value+appendChange)
     * [.latest()](#Value+latest)
     * [.apply()](#Value+apply)
     * [.branch()](#Value+branch)
@@ -775,6 +767,13 @@ replace substitutes this with another value
 
 **Kind**: instance method of [<code>Value</code>](#Value)  
 **Returns**: [<code>Value</code>](#Value) - r - r has same stream as this  
+<a name="Value+appendChange"></a>
+
+### value.appendChange()
+appendChange applies a change to the value and the underlying stream
+It returns a {change, version} tuple much like next does.
+
+**Kind**: instance method of [<code>Value</code>](#Value)  
 <a name="Value+latest"></a>
 
 ### value.latest()

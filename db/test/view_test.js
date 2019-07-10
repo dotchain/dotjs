@@ -6,17 +6,9 @@
 
 import { expect } from "chai";
 
-import {
-  View,
-  Field,
-  Dict,
-  Ref,
-  Store,
-  Stream,
-  Text,
-  Null,
-  run
-} from "../index.js";
+import { View, Dict, Ref, Store, Stream, Text, Null, run } from "../index.js";
+
+import { Reflect } from "../reflect.js";
 
 describe("View", () => {
   function newStore() {
@@ -28,9 +20,9 @@ describe("View", () => {
     const row2 = new Dict({ col1: new Ref(["table1", "row1"]) });
     const view = new View(
       new Dict({
-        viewFn: new Field(),
+        viewFn: new Reflect.FieldFn(),
         obj: new Ref(["table1", "row2", "col1"]),
-        field: new Text("col1")
+        key: new Text("col1")
       })
     );
     table1.get("row1").replace(row1);
@@ -63,7 +55,7 @@ describe("View", () => {
     s.get("table1")
       .get("view")
       .get("info")
-      .get("field")
+      .get("key")
       .replace(new Text("col2"));
 
     expect(v.next.version).to.be.an.instanceof(Null);

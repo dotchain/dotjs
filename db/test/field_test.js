@@ -6,7 +6,7 @@
 
 import { expect } from "chai";
 
-import { Dict, Ref, Store, Stream, Text, Field, Null } from "../index.js";
+import { field, Dict, Ref, Store, Stream, Text, Null } from "../index.js";
 
 describe("Field", () => {
   function newStore() {
@@ -26,17 +26,13 @@ describe("Field", () => {
     return s.next.version.next.version.next.version;
   }
 
-  it("should invoke", () => {
-    const s = newStore();
-    const fn = new Field();
-    const f = fn.invoke(s, s.get("table1").get("args"));
-    expect(f.text).to.equal("hello");
-  });
-
   it("should track object", () => {
     const s = newStore();
-    const fn = new Field();
-    const f = fn.invoke(s, s.get("table1").get("args"));
+    const f = field(
+      s,
+      new Ref(["table1", "args", "obj"]),
+      new Ref(["table1", "args", "field"])
+    );
     s.get("table1")
       .get("row1")
       .get("col1")
@@ -47,8 +43,11 @@ describe("Field", () => {
 
   it("should track field", () => {
     const s = newStore();
-    const fn = new Field();
-    const f = fn.invoke(s, s.get("table1").get("args"));
+    const f = field(
+      s,
+      new Ref(["table1", "args", "obj"]),
+      new Ref(["table1", "args", "field"])
+    );
     s.get("table1")
       .get("args")
       .get("field")
@@ -59,8 +58,11 @@ describe("Field", () => {
 
   it("should proxy changes", () => {
     const s = newStore();
-    const fn = new Field();
-    const f = fn.invoke(s, s.get("table1").get("args"));
+    const f = field(
+      s,
+      new Ref(["table1", "args", "obj"]),
+      new Ref(["table1", "args", "field"])
+    );
     f.replace(new Text("world"));
 
     expect(

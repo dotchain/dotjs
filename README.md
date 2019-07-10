@@ -182,10 +182,20 @@ it("proxies edits on filtered dictionaries", () => {
 
   expect(filtered.get("boo")).to.be.instanceOf(Null);
   expect(filtered.get("hello").text).to.equal("world");
+
+  filtered.get("seven").replace(new Text("wonders"));
+
+  // see update reflected on the underlying dictionary
+  expect(initial.latest().get("seven").text).to.equal("wonders");
 });
 ```
 
-The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  For a given definition of the reactive forward data flow, multiple reverse flows can be defined and all the `bi-directional` primitives in `DotDB` pin these behaviors.  Custom behaviors are possible (though intricate to get right at this point) but the inherent strength of two-way bindings is that the usual complexity of event-handling can be avoided with a fairly declarative setup.
+The specific implementations of `field`, `map`, `filter`, `group` and other such functions provided by `DotDB` all try to have reasonable behavior for mutating the output and proxying those changes upstream.  
+
+The `filter` example illustrates one difficult choice with mutations on the output: some mutations either don't make sense (such as modifying the filtered value in ways that violate the filter constraint) or mutations lack a clear meaning (such as when `replace()` is called on the filtered value -- does this replace all the existing elements or the whole underlying input being filtered).
+
+When considering bi-directional transformations, the declarative function should capture both the forward flow and the feedback flow.   t this point in this project, the two flows are meshed together in a single implementation of `filter` but the longer term approach is likely to decouple these and have the definition be an explicit composition of a forward and a feedback flow.
+
 
      One of the goals here is to use DotDB to build UI apps where
      the complexities of event-handling are not used.  Instead, much

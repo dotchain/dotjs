@@ -28,6 +28,23 @@ export class RunStream extends DerivedStream {
     this.obj = obj;
   }
 
+  append(c) {
+    return this._nextf(this.parent && this.parent.append(c));
+  }
+
+  reverseAppend(c) {
+    return this._nextf(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+    const val = this.value.apply(n.change).setStream(n.version);
+    const version = new RunStream(this.store, this.obj, val);
+    return { change: n.change, version };
+  }
+
   _getNext() {
     const n = this.store.next;
     if (n) {

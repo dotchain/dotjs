@@ -19,30 +19,31 @@ export class Substream extends DerivedStream {
   }
 
   append(c) {
-    const p = this.parent && this.parent.append(new PathChange([this.key], c));
-    // TODO: the key have changed!
-    return new Substream(p, this.key);
+    const cx = new PathChange([this.key], c);
+    return this._nextf(this.parent && this.parent.append(cx));
   }
 
   reverseAppend(c) {
-    const p =
-      this.parent && this.parent.reverseAppend(new PathChange([this.key], c));
-    // TODO: the key may have changed!
-    return new Substream(p, this.key);
+    const cx = new PathChange([this.key], c);
+    return this._nextf(this.parent && this.parent.reverseAppend(cx));
+  }
+
+  _nextf(n) {
+    if (!n) {
+      return null;
+    }
+
+    const { xform, key, ok } = transform(n.change, this.key);
+    if (!ok) {
+      // TODO: this should not be null for append case?
+      return null;
+    }
+
+    return { change: xform, version: new Substream(n.version, key) };
   }
 
   _getNext() {
-    const next = this.parent && this.parent.next;
-    if (!next) {
-      return null;
-    }
-
-    const { xform, key, ok } = transform(next.change, this.key);
-    if (!ok) {
-      return null;
-    }
-
-    return { change: xform, version: new Substream(next.version, key) };
+    return this._nextf(this.parent && this.parent.next);
   }
 }
 

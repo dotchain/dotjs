@@ -94,37 +94,31 @@ class SessionStream {
   }
 
   append(c) {
-    return { change: c, version: this._setParent(this._parent.append(c)) };
+    return this._nextf(this._parent && this._parent.append(c));
   }
 
   reverseAppend(c) {
-    return {
-      change: c,
-      version: this._setParent(this._parent.reeverseAppend(c))
-    };
+    return this._nextf(this._parent && this._parent.reverseAppend(c));
   }
 
-  undo() {
-    this._parent.undo();
-    return this;
-  }
-
-  redo() {
-    this._parent.redo();
-    return this;
-  }
-
-  get next() {
-    const n = this._parent.next;
+  _nextf(n) {
     if (!n) {
       return null;
     }
-
-    return { change: n.change, version: this._setParent(n.version) };
+    const version = new SessionStream(n.version, this._info);
+    return { change: n.change, version };
   }
 
-  _setParent(parent) {
-    return new SessionStream(parent, this._info);
+  undo() {
+    return this._parent.undo();
+  }
+
+  redo() {
+    return this._parent.redo();
+  }
+
+  get next() {
+    return this._nextf(this._parent.next);
   }
 
   push() {
@@ -190,7 +184,7 @@ class SessionStream {
         for (let kk = 0; kk < s.merge.length; kk++) {
           [s.merge[kk], op] = op.merge(s.merge[kk]);
         }
-        s.stream = s.stream.reverseAppend(op.changes);
+        s.stream = s.stream.reverseAppend(op.changes).version;
       }
       s.version = op.version;
     }

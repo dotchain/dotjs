@@ -41,16 +41,21 @@ class UndoStream {
 
   append(c) {
     this.stack.flush();
-    const parent = this.parent.append(c);
-    this.stack.pickupLocalChanges();
-    return new UndoStream(parent, this.stack);
+    return this._append(this.parent && this.parent.append(c));
   }
 
   reverseAppend(c) {
     this.stack.flush();
-    const parent = this.parent.reverseAppend(c);
+    return this._append(this.parent && this.parent.reverseAppend(c));
+  }
+
+  _append(n) {
+    if (!n) {
+      return null;
+    }
     this.stack.pickupLocalChanges();
-    return new UndoStream(parent, this.stack);
+    const version = new UndoStream(n.version, this.stack);
+    return { change: n.change, version };
   }
 
   push() {
@@ -105,7 +110,7 @@ class UndoStack {
     }
     const c = this.undos.shift();
     this.redos.unshift(c.revert());
-    this.stream = this.stream.append(c);
+    this.stream = this.stream.append(c).version;
     return c;
   }
 
@@ -116,7 +121,7 @@ class UndoStack {
     }
     const c = this.redos.shift();
     this.undos.unshift(c.revert());
-    this.stream = this.stream.append(c);
+    this.stream = this.stream.append(c).version;
     return c;
   }
 
