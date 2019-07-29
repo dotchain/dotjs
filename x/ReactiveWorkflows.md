@@ -129,19 +129,33 @@ flow and local variables with all shared state left as is.
 
 ## Alternate formulation
 
-An alternate more reactive formulation would be simply based on a
-large when clause and only shared state:
+An alternate more reactive formulation would be using filters and only
+shared state:
+
 
 ```js
-  ticket = CreateTicket();
-  when {
-    ticket.priority == nil : TriageTicket(ticket);
-    ticket.owner == nil : AssignTicket(ticket);
-    ticket.owner != nil && ticket.endTime == nil: ProcessTicket(ticket);
-  }
-  return ticket
+  tickets = CreateTicketsQueue();
+
+  // filter for priority and for each match, set priority to TriageTicket(it)
+  tickets.filter(it.priority == nil).map(it.extend({
+    priority: TriageTicket(it)
+  }))
+
+  // similarly do for assignment
+  tickets.filter(it.owner == nil && it.priority == nil).map(it.extend({
+    owner: AssignTicket(it)
+  }))
+
+  // similarly do for processing ticket
+  tickets.filter(it.endTime == nil && it.owner == nil).map(it.extend({
+    endTime: ProcessTicket(it)
+  }))
+
 ```
 
 This formulation is definitely much easier to implement and reason
-about but in practice, this gets quite unreadable as it unrolls all
-the nested if conditions.
+about but in practice, this is not simple to author.  A better
+approach may be to transpile the first formulation into some version
+of this formulation.
+
+
