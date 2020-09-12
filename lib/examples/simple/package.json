@@ -17,7 +17,7 @@
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "mocha": "^6.1.4",
-    "node-fetch": "^2.5.0",
+    "node-fetch": "^2.6.1",
     "why-is-node-running": "^2.1.0"
   }
 }
