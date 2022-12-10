@@ -56,7 +56,7 @@
     "cors": "^2.8.5",
     "eslint": "^5.16.0",
     "esm": "^3.2.22",
-    "express": "^4.16.4",
+    "express": "^4.17.3",
     "jsdoc-to-markdown": "^4.0.1",
     "karma": "^4.1.0",
     "karma-chai": "^0.1.0",
